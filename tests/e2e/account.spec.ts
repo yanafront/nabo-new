@@ -1,0 +1,31 @@
+import { test, expect } from '@playwright/test';
+test('регистрация, вход, выход и мобильная вёрстка', async ({ page }) => {
+  let signedIn = false;
+  await page.route('**/api/auth/me', route => route.fulfill({ status: signedIn ? 200 : 401, json: signedIn ? { id: 'test', phoneNumber: '+375291234567' } : {} }));
+  await page.route('**/api/auth/register', route => route.fulfill({ status: 201, json: { id: 'test', phoneNumber: '+375291234567' } }));
+  await page.route('**/api/auth/login', route => { signedIn = true; return route.fulfill({ json: { authenticated: true } }); });
+  await page.route('**/api/auth/logout', route => { signedIn = false; return route.fulfill({ json: { authenticated: false } }); });
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Аккаунт', exact: true }).click();
+  await page.getByRole('button', { name: 'Нет аккаунта? Зарегистрироваться' }).click();
+  await page.getByLabel('Номер телефона').fill('+375291234567');
+  await page.getByLabel('Пароль', { exact: true }).fill('sample-password');
+  await page.getByRole('button', { name: 'Зарегистрироваться', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Аккаунт создан');
+  await page.getByLabel('Пароль', { exact: true }).fill('sample-password');
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Вы вошли в Nabo' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('button', { name: 'Выйти', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Войти в аккаунт' })).toBeVisible();
+});
+test('ошибка входа отображается в форме', async ({ page }) => {
+  await page.route('**/api/auth/me', route => route.fulfill({ status: 401, json: {} }));
+  await page.route('**/api/auth/login', route => route.fulfill({ status: 401, json: {} }));
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Аккаунт', exact: true }).click();
+  await page.getByLabel('Номер телефона').fill('+375291234567');
+  await page.getByLabel('Пароль', { exact: true }).fill('sample-password');
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page.getByRole('alert')).toHaveText('Неверный номер телефона или пароль.');
+});

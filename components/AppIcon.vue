@@ -1,0 +1,71 @@
+<script setup lang="ts">
+import {
+  ArrowUp,
+  ArrowRight,
+  ArrowLeft,
+  ShoppingBasket,
+  Heart,
+  Search,
+  Plus,
+  Minus,
+  X,
+  Mic,
+  MapPin,
+  ChevronDown,
+  Check,
+  SlidersHorizontal,
+  Trash2,
+  RefreshCw,
+  ExternalLink,
+  Leaf,
+  Sparkles,
+  Clock,
+  Users,
+  Menu,
+  BadgeCheck,
+  CircleCheck,
+  Store,
+  Tag,
+  ScanSearch,
+  Star,
+} from "lucide-vue-next";
+const props = defineProps<{ name: string; size?: number }>();
+const icons: Record<string, any> = {
+  ArrowUp,
+  ArrowRight,
+  ArrowLeft,
+  ShoppingBasket,
+  Heart,
+  Search,
+  Plus,
+  Minus,
+  X,
+  Mic,
+  MapPin,
+  ChevronDown,
+  Check,
+  SlidersHorizontal,
+  Trash2,
+  RefreshCw,
+  ExternalLink,
+  Leaf,
+  Sparkles,
+  Clock,
+  Users,
+  Menu,
+  BadgeCheck,
+  CircleCheck,
+  Store,
+  Tag,
+  ScanSearch,
+  Star,
+};
+</script>
+<template>
+  <component
+    :is="icons[props.name] || Search"
+    :size="size || 20"
+    :stroke-width="1.7"
+    aria-hidden="true"
+  />
+</template>

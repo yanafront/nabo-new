@@ -1,0 +1,189 @@
+{
+  "currency": {
+    "code": "BYN",
+    "sign": "p.",
+    "template": "$VALUE$ $SIGN$$CURRENCY$",
+    "text": "руб."
+  },
+  "blocks": [
+    {
+      "title": "Товары",
+      "type": "categories_products",
+      "payload": {
+        "products": [
+          {
+            "id": 0,
+            "uid": "75746530-5122-46e0-bc15-09320dadd436",
+            "public_id": "75746530-5122-46e0-bc15-09320dadd436",
+            "name": "Молоко питьевое «Савушкин продукт» 1.5%",
+            "slug": "moloko-savushkin-ultrapast-1-5-1l",
+            "description": "",
+            "available": true,
+            "inStock": 12,
+            "price": 2,
+            "decimalPrice": "2.35",
+            "promoPrice": null,
+            "decimalPromoPrice": null,
+            "promoTypes": [
+              {
+                "id": 1,
+                "name": "Belorusskoe",
+                "text": "Белорусское",
+                "badgeColor": [
+                  {
+                    "theme": "light",
+                    "value": "#029154"
+                  },
+                  {
+                    "theme": "dark",
+                    "value": "#029154"
+                  }
+                ],
+                "textColor": [
+                  {
+                    "theme": "light",
+                    "value": "#FFFFFF"
+                  },
+                  {
+                    "theme": "dark",
+                    "value": "#FFFFFF"
+                  }
+                ],
+                "type": "information"
+              }
+            ],
+            "optionGroups": [],
+            "picture": {
+              "url": "https://avatars.mds.yandex.net/get-eda/14904645/4f4d38f8b58f091f0d624d9810bd0cdd/{w}x{h}",
+              "scale": "aspect_fit"
+            },
+            "weight": "1 л",
+            "adult": false,
+            "shippingType": "all",
+            "rating": {
+              "text": "84% (9)",
+              "icon": {
+                "light": "https://avatars.mds.yandex.net/get-eda-images/9706557/d1881286-cb8b-11f0-aaa4-aa6338bb769b/orig",
+                "dark": "https://avatars.mds.yandex.net/get-eda-images/9711422/caca181f-cb8b-11f0-ba3e-d6d185c964a4/orig"
+              }
+            }
+          },
+          {
+            "id": 0,
+            "uid": "f11ab860-1fe4-412f-91df-49ef18ce7bdd",
+            "public_id": "f11ab860-1fe4-412f-91df-49ef18ce7bdd",
+            "name": "Молоко ультрапастеризованное 1.5% Савушкин",
+            "slug": "moloko-pit-savushkin-ultrapast-1-5-1l-tetra-pak",
+            "description": "",
+            "available": true,
+            "inStock": 24,
+            "price": 2,
+            "decimalPrice": "2.90",
+            "promoPrice": null,
+            "decimalPromoPrice": null,
+            "promoTypes": [
+              {
+                "id": 1,
+                "name": "Belorusskoe",
+                "text": "Белорусское",
+                "badgeColor": [
+                  {
+                    "theme": "light",
+                    "value": "#029154"
+                  },
+                  {
+                    "theme": "dark",
+                    "value": "#029154"
+                  }
+                ],
+                "textColor": [
+                  {
+                    "theme": "light",
+                    "value": "#FFFFFF"
+                  },
+                  {
+                    "theme": "dark",
+                    "value": "#FFFFFF"
+                  }
+                ],
+                "type": "information"
+              }
+            ],
+            "optionGroups": [],
+            "picture": {
+              "url": "https://avatars.mds.yandex.net/get-eda/16473711/045bf49fa2e1ec2ab48a909af2a80af2/{w}x{h}",
+              "scale": "aspect_fit"
+            },
+            "weight": "1 л",
+            "adult": false,
+            "shippingType": "all",
+            "rating": {
+              "text": "100% (8)",
+              "icon": {
+                "light": "https://avatars.mds.yandex.net/get-eda-images/9706557/d1881286-cb8b-11f0-aaa4-aa6338bb769b/orig",
+                "dark": "https://avatars.mds.yandex.net/get-eda-images/9711422/caca181f-cb8b-11f0-ba3e-d6d185c964a4/orig"
+              }
+            }
+          },
+          {
+            "id": 0,
+            "uid": "9e8b6096-216e-4033-850a-51a09e8af56f",
+            "public_id": "9e8b6096-216e-4033-850a-51a09e8af56f",
+            "name": "Молоко пит Славянские традиции ультрапаст 2,5% 1,5л пэт-бут",
+            "slug": "moloko-pit-slavianskie-traditsii-ultrapast-2-5-1-5l-pet-but",
+            "description": "",
+            "available": true,
+            "inStock": 62,
+            "price": 3,
+            "decimalPrice": "3.47",
+            "promoPrice": null,
+            "decimalPromoPrice": null,
+            "promoTypes": [
+              {
+                "id": 1,
+                "name": "Belorusskoe",
+                "text": "Белорусское",
+                "badgeColor": [
+                  {
+                    "theme": "light",
+                    "value": "#029154"
+                  },
+                  {
+                    "theme": "dark",
+                    "value": "#029154"
+                  }
+                ],
+                "textColor": [
+                  {
+                    "theme": "light",
+                    "value": "#FFFFFF"
+                  },
+                  {
+                    "theme": "dark",
+                    "value": "#FFFFFF"
+                  }
+                ],
+                "type": "information"
+              }
+            ],
+            "optionGroups": [],
+            "picture": {
+              "url": "https://avatars.mds.yandex.net/get-eda/15377433/de5f02d85a62892da1b0c995ca934beb/{w}x{h}",
+              "scale": "aspect_fit"
+            },
+            "weight": "1.5 кг",
+            "adult": false,
+            "shippingType": "all",
+            "rating": {
+              "text": "87% (10)",
+              "icon": {
+                "light": "https://avatars.mds.yandex.net/get-eda-images/9706557/d1881286-cb8b-11f0-aaa4-aa6338bb769b/orig",
+                "dark": "https://avatars.mds.yandex.net/get-eda-images/9711422/caca181f-cb8b-11f0-ba3e-d6d185c964a4/orig"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

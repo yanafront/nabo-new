@@ -8,11 +8,25 @@ const picker = ref(false);
 <template>
   <div class="home">
     <section class="home-start">
-      <div class="eyebrow">МЕНЬШЕ ПОИСКОВ. БОЛЬШЕ ВЫГОДЫ.</div>
-      <h1>Что сегодня<br /><span>в вашей корзине?</span></h1>
-      <p class="home-intro">
-        Напишите блюдо или продукты. Соберём корзину и найдём, где дешевле.
-      </p>
+      <div class="home-hero">
+        <div class="hero-copy">
+          <div class="eyebrow">МЕНЬШЕ ПОИСКОВ. БОЛЬШЕ ВЫГОДЫ.</div>
+          <h1>Что сегодня<br /><span>в вашей корзине?</span></h1>
+          <p class="home-intro">
+            Напишите блюдо или продукты. Соберём корзину и найдём, где дешевле.
+          </p>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <img
+            src="/images/grocery-hero.webp"
+            width="1000"
+            height="667"
+            alt=""
+            decoding="async"
+            fetchpriority="high"
+          />
+        </div>
+      </div>
       <RequestComposer ref="composer" />
       <div class="home-shortcuts">
         <button @click="picker = true">

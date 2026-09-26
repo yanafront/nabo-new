@@ -28,7 +28,7 @@ onUnmounted(() => {
     <a class="skip" href="#main">К содержимому</a>
     <header class="header">
       <NuxtLink to="/" class="logo" aria-label="Nabo — главная"
-        ><BrandMark />nabo<span class="brand-tagline"
+        ><BrandMark /><span class="brand-tagline"
           >покупки с умом</span
         ></NuxtLink
       >

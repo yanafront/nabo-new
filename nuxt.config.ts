@@ -15,7 +15,7 @@ export default defineNuxtConfig({
           content:
             "От идеи на ужин до выгодной продуктовой корзины. Сравнивайте магазины вместе с Nabo.",
         },
-        { name: "theme-color", content: "#B4432A" },
+        { name: "theme-color", content: "#FFFFFF" },
       ],
     },
   },

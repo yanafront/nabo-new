@@ -13,6 +13,8 @@ export interface Product {
   keywords: string[];
 }
 export interface Item {
+  required?: boolean;
+  allowReplacement?: boolean;
   productId: string;
   quantity: number;
   product?: Product;

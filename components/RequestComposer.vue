@@ -50,7 +50,7 @@ async function chooseRecipe(recipe: RecipeResult) {
 
 async function submitRequest(result: ReturnType<typeof recipeRequest>) {
   stopSuggestions();
-  stage.value = "Подбираем продукты в шести магазинах…";
+  stage.value = "Собираем вашу корзину…";
   error.value = "";
   loading.value = true;
   controller = new AbortController();
@@ -87,8 +87,11 @@ async function submit(value = query.value) {
     }
     await submitRequest(result);
   } catch {
-    if (!current.signal.aborted) error.value = "Не удалось найти рецепт. Повторите поиск.";
-  } finally { loading.value = false; }
+    if (!current.signal.aborted)
+      error.value = "Не удалось найти рецепт. Повторите поиск.";
+  } finally {
+    loading.value = false;
+  }
 }
 function cancel() {
   controller?.abort();
@@ -136,13 +139,13 @@ defineExpose({ submit });
   <div class="composer-wrap">
     <form class="composer" @submit.prevent="submit()">
       <label class="sr-only" for="request"
-        >Что хотите приготовить или купить?</label
+        >Что хотите купить или приготовить?</label
       ><textarea
         id="request"
         v-model="query"
         :disabled="loading"
-        placeholder="Блюдо или список продуктов"
-        rows="1"
+        placeholder="Например, борщ на 5 человек"
+        rows="2"
         maxlength="250"
         @keydown.enter.exact.prevent="submit()"
       />
@@ -162,7 +165,7 @@ defineExpose({ submit });
             :disabled="loading"
             aria-label="Собрать корзину"
           >
-            <span class="send-label">Найти продукты</span
+            <span class="send-label">Собрать корзину</span
             ><span v-if="loading" class="spinner" /><AppIcon
               v-else
               name="ArrowUp"
@@ -200,11 +203,11 @@ defineExpose({ submit });
         target="_blank"
         rel="noopener noreferrer"
       >
-        501 рецепт · данные UniTools, CC BY-SA 4.0
+        Рецепты: UniTools · CC BY-SA 4.0
       </a>
     </div>
     <p
-      v-else-if="recipeSearchPending && !loading"
+      v-if="recipeSearchPending && !loading"
       class="recipe-search-status"
       role="status"
     >
@@ -213,7 +216,9 @@ defineExpose({ submit });
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <div v-if="loading" class="generation" role="status">
       <span class="spinner" /> {{ stage }}
-      <button type="button" class="text-button" @click="cancel">Отменить</button>
+      <button type="button" class="text-button" @click="cancel">
+        Отменить
+      </button>
     </div>
     <div v-else class="quick-queries">
       <button

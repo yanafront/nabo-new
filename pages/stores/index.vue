@@ -7,9 +7,9 @@ import { retailStores } from "~/shared/yandex";
     <div class="page-heading stores-heading">
       <div>
         <span class="eyebrow">Каталоги магазинов</span>
-        <h1>Выберите магазин</h1>
+        <h1>Добавить из магазина</h1>
         <p class="muted">
-          Ищите товары, смотрите актуальные цены и сравнивайте магазины.
+          Знаете, что ищете? Откройте каталог и добавьте продукты в корзину.
         </p>
       </div>
     </div>
@@ -29,15 +29,6 @@ import { retailStores } from "~/shared/yandex";
         </div>
         <AppIcon name="ArrowRight" :size="20" />
       </NuxtLink>
-    </div>
-    <div class="catalog-explainer">
-      <AppIcon name="ScanSearch" :size="22" />
-      <div>
-        <strong>Сравнение в карточке товара</strong>
-        <p>
-          Откройте товар — покажем похожие позиции и цены остальных магазинов.
-        </p>
-      </div>
     </div>
   </div>
 </template>

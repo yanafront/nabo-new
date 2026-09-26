@@ -59,6 +59,10 @@ export function useBasket() {
       return false;
     }
     if (existing) {
+      if (old) {
+        existing.required = existing.required || old.required;
+        if (old.allowReplacement === false) existing.allowReplacement = false;
+      }
       existing.quantity = quantity;
       existing.product = product;
       if (old) remove(old.productId);
@@ -81,6 +85,14 @@ export function useBasket() {
       } else i.quantity = Math.min(99, i.quantity + delta);
     }
   }
+  function setPreference(
+    id: string,
+    key: "required" | "allowReplacement",
+    value: boolean,
+  ) {
+    const item = items.value.find((i) => i.productId === id);
+    if (item) item[key] = value;
+  }
   function save() {
     if (!items.value.length) return;
     saved.value.unshift({
@@ -100,6 +112,7 @@ export function useBasket() {
     compareItems,
     unresolved,
     pendingIngredients,
+    setPreference,
     addProduct,
     remove,
     change,

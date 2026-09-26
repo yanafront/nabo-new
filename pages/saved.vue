@@ -20,8 +20,10 @@ function restore(id: string) {
     <div class="page-heading">
       <div>
         <div class="eyebrow small"></div>
-        <h1>Ваши сохранённые</h1>
-        <p class="muted">Корзины на этом устройстве.</p>
+        <h1>Покупки на повтор</h1>
+        <p class="muted">
+          Ваши готовые списки. Откройте и проверьте свежие цены.
+        </p>
       </div>
     </div>
     <div v-if="saved.length" class="saved-grid">
@@ -44,11 +46,14 @@ function restore(id: string) {
         </div>
         <h2>{{ basket.title }}</h2>
         <p class="muted">
-          {{ basket.items.length }} позиций · {{ basket.date }}
+          {{
+            quantityLabel(basket.items.length, "позиция", "позиции", "позиций")
+          }}
+          · {{ basket.date }}
         </p>
         <div>
           <button class="primary" @click="restore(basket.id)">
-            Открыть корзину <AppIcon name="ArrowRight" :size="17" /></button
+            Повторить покупки <AppIcon name="ArrowRight" :size="17" /></button
           ><button
             class="icon-button"
             :aria-label="`Удалить сохранённую корзину ${basket.title}`"
@@ -67,7 +72,7 @@ function restore(id: string) {
         с готового.
       </p>
       <NuxtLink to="/" class="primary"
-        >Найти вкусную идею <AppIcon name="ArrowRight"
+        >Собрать первую корзину <AppIcon name="ArrowRight"
       /></NuxtLink>
     </div>
   </div>

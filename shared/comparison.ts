@@ -13,7 +13,9 @@ export function summarizeComparison(offer: StoreComparison) {
       l.selected.stock !== null &&
       demand.get(l.selected.id)! > l.selected.stock,
   );
-  const missing = offer.lines.filter((l) => !l.selected);
+  const missing = offer.lines.filter(
+    (l) => !l.selected || !l.selected.available,
+  );
   const complete =
     offer.lines.length > 0 &&
     !missing.length &&
@@ -23,7 +25,9 @@ export function summarizeComparison(offer: StoreComparison) {
     offer.lines.reduce(
       (sum, l) =>
         sum +
-        (l.selected ? Math.round(l.selected.price * 100) * l.quantity : 0),
+        (l.selected?.available && !l.error
+          ? Math.round(l.selected.price * 100) * l.quantity
+          : 0),
       0,
     ) / 100;
   return {

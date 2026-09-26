@@ -1,111 +1,75 @@
 <script setup lang="ts">
 import { recipes } from "~/data/catalog";
+import { retailStores } from "~/shared/yandex";
 const composer = ref<{ submit: (q: string) => void }>();
+const { items, title } = useBasket();
 const picker = ref(false);
-const category = ref<string>();
-function openCategory(value?: string) {
-  category.value = value;
-  picker.value = true;
-}
-const { items } = useBasket();
-function choose(q: string) {
-  composer.value?.submit(q);
-}
 </script>
 <template>
-  <div class="home compact-home">
-    <section class="hero home-hero">
-      <div class="home-hero-content">
-        <div class="home-heading">
-          <span class="hero-kicker"
-            ><AppIcon name="BadgeCheck" :size="15" /> Цены магазинов</span
-          >
-          <h1>Вся корзина дешевле — за пару минут</h1>
-          <p>
-            Напишите блюдо или список покупок. Nabo соберёт товары и покажет, в
-            каком магазине выгоднее.
-          </p>
-        </div>
-        <RequestComposer ref="composer" />
-        <div class="hero-benefits" aria-label="Преимущества">
-          <span><AppIcon name="CircleCheck" :size="15" /> 501 рецепт</span>
-          <span><AppIcon name="Store" :size="15" /> 6 магазинов</span>
-          <span><AppIcon name="Tag" :size="15" /> Реальные цены</span>
-        </div>
-      </div>
-      <div class="home-hero-visual" aria-hidden="true">
-        <img src="/images/nabo-grocery-hero.webp" alt="" />
-        <div>
-          <strong>от 32,40 BYN</strong>
-          <span>корзина на ужин</span>
-        </div>
+  <div class="home">
+    <section class="home-start">
+      <div class="eyebrow">МЕНЬШЕ ПОИСКОВ. БОЛЬШЕ ВЫГОДЫ.</div>
+      <h1>Что сегодня<br /><span>в вашей корзине?</span></h1>
+      <p class="home-intro">
+        Напишите блюдо или продукты. Соберём корзину и найдём, где дешевле.
+      </p>
+      <RequestComposer ref="composer" />
+      <div class="home-shortcuts">
+        <button @click="picker = true">
+          <AppIcon name="Plus" :size="17" /> Добавить продукты вручную</button
+        ><NuxtLink to="/stores"
+          >Магазины <AppIcon name="ArrowRight" :size="16"
+        /></NuxtLink>
       </div>
     </section>
-    <section class="categories" aria-label="Добавить продукты">
-      <button @click="openCategory('vegetables')">
-        <img src="/images/category-produce.webp" alt="" />
-        <span>Овощи и фрукты</span><AppIcon name="Plus" :size="15" />
-      </button>
-      <button @click="openCategory('dairy')">
-        <img src="/images/category-dairy.webp" alt="" />
-        <span>Молочные</span><AppIcon name="Plus" :size="15" />
-      </button>
-      <button @click="openCategory('bakery')">
-        <img src="/images/category-bakery.webp" alt="" />
-        <span>Хлеб и выпечка</span><AppIcon name="Plus" :size="15" />
-      </button>
-      <button @click="openCategory()">
-        <span class="category-all"><AppIcon name="Search" :size="20" /></span>
-        <span>Все продукты</span><AppIcon name="ArrowRight" :size="15" />
-      </button>
-    </section>
+    <NuxtLink v-if="items.length" to="/basket" class="resume-basket"
+      ><span class="resume-icon"><AppIcon name="ShoppingBasket" /></span
+      ><span
+        ><small>ПРОДОЛЖИТЬ ПОКУПКИ</small><strong>{{ title }}</strong
+        ><span
+          >В корзине:
+          {{
+            quantityLabel(items.length, "позиция", "позиции", "позиций")
+          }}</span
+        ></span
+      ><AppIcon name="ArrowRight"
+    /></NuxtLink>
     <section class="inspiration">
       <div class="section-head">
-        <h2>Или сразу приготовим</h2>
-        <span>Продукты в один клик</span>
+        <h2>Начните с блюда</h2>
+        <span>Продукты подберём сами</span>
       </div>
       <div class="recipe-grid">
         <button
           v-for="recipe in recipes"
           :key="recipe.id"
           class="recipe-card"
-          @click="choose(recipe.query)"
+          @click="composer?.submit(recipe.query)"
         >
-          <div class="recipe-photo" :style="{ backgroundColor: recipe.color }">
-            <img
-              :src="recipe.image"
-              alt=""
-              @error="
-                ($event.target as HTMLImageElement).src =
-                  '/images/nabo-grocery-hero.webp'
-              "
-            />
-          </div>
-          <div class="recipe-details">
-            <h3>{{ recipe.title }}</h3>
-            <span
+          <img
+            :src="recipe.image"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          /><span class="recipe-details"
+            ><strong>{{ recipe.title }}</strong
+            ><small
               >{{ recipe.time }} · {{ recipe.people }}
-              {{ recipe.people === 5 ? "порций" : "порции" }}</span
-            >
-          </div>
-          <span class="recipe-arrow"
-            ><AppIcon name="ArrowRight" :size="17"
-          /></span>
+              {{ recipe.people === 2 ? "порции" : "порций" }}</small
+            ></span
+          ><AppIcon name="ArrowUp" :size="18" />
         </button>
       </div>
     </section>
-    <NuxtLink v-if="items.length" to="/basket" class="resume-basket"
-      ><AppIcon name="ShoppingBasket" :size="19" /><span
-        >Ваша корзина <small>{{ items.length }} позиций</small></span
-      ><AppIcon name="ArrowRight" :size="18"
-    /></NuxtLink>
-    <div class="store-proof">
-      <span
-        ><AppIcon name="ScanSearch" :size="14" /> Сравниваем полную
-        корзину</span
-      ><b class="euroopt">Евроопт</b><b class="green">Гиппо</b
-      ><b class="sosedi">Белмаркет</b><b class="korona">Санта</b>
-    </div>
-    <LazyProductPicker :category="category" v-if="picker" @close="picker = false" />
+    <section class="store-proof" aria-label="Магазины для сравнения">
+      <p>Одна корзина. Шесть магазинов.</p>
+      <div>
+        <span v-for="store in retailStores" :key="store.id">{{
+          store.name
+        }}</span>
+      </div>
+      <small>Сравниваем товары. Доставка и сборы уточняются у магазина.</small>
+    </section>
+    <LazyProductPicker v-if="picker" @close="picker = false" />
   </div>
 </template>

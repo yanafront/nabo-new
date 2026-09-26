@@ -82,7 +82,7 @@ test.beforeEach(async ({ page }) => {
 test("находит рецепт из большой базы и собирает корзину", async ({ page }) => {
   await page.goto("/");
   await page
-    .getByRole("textbox", { name: "Что хотите приготовить" })
+    .getByRole("textbox", { name: "Что хотите купить или приготовить" })
     .fill("драники на 4");
   await expect(page.getByRole("option", { name: /Драники/ })).toBeVisible();
   await page.getByRole("option", { name: /Драники/ }).click();
@@ -95,13 +95,6 @@ test("каталог магазина → карточка товара → ср
   page,
 }) => {
   await page.goto("/");
-  const categoryLineHeight = await page
-    .locator(".categories button > span:not(.category-all)")
-    .first()
-    .evaluate((element) =>
-      Number.parseFloat(getComputedStyle(element).lineHeight),
-    );
-  expect(categoryLineHeight).toBeLessThan(18);
   await page.getByRole("link", { name: "Магазины", exact: true }).click();
   await page.getByRole("link", { name: /Евроопт/ }).click();
   await expect(page.getByRole("heading", { name: "Евроопт" })).toBeVisible();
@@ -109,7 +102,9 @@ test("каталог магазина → карточка товара → ср
   await page.locator(".catalog-product-link").first().click();
   await expect(page).toHaveURL(/\/product\/evroopt\//);
   await expect(page.locator(".product-detail h1")).toContainText("Молоко");
-  await expect(page.locator(".similar-store-group")).toHaveCount(retailStores.length - 1);
+  await expect(page.locator(".similar-store-group")).toHaveCount(
+    retailStores.length - 1,
+  );
   await page.locator(".product-buy-row button").click();
   await expect(page.locator(".product-buy-row button")).toContainText(
     "1 в корзине",
@@ -119,7 +114,9 @@ test("товар из Яндекса → корзина → сравнение �
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Все продукты", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Добавить продукты вручную", exact: true })
+    .click();
   await page.getByRole("textbox", { name: "Поиск продукта" }).fill("молоко");
   await expect(page.locator(".picker-product")).toHaveCount(3);
   await page.locator(".picker-product").first().click();
@@ -134,18 +131,20 @@ test("товар из Яндекса → корзина → сравнение �
   await page.getByRole("button", { name: /Увеличить количество/ }).click();
   await expect(page.locator(".quantity span")).toHaveText("2");
   await page.getByRole("button", { name: "Сохранить", exact: true }).click();
-  await page.getByRole("link", { name: "Сравнить магазины" }).click();
+  await page.getByRole("link", { name: "Найти дешевле" }).click();
   await expect(page.locator(".offer")).toHaveCount(5);
-  await expect(page.locator(".offer").filter({ hasText: "Не удалось проверить" })).toHaveCount(1);
-  await expect(page.locator(".offer").filter({ hasText: "Не удалось проверить" })).toContainText(
-    "Не удалось проверить",
-  );
+  await expect(
+    page.locator(".offer").filter({ hasText: "Не удалось проверить" }),
+  ).toHaveCount(1);
+  await expect(
+    page.locator(".offer").filter({ hasText: "Не удалось проверить" }),
+  ).toContainText("Не удалось проверить");
   await page.getByRole("checkbox").check();
   await expect(page.locator(".offer")).toHaveCount(4);
   await page
     .locator(".offer")
     .first()
-    .getByRole("button", { name: "Проверить состав" })
+    .getByRole("button", { name: "Посмотреть" })
     .click();
   await expect(page.getByRole("dialog").locator("select")).toHaveCount(0);
   await page
@@ -155,9 +154,9 @@ test("товар из Яндекса → корзина → сравнение �
   await page.locator(".replacement-option").first().click();
   await expect(page.locator(".replacement-options")).toHaveCount(0);
   await expect(page.getByRole("dialog")).toContainText(
-    "Автоматический перенос корзины пока не подключён",
+    "Корзина автоматически не переносится",
   );
-  await expect(page.getByRole("link", { name: /Открыть/ })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: /Перейти в / })).toHaveAttribute(
     "href",
     /https:\/\/(eda.yandex.by\/retail\/|sosedi-dostavka.by)/,
   );
@@ -165,7 +164,7 @@ test("товар из Яндекса → корзина → сравнение �
   await page.goto("/saved");
   await expect(page.locator(".saved-card")).toHaveCount(1);
   await page.reload();
-  await page.getByRole("button", { name: "Открыть корзину" }).click();
+  await page.getByRole("button", { name: "Повторить покупки" }).click();
   await expect(page.locator(".product-row")).toHaveCount(1);
   expect(
     await page.evaluate(
@@ -188,7 +187,10 @@ test("ошибка Яндекса не подменяется моковыми �
     }),
   );
   await page.goto("/");
-  await page.getByRole("button", { name: /Молочные/ }).click();
+  await page
+    .getByRole("button", { name: "Добавить продукты вручную", exact: true })
+    .click();
+  await page.getByRole("textbox", { name: "Поиск продукта" }).fill("молоко");
   await expect(page.getByRole("alert")).toContainText("Яндекс не ответил");
   await expect(page.locator(".picker-product")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Повторить" })).toBeVisible();
@@ -204,7 +206,8 @@ test("рецепт добавляет реальные товары вместо
   await expect(page.locator(".product-row")).toHaveCount(1); // fixture repeats one upstream SKU; duplicate packs merge
   await expect(page.locator(".product-name h3")).toContainText("Савушкин");
   await expect(page.locator(".row-price")).not.toContainText("—");
-  await expect(page.locator(".product-source-link")).toHaveAttribute(
+  await page.getByRole("button", { name: "Пожелания" }).click();
+  await expect(page.locator(".row-options a")).toHaveAttribute(
     "href",
     /(item=|sosedi-dostavka.by)/,
   );
@@ -213,7 +216,9 @@ test("минус уменьшает количество и удаляет по�
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Все продукты", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Добавить продукты вручную", exact: true })
+    .click();
   await page.getByRole("textbox", { name: "Поиск продукта" }).fill("молоко");
   await page.locator(".picker-product").first().click();
   await page.locator(".picker-product").first().click();
@@ -226,12 +231,14 @@ test("минус уменьшает количество и удаляет по�
   await page.getByRole("button", { name: /Уменьшить количество/ }).click();
   await expect(page.locator(".product-row")).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "Здесь начинается что-то вкусное" }),
+    page.getByRole("heading", { name: "С чего начнём покупки?" }),
   ).toBeVisible();
 });
 test("при сбое рецепта текущая корзина сохраняется", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Все продукты", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Добавить продукты вручную", exact: true })
+    .click();
   await page.getByRole("textbox", { name: "Поиск продукта" }).fill("молоко");
   await page.locator(".picker-product").first().click();
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
@@ -246,14 +253,23 @@ test("при сбое рецепта текущая корзина сохран�
   await expect(page.locator(".product-row")).toHaveCount(1);
 });
 
-
-test("карточка товара доступна при сбое остальных магазинов", async ({ page }) => {
-  const products = normalizeSearch(fixture, "evroopt", "evroopt", new Date().toISOString());
-  await page.route("**/api/yandex/search", async route => {
-    if (route.request().postDataJSON().storeId !== "evroopt") return route.abort();
+test("карточка товара доступна при сбое остальных магазинов", async ({
+  page,
+}) => {
+  const products = normalizeSearch(
+    fixture,
+    "evroopt",
+    "evroopt",
+    new Date().toISOString(),
+  );
+  await page.route("**/api/yandex/search", async (route) => {
+    if (route.request().postDataJSON().storeId !== "evroopt")
+      return route.abort();
     return route.fallback();
   });
-  await page.goto(`/product/evroopt/${products[0].id}?name=${encodeURIComponent(products[0].name)}`);
+  await page.goto(
+    `/product/evroopt/${products[0].id}?name=${encodeURIComponent(products[0].name)}`,
+  );
   await expect(page.locator(".product-detail h1")).toHaveText(products[0].name);
   await expect(page.locator(".product-buy-row button")).toBeEnabled();
 });

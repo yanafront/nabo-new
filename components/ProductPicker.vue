@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AppModal } from "#components";
 import {
   productSourceUrl,
   providerName,
@@ -7,7 +8,11 @@ import {
   type SearchResult,
   type RetailProduct,
 } from "~/shared/yandex";
-const props = defineProps<{ replaceId?: string; category?: string }>();
+const props = defineProps<{
+  replaceId?: string;
+  category?: string;
+  inline?: boolean;
+}>();
 const emit = defineEmits<{ close: [] }>();
 const { items, addProduct, notice, rows } = useBasket();
 const { location } = useRetail();
@@ -22,7 +27,20 @@ const query = ref(
     defaults[props.category || ""] ||
     "",
 );
-const storeId = ref<StoreId>("sosedi");
+const storeId = ref<StoreId>(
+  rows.value.find((r) => r.productId === props.replaceId)?.product.storeId ||
+    "sosedi",
+);
+const cheapest = ref(false);
+const visibleProducts = computed(() => {
+  const products = [...(result.value?.products || [])];
+  return cheapest.value
+    ? products.sort(
+        (a, b) =>
+          Number(b.available) - Number(a.available) || a.price - b.price,
+      )
+    : products;
+});
 const result = ref<SearchResult | null>(null);
 const pending = ref(false);
 const error = ref("");
@@ -41,7 +59,10 @@ async function search() {
   controller = current;
   pending.value = true;
   try {
-    const response = await searchProducts({ query: query.value, storeId: storeId.value, location: location.value }, current.signal);
+    const response = await searchProducts(
+      { query: query.value, storeId: storeId.value, location: location.value },
+      current.signal,
+    );
     if (controller !== current || current.signal.aborted) return;
     result.value = response;
     if (result.value.status === "error")
@@ -92,10 +113,22 @@ async function openBasket() {
 }
 </script>
 <template>
-  <AppModal
+  <component
+    :is="inline ? 'section' : AppModal"
+    :class="{ 'inline-picker': inline }"
     :title="replaceId ? 'Заменить продукт' : 'Добавить продукт'"
     @close="emit('close')"
-    ><div class="retail-tabs">
+    ><div v-if="inline" class="panel-heading">
+      <h3>{{ replaceId ? "Выберите замену" : "Добавьте продукты" }}</h3>
+      <button
+        class="icon-button"
+        aria-label="Закрыть поиск"
+        @click="emit('close')"
+      >
+        <AppIcon name="X" />
+      </button>
+    </div>
+    <div class="retail-tabs">
       <button
         v-for="store in retailStores"
         :key="store.id"
@@ -116,7 +149,15 @@ async function openBasket() {
         <AppIcon name="ArrowRight" />
       </button>
     </form>
-    <p class="muted">{{ providerName(storeId) }} · {{ location.label }} · BYN</p>
+    <div class="picker-tools">
+      <span>{{ providerName(storeId) }} · BYN</span
+      ><label class="checkbox"
+        ><input v-model="cheapest" type="checkbox" />Сначала дешевле</label
+      >
+    </div>
+    <p v-if="replaceId" class="muted">
+      Для другого бренда измените название в поиске. Цены указаны за упаковку.
+    </p>
     <p v-if="pending" role="status" class="generation">
       <span class="spinner" /> Ищем в магазине…
     </p>
@@ -125,7 +166,7 @@ async function openBasket() {
       <button class="secondary" @click="search">Повторить</button>
     </div>
     <div v-else class="picker-list">
-      <div v-for="p in result?.products" :key="p.id" class="picker-result">
+      <div v-for="p in visibleProducts" :key="p.id" class="picker-result">
         <button
           class="picker-product"
           :disabled="!p.available"
@@ -151,7 +192,8 @@ async function openBasket() {
           rel="noopener noreferrer"
           class="text-button product-source-link"
           :aria-label="`Проверить в ${providerName(p.storeId)}: ${p.name}`"
-          >Проверить в {{ providerName(p.storeId) }} <AppIcon name="ExternalLink" :size="12"
+          >Проверить в {{ providerName(p.storeId) }}
+          <AppIcon name="ExternalLink" :size="12"
         /></a>
       </div>
       <p
@@ -164,7 +206,7 @@ async function openBasket() {
         Введите название продукта — покажем товары выбранного магазина.
       </p>
     </div>
-    <div class="picker-cart-footer">
+    <div v-if="!inline" class="picker-cart-footer">
       <p
         v-if="feedback"
         :role="feedbackError ? 'alert' : 'status'"
@@ -183,5 +225,5 @@ async function openBasket() {
           :size="16"
         />
       </button></div
-  ></AppModal>
+  ></component>
 </template>

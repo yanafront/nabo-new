@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { recommend } from "~/shared/recommendation";
+import { retailStores } from "~/shared/yandex";
 import {
   productSourceUrl,
   providerName,
@@ -6,7 +8,7 @@ import {
   type StoreId,
   type RetailProduct,
 } from "~/shared/yandex";
-const { items, compareItems } = useBasket();
+const { items, compareItems, notice } = useBasket();
 const {
   offers,
   comparisons,
@@ -22,6 +24,43 @@ const onlyComplete = ref(false);
 const visible = computed(() =>
   offers.value.filter((o) => !onlyComplete.value || o.complete),
 );
+const recommendation = computed(() => recommend(offers.value));
+const best = computed(() =>
+  offers.value.find((o) => o.id === recommendation.value.best?.storeId),
+);
+const otherOffers = computed(() =>
+  visible.value.filter((o) => o.id !== best.value?.id),
+);
+const storeName = (id: string) =>
+  retailStores.find((s) => s.id === id)?.name || id;
+const requiredMissing = (offer: (typeof offers.value)[number]) =>
+  offer.lines.filter(
+    (line) =>
+      items.value.find((item) => item.productId === line.itemId)?.required &&
+      (!line.selected?.available ||
+        line.error ||
+        offer.stockProblems.some((p) => p.itemId === line.itemId)),
+  );
+function openOffer(id: StoreId) {
+  detail.value = id;
+  copied.value = false;
+  copyError.value = "";
+}
+async function copySplit() {
+  try {
+    await navigator.clipboard.writeText(
+      recommendation.value
+        .split!.groups.map(
+          (group) =>
+            `${storeName(group.storeId)}\n${group.lines.map((line) => `${line.selected!.name} · ${line.selected!.unit} × ${line.quantity}`).join("\n")}`,
+        )
+        .join("\n\n"),
+    );
+    notice.value = "Списки двух магазинов скопированы";
+  } catch {
+    copyError.value = "Не удалось скопировать список. Выделите товары ниже.";
+  }
+}
 const detail = ref<StoreId | null>(null);
 const selected = computed(() =>
   offers.value.find((o) => o.id === detail.value),
@@ -84,16 +123,19 @@ const time = (value: string) =>
   });
 </script>
 <template>
-  <div class="inner-page">
-    <NuxtLink to="/basket" class="back-link"
-      ><AppIcon name="ArrowLeft" :size="16" /> К корзине</NuxtLink
-    >
+  <div class="inner-page comparison-page">
+    <div class="flow-steps">
+      <NuxtLink to="/">01 · Список</NuxtLink
+      ><NuxtLink to="/basket">02 · Корзина</NuxtLink
+      ><span class="active">03 · Где дешевле</span>
+    </div>
     <div class="page-heading">
       <div>
-        <h1>Сравним магазины</h1>
+        <span class="eyebrow">ВЫБЕРИТЕ СВОЙ ВАРИАНТ</span>
+        <h1>Где дешевле</h1>
         <p class="muted">
-          {{ location.label }} · {{ items.length }} позиций · Только стоимость
-          товаров
+          {{ quantityLabel(items.length, "позиция", "позиции", "позиций") }} ·
+          {{ location.label }}
         </p>
       </div>
       <button
@@ -102,49 +144,127 @@ const time = (value: string) =>
         :disabled="pending"
         @click="refresh"
       >
-        <AppIcon name="RefreshCw" :size="16" />Обновить
+        <AppIcon name="RefreshCw" :size="16" />Обновить цены
       </button>
     </div>
-    <template v-if="items.length"
-      ><div v-if="pending" class="live-loading panel" role="status">
+    <template v-if="items.length">
+      <div v-if="pending" class="comparison-loading" role="status">
         <span class="spinner" />
-        <div>
-          <h2>Проверяем шесть магазинов</h2>
-          <p>Получаем реальные товары, цены и наличие…</p>
-        </div>
+        <h2>Сравниваем вашу корзину</h2>
+        <p>
+          Проверяем цены и наличие в шести магазинах. Иногда магазину нужно чуть
+          больше времени.
+        </p>
+        <div class="skeleton" />
+        <div class="skeleton short" />
+        <NuxtLink to="/basket" class="text-button"
+          >Вернуться к корзине</NuxtLink
+        >
       </div>
-      <p v-if="error" role="alert" class="error">{{ error }}</p>
-      <template v-if="!pending && offers.length"
-        ><div class="compare-banner">
-          <div>
-            <h3>Один список — разные корзины</h3>
-            <p>
-              Если нужного товара нет, подбираем замену. Бренды и упаковки могут
-              отличаться. Сравниваем сумму выбранных товаров без доставки и
-              сборов.
-            </p>
+      <div v-if="error" class="error-state" role="alert">
+        <h2>Магазины не ответили</h2>
+        <p>{{ error }}</p>
+        <button class="primary" @click="refresh">Попробовать ещё раз</button
+        ><NuxtLink to="/basket" class="text-button"
+          >Корзина сохранена — вернуться</NuxtLink
+        >
+      </div>
+      <template v-if="!pending && offers.length">
+        <section v-if="best" class="recommended-offer">
+          <div class="recommendation-label">
+            <AppIcon name="Check" :size="18" />Самая выгодная полная корзина
           </div>
+          <div class="recommended-main">
+            <div class="store-identity">
+              <span class="store-logo" :style="{ background: best.color }">{{
+                best.letter
+              }}</span>
+              <div>
+                <h2>{{ best.name }}</h2>
+                <p>Найдена вся корзина</p>
+              </div>
+            </div>
+            <div class="recommended-price">
+              {{ money(best.subtotal) }} <small>BYN</small>
+            </div>
+          </div>
+          <p v-if="recommendation.saving > 0" class="saving">
+            На {{ money(recommendation.saving) }} BYN дешевле, чем в
+            {{ storeName(recommendation.baseline!) }}
+          </p>
+          <p v-else class="recommendation-reason">
+            {{
+              offers.filter((o) => o.complete).length === 1
+                ? "Единственный магазин, где найдена вся корзина."
+                : "Минимальная сумма среди найденных полных корзин."
+            }}
+          </p>
+          <button class="primary" @click="openOffer(best.id)">
+            Проверить и перейти к покупке
+            <AppIcon name="ArrowRight" :size="18" /></button
+          ><small>За товары · доставка и сборы отдельно</small>
+        </section>
+        <div v-else class="basket-notice">
+          <strong>Целиком корзину пока не нашли</strong>
+          <p>
+            Ниже — доступные товары в каждом магазине. Проверьте недостающие
+            позиции перед покупкой.
+          </p>
         </div>
+        <details v-if="recommendation.split" class="split-offer">
+          <summary>
+            <span
+              ><AppIcon name="ShoppingBasket" :size="19" />{{
+                recommendation.split.saving > 0
+                  ? `Ещё ${money(recommendation.split.saving)} BYN можно сэкономить`
+                  : "Весь список есть в двух магазинах"
+              }}<small
+                >Если купить в двух местах · без двух доставок и сборов</small
+              ></span
+            ><AppIcon name="ChevronDown" :size="18" />
+          </summary>
+          <p>
+            Товары обойдутся в
+            <strong>{{ money(recommendation.split.subtotal) }} BYN</strong>.
+            Дополнительная доставка и время могут перекрыть выгоду. Проверьте
+            выбранные упаковки.
+          </p>
+          <div
+            v-for="group in recommendation.split.groups"
+            :key="group.storeId"
+          >
+            <h3>{{ storeName(group.storeId) }}</h3>
+            <ul>
+              <li v-for="line in group.lines" :key="line.itemId">
+                {{ line.selected!.name }} · {{ line.selected!.unit }} ×
+                {{ line.quantity }}
+              </li>
+            </ul>
+            <a
+              class="text-button"
+              :href="storeUrl(group.storeId)"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Открыть {{ storeName(group.storeId) }}
+              <AppIcon name="ExternalLink" :size="14"
+            /></a>
+          </div>
+          <button class="secondary" @click="copySplit">
+            Скопировать оба списка
+          </button>
+        </details>
+        <p v-if="copyError && !selected" class="error" role="alert">
+          {{ copyError }}
+        </p>
         <div class="compare-toolbar">
-          <h2>Подобранные корзины</h2>
+          <h2>{{ best ? "Другие варианты" : "Что нашли магазины" }}</h2>
           <label class="checkbox"
-            ><input v-model="onlyComplete" type="checkbox" /> Только
+            ><input v-model="onlyComplete" type="checkbox" />Только
             полные</label
           >
         </div>
         <div class="offers">
-          <article
-            v-for="offer in visible"
-            :key="offer.id"
-            class="offer panel"
-            :class="{ best: offer.complete && offer.id === offers[0]?.id }"
-          >
-            <div
-              v-if="offer.complete && offer.id === offers[0]?.id"
-              class="best-label"
-            >
-              МИНИМУМ СРЕДИ ПОЛНЫХ КОРЗИН
-            </div>
+          <article v-for="offer in otherOffers" :key="offer.id" class="offer">
             <div class="store-identity">
               <span class="store-logo" :style="{ background: offer.color }">{{
                 offer.letter
@@ -155,19 +275,20 @@ const time = (value: string) =>
                   offer.hasError
                     ? "Не удалось проверить"
                     : offer.stockProblems.length
-                      ? "Недостаточно остатка"
+                      ? "Не хватает остатка"
                       : offer.complete
-                        ? "Все позиции подобраны"
-                        : `${offer.lines.length - offer.missing.length} из ${offer.lines.length} подобрано`
-                }}</span>
+                        ? "Вся корзина"
+                        : `${offer.lines.length - offer.missing.length} из ${offer.lines.length} позиций`
+                }}</span
+                ><small v-if="requiredMissing(offer).length" class="unavailable"
+                  >Нет обязательных:
+                  {{
+                    requiredMissing(offer)
+                      .map((l) => l.query)
+                      .join(", ")
+                  }}</small
+                >
               </div>
-            </div>
-            <div class="offer-breakdown">
-              <span>Доставка и сборы <b>При оформлении</b></span
-              ><small>Проверено в {{ time(offer.fetchedAt) }}</small
-              ><small v-if="offer.hasError" class="unavailable">{{
-                offer.lines.find((l) => l.error)?.error
-              }}</small>
             </div>
             <div class="offer-total">
               <strong
@@ -180,36 +301,44 @@ const time = (value: string) =>
                   >BYN</small
                 ></strong
               ><span>{{
-                offer.complete
-                  ? "Товары без доставки"
-                  : "Только подобранные позиции"
+                offer.complete ? "За все товары" : "За найденные товары"
               }}</span>
             </div>
-            <button
-              class="primary"
-              @click="
-                detail = offer.id;
-                copied = false;
-                copyError = '';
-              "
-            >
-              Проверить состав<AppIcon name="ArrowRight" :size="17" />
+            <button class="secondary" @click="openOffer(offer.id)">
+              {{ offer.complete ? "Посмотреть" : "Проверить состав"
+              }}<AppIcon name="ArrowRight" :size="16" />
             </button>
           </article>
         </div>
-        <p v-if="!visible.length" class="empty-search">
-          Полных корзин пока нет. Отключите фильтр и выберите замены.
+        <p v-if="!otherOffers.length" class="empty-search">
+          Других {{ onlyComplete ? "полных " : "" }}корзин пока нет.
         </p>
-        <p class="compare-disclaimer">
-          Цены из Яндекс Еды, Е-доставки и каталога «Соседей», кеш до 2 минут.
-          Наличие и доставка по адресу могут измениться. Итог проверьте в
-          магазине.
-        </p></template
-      ></template
-    >
+        <details class="trust-details">
+          <summary>Почему такая цена и как считаем выгоду</summary>
+          <p>
+            Сравниваем подобранные корзины с одинаковым списком и количеством
+            позиций. Бренды и упаковки могут различаться. Экономия — разница с
+            ближайшей по цене полной корзиной, а не обещание одинаковых товаров
+            во всех магазинах.
+          </p>
+          <p>
+            Неполные корзины не участвуют в выборе лучшей полной корзины. Цены
+            из каталогов магазинов и Яндекс Еды, кеш до 2 минут. Доставка и
+            сборы не включены.
+          </p>
+          <p v-for="offer in offers" :key="offer.id">
+            {{ offer.name }} · проверено {{ time(offer.fetchedAt) }}
+          </p>
+        </details>
+      </template>
+    </template>
     <div v-else class="empty-state">
+      <span class="empty-icon"
+        ><AppIcon name="ShoppingBasket" :size="32"
+      /></span>
       <h2>Сначала соберём корзину</h2>
-      <NuxtLink to="/" class="primary">Выбрать продукты</NuxtLink>
+      <p>Добавьте продукты — найдём выгодный магазин для вашего списка.</p>
+      <NuxtLink to="/" class="primary">Собрать корзину</NuxtLink>
     </div>
     <AppModal
       v-if="selected"
@@ -299,8 +428,9 @@ const time = (value: string) =>
         выберите замену.
       </p>
       <div class="info-note">
-        Товары: {{ money(selected.subtotal) }} BYN. Доставка и сборы — при
-        оформлении. Автоматический перенос корзины пока не подключён.
+        Товары: {{ money(selected.subtotal) }} BYN. Скопируйте список и добавьте
+        товары у магазина. Корзина автоматически не переносится; доставка и
+        сборы — при оформлении.
       </div>
       <button class="secondary full" @click="copy">
         {{ copied ? "Список скопирован" : "Скопировать список продуктов" }}
@@ -311,9 +441,8 @@ const time = (value: string) =>
         target="_blank"
         rel="noopener noreferrer"
         class="primary full retailer-link"
-        >Открыть {{ selected.name }}<AppIcon
-          name="ExternalLink"
-          :size="17" /></a
+        >Перейти в {{ selected.name
+        }}<AppIcon name="ExternalLink" :size="17" /></a
     ></AppModal>
   </div>
 </template>

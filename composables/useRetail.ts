@@ -1,3 +1,4 @@
+import { withPreferences } from "~/shared/recommendation";
 import { summarizeComparison } from "~/shared/comparison";
 import type {
   DeliveryLocation,
@@ -8,6 +9,10 @@ import { retailStores } from "~/shared/yandex";
 const requests = new WeakMap<object, AbortController>();
 export function useRetail() {
   const app = useNuxtApp();
+  const basketItems = useState<import("~/data/catalog").Item[]>(
+    "items",
+    () => [],
+  );
   const location = useState<DeliveryLocation>("delivery-location", () => ({
     lat: 53.9,
     lon: 27.5667,
@@ -22,9 +27,19 @@ export function useRetail() {
   const fingerprint = useState("retail-fingerprint", () => "");
   const currentKey = useState("retail-request-key", () => "");
   const keyFor = (items: CompareItem[]) =>
-    JSON.stringify([items, location.value.lat, location.value.lon]);
+    JSON.stringify([
+      items,
+      location.value.lat,
+      location.value.lon,
+      basketItems.value.map((i) => [
+        i.productId,
+        i.required,
+        i.allowReplacement,
+      ]),
+    ]);
   const offers = computed(() =>
     comparisons.value
+      .map((offer) => withPreferences(offer, basketItems.value))
       .map((offer) => {
         const store = retailStores.find((s) => s.id === offer.storeId)!;
         return { ...offer, ...store, ...summarizeComparison(offer) };

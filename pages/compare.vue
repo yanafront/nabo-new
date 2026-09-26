@@ -30,7 +30,9 @@ const expanded = ref<string | null>(null);
 const copied = ref(false);
 const copyError = ref("");
 const requestKey = computed(() => keyFor(compareItems.value));
+let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 function refresh() {
+  clearTimeout(refreshTimer);
   if (items.value.length) compare(compareItems.value);
 }
 onMounted(() => {
@@ -42,9 +44,11 @@ onMounted(() => {
 });
 watch(requestKey, () => {
   detail.value = null;
-  refresh();
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(refresh, 200);
 });
 onBeforeUnmount(() => {
+  clearTimeout(refreshTimer);
   if (pending.value) invalidate();
 });
 function choose(itemId: string, id: string) {

@@ -77,27 +77,34 @@ export default defineNuxtPlugin(() => {
       notice.value = "Не удалось восстановить сохранённые корзины";
     }
     watch([items, location], invalidate, { deep: true, flush: "sync" });
-    watch(
-      [items, title, saved, location, unresolved, pendingIngredients],
-      () => {
-        try {
-          localStorage.setItem(
-            "nabo-v2",
-            JSON.stringify({
-              items: items.value,
-              title: title.value,
-              saved: saved.value,
-              location: location.value,
-              unresolved: unresolved.value,
-              pendingIngredients: pendingIngredients.value,
-            }),
-          );
-        } catch {
-          notice.value =
-            "Хранилище недоступно. Изменения сохранятся до закрытия страницы";
-        }
-      },
-      { deep: true },
-    );
+    let saveTimer: ReturnType<typeof setTimeout> | undefined;
+    let dirty = false;
+    const persist = () => {
+      clearTimeout(saveTimer);
+      if (!dirty) return;
+      try {
+        localStorage.setItem("nabo-v2", JSON.stringify({
+          items: items.value, title: title.value, saved: saved.value,
+          location: location.value, unresolved: unresolved.value,
+          pendingIngredients: pendingIngredients.value,
+        }));
+        dirty = false;
+      } catch {
+        notice.value = "Хранилище недоступно. Изменения сохранятся до закрытия страницы";
+      }
+    };
+    const stop = watch([items, title, saved, location, unresolved, pendingIngredients], () => {
+      dirty = true;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(persist, 150);
+    }, { deep: true, flush: "sync" });
+    const hidden = () => { if (document.visibilityState === "hidden") persist(); };
+    window.addEventListener("pagehide", persist);
+    document.addEventListener("visibilitychange", hidden);
+    if (import.meta.hot) import.meta.hot.dispose(() => {
+      persist(); stop();
+      window.removeEventListener("pagehide", persist);
+      document.removeEventListener("visibilitychange", hidden);
+    });
   });
 });

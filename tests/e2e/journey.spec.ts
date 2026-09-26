@@ -109,7 +109,7 @@ test("каталог магазина → карточка товара → ср
   await page.locator(".catalog-product-link").first().click();
   await expect(page).toHaveURL(/\/product\/evroopt\//);
   await expect(page.locator(".product-detail h1")).toContainText("Молоко");
-  await expect(page.locator(".similar-store-group")).toHaveCount(4);
+  await expect(page.locator(".similar-store-group")).toHaveCount(retailStores.length - 1);
   await page.locator(".product-buy-row button").click();
   await expect(page.locator(".product-buy-row button")).toContainText(
     "1 в корзине",
@@ -244,4 +244,16 @@ test("при сбое рецепта текущая корзина сохран�
   await expect(page.getByRole("alert")).toContainText("Не удалось подобрать");
   await page.goto("/basket");
   await expect(page.locator(".product-row")).toHaveCount(1);
+});
+
+
+test("карточка товара доступна при сбое остальных магазинов", async ({ page }) => {
+  const products = normalizeSearch(fixture, "evroopt", "evroopt", new Date().toISOString());
+  await page.route("**/api/yandex/search", async route => {
+    if (route.request().postDataJSON().storeId !== "evroopt") return route.abort();
+    return route.fallback();
+  });
+  await page.goto(`/product/evroopt/${products[0].id}?name=${encodeURIComponent(products[0].name)}`);
+  await expect(page.locator(".product-detail h1")).toHaveText(products[0].name);
+  await expect(page.locator(".product-buy-row button")).toBeEnabled();
 });

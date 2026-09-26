@@ -33,7 +33,7 @@ onUnmounted(() => clearTimeout(timer));
       </button>
       <NuxtLink class="account-link" to="/account">Аккаунт</NuxtLink>
     </header>
-    <LocationPicker v-if="showLocation" @close="showLocation = false" />
+    <LazyLocationPicker v-if="showLocation" @close="showLocation = false" />
     <main id="main"><NuxtPage :key="$route.fullPath" /></main>
     <footer class="footer">
       <span>Цены в BYN · Покупка и доставка у магазина</span

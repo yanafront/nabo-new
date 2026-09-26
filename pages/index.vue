@@ -106,6 +106,6 @@ function choose(q: string) {
       ><b class="euroopt">Евроопт</b><b class="green">Гиппо</b
       ><b class="sosedi">Белмаркет</b><b class="korona">Санта</b>
     </div>
-    <ProductPicker :category="category" v-if="picker" @close="picker = false" />
+    <LazyProductPicker :category="category" v-if="picker" @close="picker = false" />
   </div>
 </template>

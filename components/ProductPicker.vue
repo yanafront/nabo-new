@@ -11,6 +11,7 @@ const props = defineProps<{ replaceId?: string; category?: string }>();
 const emit = defineEmits<{ close: [] }>();
 const { items, addProduct, notice, rows } = useBasket();
 const { location } = useRetail();
+const { searchProducts } = useApi();
 const defaults: Record<string, string> = {
   vegetables: "помидоры",
   dairy: "молоко",
@@ -28,6 +29,7 @@ const error = ref("");
 let timer: ReturnType<typeof setTimeout>;
 let controller: AbortController | undefined;
 async function search() {
+  clearTimeout(timer);
   controller?.abort();
   result.value = null;
   error.value = "";
@@ -39,17 +41,7 @@ async function search() {
   controller = current;
   pending.value = true;
   try {
-    const response = await $fetch<SearchResult>("/api/yandex/search", {
-      method: "POST",
-      body: {
-        query: query.value,
-        storeId: storeId.value,
-        location: location.value,
-      },
-      signal: current.signal,
-      retry: 0,
-      timeout: 70000,
-    });
+    const response = await searchProducts({ query: query.value, storeId: storeId.value, location: location.value }, current.signal);
     if (controller !== current || current.signal.aborted) return;
     result.value = response;
     if (result.value.status === "error")
@@ -62,15 +54,17 @@ async function search() {
   }
 }
 watch(
-  [query, storeId, location],
+  query,
   () => {
     controller?.abort();
     result.value = null;
     clearTimeout(timer);
-    timer = setTimeout(search, 450);
+    pending.value = query.value.trim().length >= 2;
+    timer = setTimeout(search, 200);
   },
   { deep: true },
 );
+watch([storeId, location], search, { deep: true });
 onMounted(search);
 onBeforeUnmount(() => {
   clearTimeout(timer);

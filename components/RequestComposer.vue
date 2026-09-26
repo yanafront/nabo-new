@@ -2,7 +2,9 @@
 import { parseRequest } from "~/utils/basket";
 import { recipeRequest, type RecipeResult } from "~/shared/recipes";
 const { resolve, resolveError } = useRecipeBasket();
+const { searchRecipes } = useApi();
 const query = ref("");
+const stage = ref("Ищем рецепт…");
 const loading = ref(false);
 const error = ref("");
 const listening = ref(false);
@@ -13,38 +15,42 @@ let searchController: AbortController | undefined;
 const recipeResults = ref<RecipeResult[]>([]);
 const recipeSearchPending = ref(false);
 
-watch(query, (value) => {
+function stopSuggestions() {
   clearTimeout(searchTimer);
   searchController?.abort();
-  recipeResults.value = [];
-  if (value.trim().length < 2 || loading.value) return;
+  recipeSearchPending.value = false;
+}
+watch(query, (value) => {
+  stopSuggestions();
+  if (value.trim().length < 2 || loading.value) {
+    recipeResults.value = [];
+    return;
+  }
+  const current = new AbortController();
+  searchController = current;
+  recipeSearchPending.value = true;
   searchTimer = setTimeout(async () => {
-    searchController = new AbortController();
-    recipeSearchPending.value = true;
     try {
-      const response = await $fetch<{ recipes: RecipeResult[] }>(
-        "/api/recipes",
-        {
-          query: { q: value },
-          signal: searchController.signal,
-        },
-      );
-      recipeResults.value = response.recipes;
+      const response = await searchRecipes(value, current.signal);
+      if (!current.signal.aborted) recipeResults.value = response.recipes;
     } catch {
-      if (!searchController.signal.aborted) recipeResults.value = [];
+      if (!current.signal.aborted) recipeResults.value = [];
     } finally {
-      if (!searchController.signal.aborted) recipeSearchPending.value = false;
+      if (searchController === current) recipeSearchPending.value = false;
     }
-  }, 250);
+  }, 150);
 });
 
 async function chooseRecipe(recipe: RecipeResult) {
+  if (loading.value) return;
   query.value = `${recipe.name} на ${recipe.servings} человек`;
   recipeResults.value = [];
   await submitRequest(recipeRequest(recipe));
 }
 
 async function submitRequest(result: ReturnType<typeof recipeRequest>) {
+  stopSuggestions();
+  stage.value = "Подбираем продукты в шести магазинах…";
   error.value = "";
   loading.value = true;
   controller = new AbortController();
@@ -62,26 +68,33 @@ async function submit(value = query.value) {
     error.value = "Напишите блюдо или продукты";
     return;
   }
-  let result = parseRequest(value);
-  if (!result) {
-    try {
-      const response = await $fetch<{ recipes: RecipeResult[] }>(
-        "/api/recipes",
-        {
-          query: { q: value },
-        },
-      );
+  stopSuggestions();
+  loading.value = true;
+  stage.value = "Ищем рецепт…";
+  error.value = "";
+  controller = new AbortController();
+  const current = controller;
+  try {
+    let result = parseRequest(value);
+    if (!result) {
+      const response = await searchRecipes(value, current.signal);
       if (response.recipes[0]) result = recipeRequest(response.recipes[0]);
-    } catch {
-      // Product lists remain available while the recipe source is offline.
     }
-  }
-  if (!result) {
-    error.value = "Рецепт не найден. Попробуйте другое название блюда.";
-    return;
-  }
-  await submitRequest(result);
+    if (current.signal.aborted) return;
+    if (!result) {
+      error.value = "Рецепт не найден. Попробуйте другое название блюда.";
+      return;
+    }
+    await submitRequest(result);
+  } catch {
+    if (!current.signal.aborted) error.value = "Не удалось найти рецепт. Повторите поиск.";
+  } finally { loading.value = false; }
 }
+function cancel() {
+  controller?.abort();
+  error.value = "";
+}
+
 function voice() {
   const Speech =
     (window as any).SpeechRecognition ||
@@ -199,7 +212,8 @@ defineExpose({ submit });
     </p>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
     <div v-if="loading" class="generation" role="status">
-      <span class="spinner" /> Ищем реальные товары в четырёх магазинах…
+      <span class="spinner" /> {{ stage }}
+      <button type="button" class="text-button" @click="cancel">Отменить</button>
     </div>
     <div v-else class="quick-queries">
       <button

@@ -5,7 +5,9 @@ import type {
   StoreComparison,
 } from "~/shared/yandex";
 import { retailStores } from "~/shared/yandex";
+const requests = new WeakMap<object, AbortController>();
 export function useRetail() {
+  const app = useNuxtApp();
   const location = useState<DeliveryLocation>("delivery-location", () => ({
     lat: 53.9,
     lon: 27.5667,
@@ -34,6 +36,9 @@ export function useRetail() {
   );
   async function compare(items: CompareItem[]) {
     if (!items.length) return;
+    requests.get(app)?.abort();
+    const controller = new AbortController();
+    requests.set(app, controller);
     const key = keyFor(items);
     const requestId = crypto.randomUUID();
     currentKey.value = requestId;
@@ -47,6 +52,7 @@ export function useRetail() {
         {
           method: "POST",
           body: { items, location: location.value },
+          signal: controller.signal,
           timeout: 120000,
           retry: 0,
         },
@@ -63,6 +69,8 @@ export function useRetail() {
     }
   }
   function invalidate() {
+    requests.get(app)?.abort();
+    requests.delete(app);
     currentKey.value = "";
     comparisons.value = [];
     fingerprint.value = "";

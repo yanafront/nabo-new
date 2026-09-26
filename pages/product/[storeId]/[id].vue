@@ -18,6 +18,8 @@ if (!store || !initialName)
   throw createError({ statusCode: 404, statusMessage: "Товар не найден" });
 
 const { location } = useRetail();
+const { searchProducts, cachedProduct } = useApi();
+const relatedPending = ref(false);
 const { addProduct, items } = useBasket();
 const product = ref<RetailProduct | null>(null);
 const related = ref<
@@ -68,49 +70,41 @@ function categoryQuery(name: string) {
 
 async function load() {
   controller?.abort();
-  controller = new AbortController();
-  pending.value = true;
+  const current = new AbortController();
+  controller = current;
+  product.value = cachedProduct(storeId, productId, location.value);
+  pending.value = !product.value;
+  related.value = [];
+  relatedPending.value = true;
   error.value = "";
-  try {
-    const query = categoryQuery(initialName);
-    const responses = await Promise.all(
-      retailStores.map((item) =>
-        $fetch<SearchResult>("/api/yandex/search", {
-          method: "POST",
-          body: {
-            query: item.id === storeId ? initialName : query,
-            storeId: item.id,
-            location: location.value,
-          },
-          signal: controller!.signal,
-          timeout: 25000,
-          retry: 0,
-        }),
-      ),
-    );
-    const current = responses.find((response) => response.storeId === storeId);
-    product.value =
-      current?.products.find((item) => item.id === productId) ||
-      current?.products[0] ||
-      null;
-    related.value = responses
-      .filter(
-        (response) => response.storeId !== storeId && response.status === "ok",
-      )
-      .map((response) => ({
-        store: retailStores.find((item) => item.id === response.storeId)!,
-        products: response.products
-          .filter((item) => item.available)
-          .slice(0, 3),
-      }))
-      .filter((group) => group.products.length);
-    if (!product.value) error.value = "Этот товар больше не найден в каталоге.";
-  } catch {
-    if (!controller.signal.aborted)
-      error.value = "Не удалось загрузить товар. Попробуйте ещё раз.";
-  } finally {
-    pending.value = false;
-  }
+  const point = { ...location.value };
+  const valid = () => controller === current && !current.signal.aborted;
+  const primary = async () => {
+    if (product.value) return;
+    try {
+      const response = await searchProducts({ storeId, query: initialName, location: point }, current.signal);
+      if (!valid()) return;
+      product.value = response.products.find(item => item.id === productId) || null;
+      if (!product.value) error.value = response.status === "error" ? "Не удалось загрузить товар. Повторите попытку." : "Этот товар больше не найден в каталоге.";
+    } catch {
+      if (valid()) error.value = "Не удалось загрузить товар. Попробуйте ещё раз.";
+    } finally { if (valid()) pending.value = false; }
+  };
+  // Start the requested product first. Each secondary store can fail independently.
+  const main = primary();
+  const query = categoryQuery(initialName);
+  const others = retailStores.filter(item => item.id !== storeId).map(async store => {
+    try {
+      const response = await searchProducts({ storeId: store.id, query, location: point }, current.signal);
+      if (!valid() || response.status !== "ok") return;
+      const products = response.products.filter(item => item.available).slice(0, 3);
+      if (products.length) related.value = [...related.value, { store, products }]
+        .sort((a, b) => retailStores.indexOf(a.store) - retailStores.indexOf(b.store));
+    } catch { /* Other retailers must not block the requested product. */ }
+  });
+  await main;
+  await Promise.all(others);
+  if (valid()) relatedPending.value = false;
 }
 
 const inCart = computed(
@@ -134,7 +128,7 @@ onBeforeUnmount(() => controller?.abort());
       {{ store!.name }}</NuxtLink
     >
     <div v-if="pending" class="catalog-loading panel" role="status">
-      <span class="spinner" /> Загружаем товар и сравниваем цены…
+      <span class="spinner" /> Загружаем товар…
     </div>
     <div v-else-if="error" class="catalog-error panel">
       <p class="error" role="alert">{{ error }}</p>
@@ -199,6 +193,7 @@ onBeforeUnmount(() => controller?.abort());
           </div>
           <span>{{ location.label }}</span>
         </div>
+        <p v-if="relatedPending" role="status"><span class="spinner" /> Проверяем похожие товары…</p>
         <div v-if="related.length" class="similar-store-groups">
           <div
             v-for="group in related"
@@ -229,7 +224,7 @@ onBeforeUnmount(() => controller?.abort());
             </div>
           </div>
         </div>
-        <div v-else class="empty-state compact">
+        <div v-else-if="!relatedPending" class="empty-state compact">
           <h2>Аналоги пока не найдены</h2>
           <p>Попробуйте обновить страницу немного позже.</p>
         </div>

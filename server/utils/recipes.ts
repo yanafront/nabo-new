@@ -47,8 +47,8 @@ function validRecipe(value: unknown): value is SourceRecipe {
   );
 }
 
+const recipes = (dataset.recipes as unknown[]).filter(validRecipe);
 export async function recipeDatabase() {
-  const recipes = (dataset.recipes as unknown[]).filter(validRecipe);
   if (recipes.length < 400) throw new Error("INVALID_RECIPE_DATA");
   return recipes;
 }
@@ -114,6 +114,8 @@ export function presentRecipe(
   };
 }
 
+const searchIndex = new WeakMap<SourceRecipe, { name: string; summary: string; ingredients: string }>();
+
 export function searchRecipes(recipes: SourceRecipe[], query: string) {
   const stopWords = new Set([
     "приготовить",
@@ -132,11 +134,13 @@ export function searchRecipes(recipes: SourceRecipe[], query: string) {
   if (!words.length) return [];
   return recipes
     .map((recipe) => {
-      const name = normalize(recipe.name.ru);
-      const summary = normalize(recipe.summary?.ru || "");
-      const ingredients = normalize(
-        recipe.ingredients.map((item) => item.name?.ru || "").join(" "),
-      );
+      let entry = searchIndex.get(recipe);
+      if (!entry) {
+        entry = { name: normalize(recipe.name.ru), summary: normalize(recipe.summary?.ru || ""),
+          ingredients: normalize(recipe.ingredients.map(item => item.name?.ru || "").join(" ")) };
+        searchIndex.set(recipe, entry);
+      }
+      const { name, summary, ingredients } = entry;
       const score = words.reduce(
         (sum, word) =>
           sum +

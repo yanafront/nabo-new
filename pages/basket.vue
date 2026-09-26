@@ -85,7 +85,7 @@ function openPicker(id?: string) {
       <button class="text-button" @click="openPicker()">Найти вручную</button>
       <button class="text-button" @click="unresolved = []">Скрыть</button>
     </div>
-    <ProductPicker
+    <LazyProductPicker
       v-if="picker"
       :replace-id="replaceId"
       @close="picker = false"

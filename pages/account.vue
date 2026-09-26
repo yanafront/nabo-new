@@ -5,7 +5,7 @@ const register = ref(false);
 const pending = ref(false);
 const error = ref("");
 const message = ref("");
-const { data: user, refresh, status } = await useFetch<{ id: string; phoneNumber: string }>("/api/auth/me", { retry: 0 });
+const { data: user, refresh, status } = await useFetch<{ id: string; phoneNumber: string }>("/api/auth/me", { retry: 0, lazy: true, timeout: 15000 });
 async function submit() {
   pending.value = true; error.value = ""; message.value = "";
   try {

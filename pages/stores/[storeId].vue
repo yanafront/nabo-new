@@ -9,6 +9,7 @@ if (!store.value)
   throw createError({ statusCode: 404, statusMessage: "Магазин не найден" });
 
 const { location } = useRetail();
+const { searchProducts } = useApi();
 const query = ref(typeof route.query.q === "string" ? route.query.q : "молоко");
 const result = ref<SearchResult | null>(null);
 const pending = ref(false);
@@ -22,28 +23,21 @@ async function search(value = query.value) {
   query.value = value;
   visibleCount.value = 24;
   controller?.abort();
-  controller = new AbortController();
+  const current = new AbortController();
+  controller = current;
   pending.value = true;
   error.value = "";
   try {
-    result.value = await $fetch<SearchResult>("/api/yandex/search", {
-      method: "POST",
-      body: {
-        query: value,
-        storeId: store.value!.id,
-        location: location.value,
-      },
-      signal: controller.signal,
-      timeout: 25000,
-      retry: 0,
-    });
+    const response = await searchProducts({ query: value, storeId: store.value!.id, location: location.value }, current.signal);
+    if (controller !== current || current.signal.aborted) return;
+    result.value = response;
     if (result.value.status === "error")
       error.value = result.value.error || "Поиск недоступен";
   } catch {
-    if (!controller.signal.aborted)
+    if (controller === current && !current.signal.aborted)
       error.value = "Не удалось загрузить каталог. Повторите поиск.";
   } finally {
-    pending.value = false;
+    if (controller === current) pending.value = false;
   }
 }
 

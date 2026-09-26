@@ -17,6 +17,7 @@ watch(source, () => {
     class="product-image"
     alt=""
     loading="lazy"
+    decoding="async"
     @error="failed = true"
   />
   <span v-else class="product-emoji" aria-hidden="true">{{ fallback }}</span>

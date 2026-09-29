@@ -12,6 +12,7 @@ const props = defineProps<{
   replaceId?: string;
   category?: string;
   inline?: boolean;
+  initialQuery?: string;
 }>();
 const emit = defineEmits<{ close: [] }>();
 const { items, addProduct, notice, rows } = useBasket();
@@ -24,6 +25,7 @@ const defaults: Record<string, string> = {
 };
 const query = ref(
   rows.value.find((r) => r.productId === props.replaceId)?.product.name ||
+    props.initialQuery ||
     defaults[props.category || ""] ||
     "",
 );

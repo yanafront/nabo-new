@@ -28,6 +28,10 @@ import {
   Tag,
   ScanSearch,
   Star,
+  Utensils,
+  ListPlus,
+  Wallet,
+  History,
 } from "lucide-vue-next";
 const props = defineProps<{ name: string; size?: number }>();
 const icons: Record<string, any> = {
@@ -59,6 +63,10 @@ const icons: Record<string, any> = {
   Tag,
   ScanSearch,
   Star,
+  Utensils,
+  ListPlus,
+  Wallet,
+  History,
 };
 </script>
 <template>

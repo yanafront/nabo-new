@@ -13,6 +13,7 @@ export interface Product {
   keywords: string[];
 }
 export interface Item {
+  requirement?: import("../shared/recipe/purchasing").IngredientDemand;
   required?: boolean;
   allowReplacement?: boolean;
   productId: string;

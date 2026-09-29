@@ -1,3 +1,4 @@
+import { packagesFor } from "./recipe/purchasing";
 import type { Item, Product } from "../data/catalog";
 import type { RetailProduct, StoreComparison } from "./yandex";
 export function retailProduct(source: RetailProduct): Product {
@@ -22,7 +23,7 @@ export function retailProduct(source: RetailProduct): Product {
   };
 }
 /** Only actual upstream products enter a basket; missing ingredients stay outside it. */
-export function recipeBasket(offers: StoreComparison[]) {
+export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
   const freshIngredients = new Set([
     "tomato",
     "potato",
@@ -42,7 +43,9 @@ export function recipeBasket(offers: StoreComparison[]) {
     for (const line of offer.lines) {
       const suitable = (p: RetailProduct) =>
         p.available &&
-        (p.stock === null || p.stock >= line.quantity) &&
+        (line.demand
+          ? packagesFor(p, line.demand) !== undefined
+          : p.stock === null || p.stock >= line.quantity) &&
         (!freshIngredients.has(line.itemId) || !preserved.test(p.name));
       const source = line.error
         ? null
@@ -55,14 +58,39 @@ export function recipeBasket(offers: StoreComparison[]) {
       }
       const product = retailProduct(source);
       const existing = items.find((i) => i.productId === product.id);
-      const quantity = (existing?.quantity || 0) + line.quantity;
+      const quantity =
+        (existing?.quantity || 0) +
+        (line.demand ? packagesFor(source, line.demand)! : line.quantity);
       if (quantity > 99 || (source.stock !== null && quantity > source.stock)) {
         missing.push(line.query);
         continue;
       }
       if (source.id !== line.selected?.id) adjusted = true;
-      if (existing) existing.quantity = quantity;
-      else items.push({ productId: product.id, product, quantity });
+      if (existing) {
+        existing.quantity = quantity;
+        const demand = requests.find(
+          (i) => i.productId === line.itemId,
+        )?.requirement;
+        if (
+          existing.requirement &&
+          demand &&
+          existing.requirement.ingredientId === demand.ingredientId &&
+          existing.requirement.dimension === demand.dimension
+        ) {
+          existing.requirement = {
+            ...existing.requirement,
+            amount: existing.requirement.amount + demand.amount,
+          };
+        } else delete existing.requirement;
+      } else
+        items.push({
+          productId: product.id,
+          product,
+          quantity,
+          requirement: requests.find((i) => i.productId === line.itemId)
+            ?.requirement,
+          required: true,
+        });
     }
     return {
       items,

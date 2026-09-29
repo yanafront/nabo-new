@@ -7,7 +7,7 @@ export function useRecipeBasket() {
   const resolving = useState("recipe-resolving", () => false);
   const resolveError = useState("recipe-error", () => "");
   async function resolve(
-    request: { title: string; items: Item[] },
+    request: { title: string; items: Item[]; manual?: string[] },
     signal?: AbortSignal,
     keepCurrent = false,
   ) {
@@ -24,6 +24,7 @@ export function useRecipeBasket() {
           query: p.name,
           unit: p.unit,
           quantity: i.quantity,
+          requirement: i.requirement,
         };
       });
       const response = await $fetch<{ offers: StoreComparison[] }>(
@@ -41,7 +42,7 @@ export function useRecipeBasket() {
         resolveError.value = "Точка доставки изменилась. Повторите подбор.";
         return false;
       }
-      const basket = recipeBasket(response.offers);
+      const basket = recipeBasket(response.offers, request.items);
       if (!basket?.items.length) {
         resolveError.value =
           "Не удалось подобрать товары в магазинах. Попробуйте снова или добавьте их через поиск.";
@@ -55,6 +56,7 @@ export function useRecipeBasket() {
         if (existing) {
           if (existing.quantity + row.quantity > 99) throw new Error();
           existing.quantity += row.quantity;
+          delete existing.requirement; // Preserve the explicit combined package count.
         } else next.push(row);
       }
       if (next.length > 20) {
@@ -63,12 +65,20 @@ export function useRecipeBasket() {
         return false;
       }
       items.value = next;
-      title.value = request.title;
-      unresolved.value = basket.missing;
+      title.value = keepCurrent ? "Корзина из нескольких блюд" : request.title;
+      unresolved.value = [
+        ...new Set([
+          ...(keepCurrent ? unresolved.value : []),
+          ...(request.manual || []),
+          ...basket.missing,
+        ]),
+      ];
       pendingIngredients.value = [];
-      notice.value = basket.adjusted
-        ? "Товары подобраны. Проверьте размеры упаковок."
-        : "Реальные товары добавлены в корзину";
+      notice.value = keepCurrent
+        ? "Продукты блюда добавлены в корзину"
+        : basket.adjusted
+          ? "Товары подобраны. Проверьте размеры упаковок."
+          : "Реальные товары добавлены в корзину";
       return true;
     } catch {
       if (!signal?.aborted)

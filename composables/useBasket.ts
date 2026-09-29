@@ -28,6 +28,7 @@ export function useBasket() {
       query: i.product.name.slice(0, 160),
       quantity: i.quantity,
       unit: i.product.unit,
+      ...(i.requirement ? { requirement: i.requirement } : {}),
       ...(i.product.sourceId
         ? { exactName: i.product.name, unit: i.product.unit }
         : {}),
@@ -63,10 +64,12 @@ export function useBasket() {
         existing.required = existing.required || old.required;
         if (old.allowReplacement === false) existing.allowReplacement = false;
       }
+      delete existing.requirement;
       existing.quantity = quantity;
       existing.product = product;
       if (old) remove(old.productId);
     } else if (old) {
+      delete old.requirement;
       old.productId = id;
       old.product = product;
     } else items.value.push({ productId: id, quantity: 1, product });
@@ -79,6 +82,7 @@ export function useBasket() {
   function change(id: string, delta: number) {
     const i = items.value.find((i) => i.productId === id);
     if (i) {
+      delete i.requirement; // A manual pack count replaces the recipe demand.
       if (i.quantity + delta <= 0) {
         remove(id);
         notice.value = "Товар удалён из корзины";

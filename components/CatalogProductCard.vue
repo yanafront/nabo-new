@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RetailProduct } from "~/shared/yandex";
 
-const props = defineProps<{ product: RetailProduct }>();
+const props = defineProps<{ product: RetailProduct; replaceId?: string }>();
 const { addProduct, items } = useBasket();
 const added = ref(false);
 const inCart = computed(
@@ -13,7 +13,8 @@ const inCart = computed(
 );
 
 function add() {
-  added.value = addProduct(props.product);
+  added.value = addProduct(props.product, props.replaceId);
+  if (added.value && props.replaceId) navigateTo("/basket");
 }
 </script>
 
@@ -22,7 +23,10 @@ function add() {
     <NuxtLink
       :to="{
         path: `/product/${product.storeId}/${product.id}`,
-        query: { name: product.name },
+        query: {
+          name: product.name,
+          ...(replaceId ? { replace: replaceId } : {}),
+        },
       }"
       class="catalog-product-link"
     >
@@ -41,16 +45,18 @@ function add() {
       class="catalog-add"
       :class="{ added: added || inCart }"
       :disabled="!product.available"
-      :aria-label="`Добавить в корзину: ${product.name}`"
+      :aria-label="`${replaceId ? 'Заменить на' : 'Добавить в корзину'}: ${product.name}`"
       @click="add"
     >
       <AppIcon :name="added || inCart ? 'Check' : 'Plus'" :size="18" />
       <span>{{
-        inCart
-          ? `${inCart} в корзине`
-          : product.available
-            ? "Добавить"
-            : "Недоступно"
+        replaceId
+          ? "Заменить"
+          : inCart
+            ? `${inCart} в корзине`
+            : product.available
+              ? "Добавить"
+              : "Недоступно"
       }}</span>
     </button>
   </article>

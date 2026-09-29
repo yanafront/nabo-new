@@ -13,6 +13,8 @@ const storeId = route.params.storeId as StoreId;
 const productId = String(route.params.id);
 const initialName =
   typeof route.query.name === "string" ? route.query.name : "";
+const replaceId =
+  typeof route.query.replace === "string" ? route.query.replace : undefined;
 const store = retailStores.find((item) => item.id === storeId);
 if (!store || !initialName)
   throw createError({ statusCode: 404, statusMessage: "Товар не найден" });
@@ -22,9 +24,13 @@ const { searchProducts, cachedProduct } = useApi();
 const relatedPending = ref(false);
 const { addProduct, items } = useBasket();
 const product = ref<RetailProduct | null>(null);
-const related = ref<
-  Array<{ store: (typeof retailStores)[number]; products: RetailProduct[] }>
->([]);
+type StoreProductGroup = {
+  store: (typeof retailStores)[number];
+  products: RetailProduct[];
+};
+const exactRelated = ref<StoreProductGroup[]>([]);
+const related = ref<StoreProductGroup[]>([]);
+const sameStore = ref<RetailProduct[]>([]);
 const pending = ref(true);
 const error = ref("");
 let controller: AbortController | undefined;
@@ -68,13 +74,24 @@ function categoryQuery(name: string) {
   );
 }
 
+const comparableName = (name: string) =>
+  name.toLocaleLowerCase("ru").replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+
+function addGroup(target: typeof related, group: StoreProductGroup) {
+  target.value = [...target.value, group].sort(
+    (a, b) => retailStores.indexOf(a.store) - retailStores.indexOf(b.store),
+  );
+}
+
 async function load() {
   controller?.abort();
   const current = new AbortController();
   controller = current;
   product.value = cachedProduct(storeId, productId, location.value);
   pending.value = !product.value;
+  exactRelated.value = [];
   related.value = [];
+  sameStore.value = [];
   relatedPending.value = true;
   error.value = "";
   const point = { ...location.value };
@@ -82,28 +99,70 @@ async function load() {
   const primary = async () => {
     if (product.value) return;
     try {
-      const response = await searchProducts({ storeId, query: initialName, location: point }, current.signal);
+      const response = await searchProducts(
+        { storeId, query: initialName, location: point },
+        current.signal,
+      );
       if (!valid()) return;
-      product.value = response.products.find(item => item.id === productId) || null;
-      if (!product.value) error.value = response.status === "error" ? "Не удалось загрузить товар. Повторите попытку." : "Этот товар больше не найден в каталоге.";
+      product.value =
+        response.products.find((item) => item.id === productId) || null;
+      if (!product.value)
+        error.value =
+          response.status === "error"
+            ? "Не удалось загрузить товар. Повторите попытку."
+            : "Этот товар больше не найден в каталоге.";
     } catch {
-      if (valid()) error.value = "Не удалось загрузить товар. Попробуйте ещё раз.";
-    } finally { if (valid()) pending.value = false; }
+      if (valid())
+        error.value = "Не удалось загрузить товар. Попробуйте ещё раз.";
+    } finally {
+      if (valid()) pending.value = false;
+    }
   };
   // Start the requested product first. Each secondary store can fail independently.
   const main = primary();
   const query = categoryQuery(initialName);
-  const others = retailStores.filter(item => item.id !== storeId).map(async store => {
+  const others = retailStores
+    .filter((item) => item.id !== storeId)
+    .map(async (store) => {
+      try {
+        const response = await searchProducts(
+          { storeId: store.id, query: initialName, location: point },
+          current.signal,
+        );
+        if (!valid() || response.status !== "ok") return;
+        const available = response.products.filter((item) => item.available);
+        const exact = available
+          .filter(
+            (item) => comparableName(item.name) === comparableName(initialName),
+          )
+          .slice(0, 3);
+        const similar = available
+          .filter(
+            (item) => comparableName(item.name) !== comparableName(initialName),
+          )
+          .slice(0, 3);
+        if (exact.length) addGroup(exactRelated, { store, products: exact });
+        if (similar.length) addGroup(related, { store, products: similar });
+      } catch {
+        /* Other retailers must not block the requested product. */
+      }
+    });
+  const localAlternatives = (async () => {
     try {
-      const response = await searchProducts({ storeId: store.id, query, location: point }, current.signal);
+      const response = await searchProducts(
+        { storeId, query, location: point },
+        current.signal,
+      );
       if (!valid() || response.status !== "ok") return;
-      const products = response.products.filter(item => item.available).slice(0, 3);
-      if (products.length) related.value = [...related.value, { store, products }]
-        .sort((a, b) => retailStores.indexOf(a.store) - retailStores.indexOf(b.store));
-    } catch { /* Other retailers must not block the requested product. */ }
-  });
+      sameStore.value = response.products
+        .filter((item) => item.available && item.id !== productId)
+        .slice(0, 4);
+    } catch {
+      /* Similar items are optional. */
+    }
+  })();
   await main;
-  await Promise.all(others);
+  await Promise.all([...others, localAlternatives]);
   if (valid()) relatedPending.value = false;
 }
 
@@ -113,7 +172,8 @@ const inCart = computed(
       ?.quantity || 0,
 );
 function add() {
-  if (product.value) addProduct(product.value);
+  if (product.value && addProduct(product.value, replaceId) && replaceId)
+    navigateTo("/basket");
 }
 
 watch(location, load, { deep: true });
@@ -123,9 +183,16 @@ onBeforeUnmount(() => controller?.abort());
 
 <template>
   <div class="inner-page product-page">
-    <NuxtLink :to="`/stores/${storeId}`" class="back-link"
-      ><AppIcon name="ArrowLeft" :size="16" /> В каталог
-      {{ store!.name }}</NuxtLink
+    <NuxtLink
+      :to="{
+        path: '/products',
+        query: {
+          q: categoryQuery(initialName),
+          ...(replaceId ? { replace: replaceId } : {}),
+        },
+      }"
+      class="back-link"
+      ><AppIcon name="ArrowLeft" :size="16" /> К результатам поиска</NuxtLink
     >
     <div v-if="pending" class="catalog-loading panel" role="status">
       <span class="spinner" /> Загружаем товар…
@@ -171,7 +238,11 @@ onBeforeUnmount(() => controller?.abort());
             </div>
             <button class="primary" :disabled="!product.available" @click="add">
               <AppIcon :name="inCart ? 'Check' : 'Plus'" :size="18" />{{
-                inCart ? `${inCart} в корзине` : "Добавить в корзину"
+                replaceId
+                  ? "Заменить товар"
+                  : inCart
+                    ? `${inCart} в корзине`
+                    : "Добавить в корзину"
               }}
             </button>
           </div>
@@ -188,13 +259,59 @@ onBeforeUnmount(() => controller?.abort());
       <section class="similar-products">
         <div class="section-head product-section-head">
           <div>
-            <span class="eyebrow">Сравнение магазинов</span>
-            <h2>Похожие товары и цены</h2>
+            <span class="eyebrow">СРАВНЕНИЕ ЦЕН</span>
+            <h2>Такой же товар в других магазинах</h2>
           </div>
           <span>{{ location.label }}</span>
         </div>
-        <p v-if="relatedPending" role="status"><span class="spinner" /> Проверяем похожие товары…</p>
-        <div v-if="related.length" class="similar-store-groups">
+        <p v-if="relatedPending" role="status">
+          <span class="spinner" /> Проверяем похожие товары…
+        </p>
+        <div v-if="exactRelated.length" class="similar-store-groups">
+          <div
+            v-for="group in exactRelated"
+            :key="group.store.id"
+            class="similar-store-group"
+          >
+            <div class="similar-store-title">
+              <span
+                class="store-logo"
+                :style="{ background: group.store.color }"
+                >{{ group.store.letter }}</span
+              >
+              <h3>{{ group.store.name }}</h3>
+              <NuxtLink
+                :to="{
+                  path: `/stores/${group.store.id}`,
+                  query: { q: product.name },
+                }"
+                >В каталог</NuxtLink
+              >
+            </div>
+            <div class="catalog-product-grid compact-grid">
+              <CatalogProductCard
+                v-for="item in group.products"
+                :key="item.id"
+                :product="item"
+                :replace-id="replaceId"
+              />
+            </div>
+          </div>
+        </div>
+        <div v-else-if="!relatedPending" class="empty-state compact">
+          <h2>Точного совпадения в других магазинах нет</h2>
+          <p>Ниже показываем похожие товары, чтобы вы могли выбрать замену.</p>
+        </div>
+      </section>
+      <section v-if="related.length" class="similar-products">
+        <div class="section-head product-section-head">
+          <div>
+            <span class="eyebrow">АЛЬТЕРНАТИВЫ В ДРУГИХ СЕТЯХ</span>
+            <h2>Похожие товары в других магазинах</h2>
+          </div>
+          <span>{{ location.label }}</span>
+        </div>
+        <div class="similar-store-groups">
           <div
             v-for="group in related"
             :key="group.store.id"
@@ -220,13 +337,26 @@ onBeforeUnmount(() => controller?.abort());
                 v-for="item in group.products"
                 :key="item.id"
                 :product="item"
+                :replace-id="replaceId"
               />
             </div>
           </div>
         </div>
-        <div v-else-if="!relatedPending" class="empty-state compact">
-          <h2>Аналоги пока не найдены</h2>
-          <p>Попробуйте обновить страницу немного позже.</p>
+      </section>
+      <section v-if="sameStore.length" class="similar-products">
+        <div class="section-head product-section-head">
+          <div>
+            <span class="eyebrow">ЕЩЁ В {{ store!.name.toUpperCase() }}</span>
+            <h2>Похожие товары в этом магазине</h2>
+          </div>
+        </div>
+        <div class="catalog-product-grid compact-grid">
+          <CatalogProductCard
+            v-for="item in sameStore"
+            :key="item.id"
+            :product="item"
+            :replace-id="replaceId"
+          />
         </div>
       </section>
     </template>

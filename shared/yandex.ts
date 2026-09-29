@@ -80,6 +80,7 @@ export interface SearchResult {
   currency: "BYN";
 }
 export interface CompareItem {
+  requirement?: import("./recipe/purchasing").IngredientDemand;
   id: string;
   query: string;
   quantity: number;
@@ -87,6 +88,7 @@ export interface CompareItem {
   unit?: string;
 }
 export interface CompareLine {
+  demand?: import("./recipe/purchasing").IngredientDemand;
   replacement?: boolean;
   itemId: string;
   query: string;
@@ -106,29 +108,28 @@ export const storeUrl = (id: StoreId) =>
     ? "https://sosedi-dostavka.by/"
     : id === "evroopt"
       ? "https://edostavka.by/"
-    : id === "green"
-      ? "https://green-dostavka.by/"
-    : `https://eda.yandex.by/retail/${retailStores.find((s) => s.id === id)!.slug}`;
+      : id === "green"
+        ? "https://green-dostavka.by/"
+        : `https://eda.yandex.by/retail/${retailStores.find((s) => s.id === id)!.slug}`;
 
 export const productUrl = (storeId: StoreId, productId: string) =>
   storeId === "sosedi"
     ? `${storeUrl(storeId)}search?query=${encodeURIComponent(productId)}`
     : storeId === "evroopt"
       ? `${storeUrl(storeId)}product/${encodeURIComponent(productId)}`
-    : storeId === "green"
-      ? `${storeUrl(storeId)}search?query=${encodeURIComponent(productId)}`
-    : `${storeUrl(storeId)}?item=${encodeURIComponent(productId)}`;
+      : storeId === "green"
+        ? `${storeUrl(storeId)}search?query=${encodeURIComponent(productId)}`
+        : `${storeUrl(storeId)}?item=${encodeURIComponent(productId)}`;
 
 export const productSourceUrl = (
   product: Pick<RetailProduct, "id" | "storeId" | "externalUrl">,
-) =>
-  product.externalUrl || productUrl(product.storeId, product.id);
+) => product.externalUrl || productUrl(product.storeId, product.id);
 
 export const providerName = (storeId: StoreId) =>
   storeId === "sosedi"
     ? "Соседи"
     : storeId === "evroopt"
       ? "Е-доставка"
-    : storeId === "green"
-      ? "Green"
-      : "Яндекс Еда";
+      : storeId === "green"
+        ? "Green"
+        : "Яндекс Еда";

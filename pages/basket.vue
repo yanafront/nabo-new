@@ -11,8 +11,6 @@ const {
   setPreference,
 } = useBasket();
 const { resolve, resolving, resolveError } = useRecipeBasket();
-const picker = ref(false);
-const replaceId = ref<string>();
 const total = computed(
   () =>
     rows.value.reduce(
@@ -24,15 +22,14 @@ const total = computed(
 const count = computed(() =>
   rows.value.reduce((sum, row) => sum + row.quantity, 0),
 );
-function openPicker(id?: string) {
-  replaceId.value = id;
-  picker.value = true;
+function replaceProduct(id: string, name: string) {
+  navigateTo({ path: "/products", query: { q: name, replace: id } });
 }
 </script>
 <template>
   <div class="inner-page basket-page">
     <div class="flow-steps">
-      <NuxtLink to="/">01 · Список</NuxtLink
+      <NuxtLink to="/products">01 · Выбор</NuxtLink
       ><span class="active">02 · Корзина</span><span>03 · Где дешевле</span>
     </div>
     <div class="page-heading">
@@ -47,9 +44,14 @@ function openPicker(id?: string) {
           }}
         </p>
       </div>
-      <button v-if="items.length" class="secondary" @click="save">
-        <AppIcon name="Heart" :size="18" /> Сохранить
-      </button>
+      <div v-if="items.length" class="basket-heading-actions">
+        <NuxtLink to="/recipes?add=1" class="secondary">
+          <AppIcon name="Plus" :size="18" /> Добавить блюдо
+        </NuxtLink>
+        <button class="secondary" @click="save">
+          <AppIcon name="Heart" :size="18" /> Сохранить
+        </button>
+      </div>
     </div>
     <div
       v-if="unresolved.length || pendingIngredients.length"
@@ -60,7 +62,13 @@ function openPicker(id?: string) {
       <p v-if="unresolved.length">
         {{ unresolved.join(", ") }}. В сумму не включены.
       </p>
-      <button class="text-button" @click="openPicker()">Найти вручную</button
+      <NuxtLink
+        class="text-button"
+        :to="{
+          path: '/products',
+          query: unresolved[0] ? { q: unresolved[0] } : {},
+        }"
+        >Найти вручную</NuxtLink
       ><button
         v-if="pendingIngredients.length"
         class="text-button"
@@ -89,23 +97,14 @@ function openPicker(id?: string) {
             :allow-replacement="row.allowReplacement"
             @change="change(row.productId, $event)"
             @remove="remove(row.productId)"
-            @replace="openPicker(row.productId)"
+            @replace="replaceProduct(row.productId, row.product.name)"
             @preference="
               (key, value) => setPreference(row.productId, key, value)
-            " /><LazyProductPicker
-            v-if="picker && replaceId === row.productId"
-            inline
-            :replace-id="replaceId"
-            @close="picker = false"
+            "
         /></template>
-        <button class="add-product" @click="openPicker()">
+        <NuxtLink to="/products" class="add-product">
           <AppIcon name="Plus" :size="20" /> Добавить продукт
-        </button>
-        <LazyProductPicker
-          v-if="picker && !replaceId"
-          inline
-          @close="picker = false"
-        />
+        </NuxtLink>
       </section>
       <aside class="basket-summary">
         <span class="eyebrow">ВАША КОРЗИНА</span>
@@ -137,12 +136,10 @@ function openPicker(id?: string) {
         ><AppIcon name="ShoppingBasket" :size="36"
       /></span>
       <h2>С чего начнём покупки?</h2>
-      <p>Напишите блюдо или список продуктов — соберём корзину для вас.</p>
-      <NuxtLink to="/" class="primary"
-        >Собрать корзину <AppIcon name="ArrowRight" /></NuxtLink
-      ><button class="text-button" @click="openPicker()">
-        Добавить продукты вручную</button
-      ><LazyProductPicker v-if="picker" @close="picker = false" />
+      <p>Выберите товары вручную или добавьте ингредиенты из рецепта.</p>
+      <NuxtLink to="/products" class="primary"
+        >Найти товары <AppIcon name="ArrowRight" /></NuxtLink
+      ><NuxtLink to="/recipes" class="text-button"> Выбрать рецепт</NuxtLink>
     </div>
   </div>
 </template>

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { parseRequest } from "~/utils/basket";
-import { recipeRequest, type RecipeResult } from "~/shared/recipes";
+import { parseDishIntent } from "~/utils/intent";
+import type { Recipe as RecipeResult } from "~/shared/recipe/model";
 const { resolve, resolveError } = useRecipeBasket();
+const { items } = useBasket();
 const { searchRecipes } = useApi();
+const emit = defineEmits<{ openProduct: [query: string] }>();
+const mode = ref<"dish" | "products">("dish");
 const query = ref("");
 const stage = ref("Ищем рецепт…");
 const loading = ref(false);
@@ -22,7 +26,7 @@ function stopSuggestions() {
 }
 watch(query, (value) => {
   stopSuggestions();
-  if (value.trim().length < 2 || loading.value) {
+  if (mode.value !== "dish" || value.trim().length < 2 || loading.value) {
     recipeResults.value = [];
     return;
   }
@@ -42,24 +46,12 @@ watch(query, (value) => {
 });
 
 async function chooseRecipe(recipe: RecipeResult) {
-  if (loading.value) return;
-  query.value = `${recipe.name} на ${recipe.servings} человек`;
-  recipeResults.value = [];
-  await submitRequest(recipeRequest(recipe));
-}
-
-async function submitRequest(result: ReturnType<typeof recipeRequest>) {
   stopSuggestions();
-  stage.value = "Собираем вашу корзину…";
-  error.value = "";
-  loading.value = true;
-  controller = new AbortController();
-  try {
-    if (await resolve(result, controller.signal)) await navigateTo("/basket");
-    else if (!controller.signal.aborted) error.value = resolveError.value;
-  } finally {
-    loading.value = false;
-  }
+  const count = query.value.match(/(?:на|для)\s+(\d+)/)?.[1];
+  await navigateTo({
+    path: `/recipes/${recipe.slug}`,
+    query: count ? { servings: count } : {},
+  });
 }
 async function submit(value = query.value) {
   if (loading.value) return;
@@ -69,26 +61,26 @@ async function submit(value = query.value) {
     return;
   }
   stopSuggestions();
+  if (mode.value === "dish") {
+    await navigateTo({
+      path: "/recipes",
+      query: parseDishIntent(value),
+    });
+    return;
+  }
+  const list = parseRequest(value);
+  if (!list) {
+    emit("openProduct", value.trim());
+    return;
+  }
   loading.value = true;
-  stage.value = "Ищем рецепт…";
+  stage.value = "Собираем вашу корзину…";
   error.value = "";
   controller = new AbortController();
-  const current = controller;
   try {
-    let result = parseRequest(value);
-    if (!result) {
-      const response = await searchRecipes(value, current.signal);
-      if (response.recipes[0]) result = recipeRequest(response.recipes[0]);
-    }
-    if (current.signal.aborted) return;
-    if (!result) {
-      error.value = "Рецепт не найден. Попробуйте другое название блюда.";
-      return;
-    }
-    await submitRequest(result);
-  } catch {
-    if (!current.signal.aborted)
-      error.value = "Не удалось найти рецепт. Повторите поиск.";
+    if (await resolve(list, controller.signal, items.value.length > 0))
+      await navigateTo("/basket");
+    else if (!controller.signal.aborted) error.value = resolveError.value;
   } finally {
     loading.value = false;
   }
@@ -133,10 +125,35 @@ onBeforeUnmount(() => {
   controller?.abort();
   recognition?.abort();
 });
-defineExpose({ submit });
+function selectMode(next: "dish" | "products") {
+  mode.value = next;
+  query.value = "";
+  error.value = "";
+  recipeResults.value = [];
+  nextTick(() =>
+    document.querySelector<HTMLTextAreaElement>("#request")?.focus(),
+  );
+}
+defineExpose({ submit, selectMode });
 </script>
 <template>
   <div class="composer-wrap">
+    <div class="composer-modes" aria-label="Что вы хотите сделать?">
+      <button
+        type="button"
+        :aria-pressed="mode === 'dish'"
+        @click="selectMode('dish')"
+      >
+        Найти блюдо
+      </button>
+      <button
+        type="button"
+        :aria-pressed="mode === 'products'"
+        @click="selectMode('products')"
+      >
+        Купить продукты
+      </button>
+    </div>
     <form class="composer" @submit.prevent="submit()">
       <label class="sr-only" for="request"
         >Что хотите купить или приготовить?</label
@@ -144,7 +161,11 @@ defineExpose({ submit });
         id="request"
         v-model="query"
         :disabled="loading"
-        placeholder="Например, борщ на 5 человек"
+        :placeholder="
+          mode === 'dish'
+            ? 'Например, борщ на 5 человек'
+            : 'Например, молоко, яйца, хлеб'
+        "
         rows="2"
         maxlength="250"
         @keydown.enter.exact.prevent="submit()"
@@ -163,9 +184,11 @@ defineExpose({ submit });
           ><button
             class="send"
             :disabled="loading"
-            aria-label="Собрать корзину"
+            :aria-label="mode === 'dish' ? 'Найти блюдо' : 'Добавить продукты'"
           >
-            <span class="send-label">Собрать корзину</span
+            <span class="send-label">{{
+              mode === "dish" ? "Найти блюдо" : "Добавить"
+            }}</span
             ><span v-if="loading" class="spinner" /><AppIcon
               v-else
               name="ArrowUp"
@@ -190,9 +213,9 @@ defineExpose({ submit });
       >
         <img v-if="recipe.image" :src="recipe.image" alt="" loading="lazy" />
         <span>
-          <strong>{{ recipe.name }}</strong>
+          <strong>{{ recipe.title }}</strong>
           <small
-            >{{ recipe.minutes }} мин · {{ recipe.servings }} порций ·
+            >{{ recipe.cookingTime }} мин · {{ recipe.servings }} порций ·
             {{ recipe.ingredients.length }} продуктов</small
           >
         </span>
@@ -203,7 +226,7 @@ defineExpose({ submit });
         target="_blank"
         rel="noopener noreferrer"
       >
-        Рецепты: UniTools · CC BY-SA 4.0
+        Каталог Nabo · исходные данные UniTools
       </a>
     </div>
     <p
@@ -222,11 +245,9 @@ defineExpose({ submit });
     </div>
     <div v-else class="quick-queries">
       <button
-        v-for="q in [
-          'Борщ на 5 человек',
-          'Завтраки на двоих',
-          'Молоко, яйца, хлеб',
-        ]"
+        v-for="q in mode === 'dish'
+          ? ['Борщ на 5 человек', 'Завтраки на двоих', 'Курица с рисом']
+          : ['Молоко, яйца, хлеб', 'Овощи для салата', 'Кофе']"
         :key="q"
         @click="submit(q)"
       >

@@ -1,22 +1,34 @@
-import { recipeDatabase, searchRecipes, presentRecipe } from "../utils/recipes";
-
-export default defineEventHandler(async (event) => {
-  const raw = getQuery(event).q;
-  const query = typeof raw === "string" ? raw.trim().slice(0, 100) : "";
-  if (query.length < 2) return { recipes: [], total: 501 };
-  try {
-    const database = await recipeDatabase();
-    const people = Number(query.match(/\d+/)?.[0]) || undefined;
+import { recipeCatalog } from "../utils/recipe-catalog";
+import { listRecipes } from "../../shared/recipe/search";
+import { recipeCategories, recipeCollections } from "../../shared/recipe/model";
+export default defineEventHandler((event) => {
+  const q = getQuery(event);
+  const number = (v: unknown, fallback: number) =>
+    typeof v === "string" && Number.isFinite(Number(v)) ? Number(v) : fallback;
+  if (q.view === "categories") {
+    const limit = Math.min(6, Math.max(1, number(q.limit, 3)));
     return {
-      recipes: searchRecipes(database, query).map((recipe) =>
-        presentRecipe(recipe, people),
-      ),
-      total: database.length,
+      sections: recipeCategories
+        .map((category) => ({
+          ...category,
+          ...listRecipes(recipeCatalog.recipes, recipeCatalog.ingredients, {
+            category: category.id,
+            limit,
+          }),
+        }))
+        .filter((section) => section.total > 0),
     };
-  } catch {
-    throw createError({
-      statusCode: 503,
-      statusMessage: "База рецептов временно недоступна",
-    });
   }
+  const result = listRecipes(recipeCatalog.recipes, recipeCatalog.ingredients, {
+    q: typeof q.q === "string" ? q.q : "",
+    category: typeof q.category === "string" ? q.category : "",
+    collection: typeof q.collection === "string" ? q.collection : "",
+    offset: number(q.offset, 0),
+    limit: number(q.limit, 24),
+  });
+  return {
+    ...result,
+    categories: recipeCategories,
+    collections: recipeCollections,
+  };
 });

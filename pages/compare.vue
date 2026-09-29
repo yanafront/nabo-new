@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { packagesFor } from "~/shared/recipe/purchasing";
 import { recommend } from "~/shared/recommendation";
 import { retailStores } from "~/shared/yandex";
 import {
@@ -8,7 +9,7 @@ import {
   type StoreId,
   type RetailProduct,
 } from "~/shared/yandex";
-const { items, compareItems, notice } = useBasket();
+const { items, compareItems, notice, unresolved } = useBasket();
 const {
   offers,
   comparisons,
@@ -95,6 +96,11 @@ function choose(itemId: string, id: string) {
   const line = store?.lines.find((l) => l.itemId === itemId);
   if (line) {
     line.selected = line.alternatives.find((p) => p.id === id) || null;
+    if (line.demand && line.selected) {
+      const quantity = packagesFor(line.selected, line.demand);
+      if (quantity === undefined) line.selected = null;
+      else line.quantity = quantity;
+    }
     line.replacement = line.selected?.name !== line.query;
     expanded.value = null;
   }
@@ -147,6 +153,10 @@ const time = (value: string) =>
         <AppIcon name="RefreshCw" :size="16" />Обновить цены
       </button>
     </div>
+    <p v-if="unresolved.length" class="info-note" role="status">
+      Не весь рецепт собран: {{ unresolved.join(", ") }}. Ниже сравниваются
+      только добавленные товары, а не полная стоимость рецепта.
+    </p>
     <template v-if="items.length">
       <div v-if="pending" class="comparison-loading" role="status">
         <span class="spinner" />
@@ -338,111 +348,124 @@ const time = (value: string) =>
       /></span>
       <h2>Сначала соберём корзину</h2>
       <p>Добавьте продукты — найдём выгодный магазин для вашего списка.</p>
-      <NuxtLink to="/" class="primary">Собрать корзину</NuxtLink>
+      <NuxtLink to="/products" class="primary">Найти товары</NuxtLink>
     </div>
     <AppModal
       v-if="selected"
+      class="comparison-modal"
       :title="`${selected.name} · состав корзины`"
       @close="detail = null"
-      ><div class="comparison-lines">
-        <div
-          v-for="line in selected.lines"
-          :key="line.itemId"
-          class="comparison-line"
-        >
-          <h3>
-            {{ line.query }} <small>× {{ line.quantity }}</small>
-          </h3>
-          <template v-if="line.selected"
-            ><div class="chosen-product">
-              <ProductImage :src="line.selected.image" />
-              <div>
-                <strong>{{ line.selected.name }}</strong>
-                <a
-                  :href="productSourceUrl(line.selected)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-button product-source-link"
-                  >Проверить в {{ providerName(line.selected.storeId) }}
-                  <AppIcon name="ExternalLink" :size="12"
-                /></a>
-                <p>
-                  {{ line.selected.unit }} ·
-                  {{ money(line.selected.price) }} BYN / уп.
-                </p>
-              </div>
-              <b>{{ money(line.selected.price * line.quantity) }} BYN</b>
-            </div></template
+      ><div class="comparison-scroll">
+        <div class="comparison-lines">
+          <div
+            v-for="line in selected.lines"
+            :key="line.itemId"
+            class="comparison-line"
           >
-          <p v-else class="unavailable">
-            {{ line.error || "Пока нет подходящего товара в наличии." }}
-          </p>
-          <p v-if="line.replacement && line.selected" class="replacement-note">
-            Подобрали замену · {{ line.selected.unit }} ×
-            {{ line.quantity }} уп.
-          </p>
-          <button
-            v-if="line.alternatives.length"
-            class="text-button"
-            :aria-expanded="expanded === line.itemId"
-            @click="expanded = expanded === line.itemId ? null : line.itemId"
-          >
-            {{
-              expanded === line.itemId
-                ? "Скрыть варианты"
-                : line.selected
-                  ? "Заменить товар"
-                  : "Выбрать замену"
-            }}
-          </button>
-          <div v-if="expanded === line.itemId" class="replacement-options">
-            <button
-              v-for="product in line.alternatives.filter(
-                (p) => p.id !== line.selected?.id,
-              )"
-              :key="product.id"
-              class="replacement-option"
-              @click="choose(line.itemId, product.id)"
+            <h3 v-if="!line.selected || line.replacement">
+              {{ line.query }} <small>× {{ line.quantity }}</small>
+            </h3>
+            <template v-if="line.selected"
+              ><div class="chosen-product">
+                <ProductImage :src="line.selected.image" />
+                <div>
+                  <strong>{{ line.selected.name }}</strong>
+                  <a
+                    :href="productSourceUrl(line.selected)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-button product-source-link"
+                    >Проверить в {{ providerName(line.selected.storeId) }}
+                    <AppIcon name="ExternalLink" :size="12"
+                  /></a>
+                  <p>
+                    {{ line.selected.unit }} ·
+                    {{ money(line.selected.price) }} BYN ×
+                    {{ line.quantity }} уп.
+                  </p>
+                </div>
+                <b>{{ money(line.selected.price * line.quantity) }} BYN</b>
+              </div></template
             >
-              <ProductImage :src="product.image" />
-              <span
-                ><strong>{{ product.name }}</strong
-                ><small
-                  >{{ product.unit }} · {{ money(product.price) }} BYN /
-                  уп.</small
-                ></span
-              >
-              <span class="replacement-action">Выбрать</span>
-            </button>
-            <p
-              v-if="line.alternatives.every((p) => p.id === line.selected?.id)"
-              class="muted"
-            >
-              Других вариантов пока нет.
+            <p v-else class="unavailable">
+              {{ line.error || "Пока нет подходящего товара в наличии." }}
             </p>
+            <p
+              v-if="line.replacement && line.selected"
+              class="replacement-note"
+            >
+              Подобрали замену
+            </p>
+            <button
+              v-if="line.alternatives.length"
+              class="text-button"
+              :aria-expanded="expanded === line.itemId"
+              @click="expanded = expanded === line.itemId ? null : line.itemId"
+            >
+              {{
+                expanded === line.itemId
+                  ? "Скрыть варианты"
+                  : line.selected
+                    ? "Заменить товар"
+                    : "Выбрать замену"
+              }}
+            </button>
+            <div v-if="expanded === line.itemId" class="replacement-options">
+              <button
+                v-for="product in line.alternatives.filter(
+                  (p) => p.id !== line.selected?.id,
+                )"
+                :key="product.id"
+                class="replacement-option"
+                @click="choose(line.itemId, product.id)"
+              >
+                <ProductImage :src="product.image" />
+                <span
+                  ><strong>{{ product.name }}</strong
+                  ><small
+                    >{{ product.unit }} · {{ money(product.price) }} BYN /
+                    уп.</small
+                  ></span
+                >
+                <span class="replacement-action">Выбрать</span>
+              </button>
+              <p
+                v-if="
+                  line.alternatives.every((p) => p.id === line.selected?.id)
+                "
+                class="muted"
+              >
+                Других вариантов пока нет.
+              </p>
+            </div>
           </div>
         </div>
+        <p v-if="selected.stockProblems.length" class="error">
+          Недостаточно остатка для повторяющихся товаров. Измените количество
+          или выберите замену.
+        </p>
       </div>
-      <p v-if="selected.stockProblems.length" class="error">
-        Недостаточно остатка для повторяющихся товаров. Измените количество или
-        выберите замену.
-      </p>
-      <div class="info-note">
-        Товары: {{ money(selected.subtotal) }} BYN. Скопируйте список и добавьте
-        товары у магазина. Корзина автоматически не переносится; доставка и
-        сборы — при оформлении.
+      <div class="comparison-footer">
+        <div class="comparison-total">
+          <span>{{ selected.lines.length }} позиций · за товары</span
+          ><strong>{{ money(selected.subtotal) }} BYN</strong>
+        </div>
+        <p>Список нужно добавить у магазина. Доставка и сборы отдельно.</p>
+        <div class="comparison-footer-actions">
+          <button class="secondary" @click="copy">
+            {{ copied ? "Скопировано" : "Копировать список" }}
+          </button>
+          <p v-if="copyError" class="error" role="alert">{{ copyError }}</p>
+          <a
+            :href="storeUrl(selected.id)"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="primary"
+            >Перейти в {{ selected.name
+            }}<AppIcon name="ExternalLink" :size="17"
+          /></a>
+        </div>
       </div>
-      <button class="secondary full" @click="copy">
-        {{ copied ? "Список скопирован" : "Скопировать список продуктов" }}
-      </button>
-      <p v-if="copyError" class="error" role="alert">{{ copyError }}</p>
-      <a
-        :href="storeUrl(selected.id)"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="primary full retailer-link"
-        >Перейти в {{ selected.name
-        }}<AppIcon name="ExternalLink" :size="17" /></a
-    ></AppModal>
+    </AppModal>
   </div>
 </template>

@@ -71,8 +71,8 @@ function restore(id: string) {
         Соберите первую и нажмите «Сохранить»,<br />чтобы в следующий раз начать
         с готового.
       </p>
-      <NuxtLink to="/" class="primary"
-        >Собрать первую корзину <AppIcon name="ArrowRight"
+      <NuxtLink to="/products" class="primary"
+        >Найти товары <AppIcon name="ArrowRight"
       /></NuxtLink>
     </div>
   </div>

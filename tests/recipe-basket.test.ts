@@ -99,3 +99,52 @@ it("для свежих томатов не подставляет марино�
   ]);
   expect(result?.items[0].product?.sourceId).toBe("fresh");
 });
+
+it("recalculates packages when a selected recipe product is unavailable", () => {
+  const demand = {
+    ingredientId: "milk",
+    query: "молоко",
+    amount: 1500,
+    dimension: "volume" as const,
+  };
+  const alternative = {
+    ...p,
+    id: "large",
+    unit: "1 л",
+    available: true,
+    stock: 10,
+  };
+  const result = recipeBasket([
+    {
+      ...offer,
+      lines: [
+        {
+          ...line,
+          demand,
+          quantity: 3,
+          selected: { ...p, available: false },
+          alternatives: [alternative],
+        },
+      ],
+    },
+  ]);
+  expect(result?.items[0].quantity).toBe(2);
+});
+it("combines equal ingredient requirements without changing input", () => {
+  const requirement = {
+    ingredientId: "milk",
+    query: "молоко",
+    amount: 500,
+    dimension: "volume" as const,
+  };
+  const requests = [
+    { productId: "milk", quantity: 1, requirement },
+    { productId: "second", quantity: 1, requirement: { ...requirement } },
+  ];
+  const result = recipeBasket(
+    [{ ...offer, lines: [line, { ...line, itemId: "second" }] }],
+    requests,
+  );
+  expect(result?.items[0].requirement?.amount).toBe(1000);
+  expect(requirement.amount).toBe(500);
+});

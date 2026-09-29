@@ -27,7 +27,7 @@ export function withPreferences(
 const signature = (offer: StoreComparison) =>
   JSON.stringify(
     offer.lines
-      .map((l) => [l.itemId, l.quantity])
+      .map((l) => [l.itemId, l.demand || l.quantity])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
   );
 export function recommend(offers: StoreComparison[]) {
@@ -70,7 +70,11 @@ export function recommend(offers: StoreComparison[]) {
               l.selected?.available &&
               (l.selected.stock === null || l.selected.stock >= l.quantity),
           )
-          .sort((x, y) => x.l.selected!.price - y.l.selected!.price);
+          .sort(
+            (x, y) =>
+              x.l.selected!.price * x.l.quantity -
+              y.l.selected!.price * y.l.quantity,
+          );
         if (!candidates.length) {
           covered = false;
           break;

@@ -33,13 +33,14 @@ onUnmounted(() => {
         ></NuxtLink
       >
       <nav class="desktop-nav" aria-label="Основная навигация">
-        <NuxtLink to="/">Собрать корзину</NuxtLink
+        <NuxtLink to="/products">Товары</NuxtLink
+        ><NuxtLink to="/recipes">Рецепты</NuxtLink
         ><NuxtLink to="/basket"
           >Моя корзина
           <span v-if="items.length" class="count">{{
             items.length
           }}</span></NuxtLink
-        ><NuxtLink to="/saved">Сохранённые</NuxtLink>
+        >
       </nav>
       <button class="location" @click="showLocation = true">
         <AppIcon name="MapPin" :size="16" /><span>{{ location.label }}</span
@@ -56,18 +57,18 @@ onUnmounted(() => {
       Нет интернета. Корзина сохранена на устройстве. Для обновления цен нужно
       подключение.
     </div>
-    <main id="main"><NuxtPage :key="$route.fullPath" /></main>
+    <main id="main"><NuxtPage :key="$route.path" /></main>
     <footer class="footer">
       <span>Цены в BYN · Покупка у магазина</span
       ><button @click="info = true">Как работает Nabo</button>
     </footer>
     <nav class="mobile-nav" aria-label="Мобильная навигация">
-      <NuxtLink to="/"><AppIcon name="Search" />Собрать</NuxtLink>
+      <NuxtLink to="/products"><AppIcon name="Search" />Товары</NuxtLink>
+      <NuxtLink to="/recipes"><AppIcon name="Leaf" />Рецепты</NuxtLink>
       <NuxtLink to="/basket"
         ><AppIcon name="ShoppingBasket" />Корзина
         <span v-if="items.length">{{ items.length }}</span></NuxtLink
       >
-      <NuxtLink to="/saved"><AppIcon name="Heart" />Сохранённые</NuxtLink>
     </nav>
     <div v-if="notice" class="toast" role="status">
       <AppIcon name="Check" :size="18" />{{ notice
@@ -79,8 +80,10 @@ onUnmounted(() => {
     <AppModal v-if="info" title="От списка до покупки" @close="info = false">
       <ol class="how-it-works">
         <li>
-          <strong>Расскажите, что купить</strong>
-          <p>Введите блюдо или список продуктов.</p>
+          <strong>Начните с товара или рецепта</strong>
+          <p>
+            В поиске товаров выбираете вы. В рецепте продукты подберёт Nabo.
+          </p>
         </li>
         <li>
           <strong>Проверьте корзину</strong>

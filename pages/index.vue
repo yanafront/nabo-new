@@ -93,6 +93,30 @@ const { items, title } = useBasket();
         ></span
       ><AppIcon name="ArrowRight"
     /></NuxtLink>
+    <section class="home-one-basket" aria-labelledby="one-basket-title">
+      <span class="one-basket-icon" aria-hidden="true"
+        ><AppIcon name="ShoppingBasket" :size="26"
+      /></span>
+      <div class="one-basket-copy">
+        <h2 id="one-basket-title">Одна корзина — все магазины</h2>
+        <p>
+          Соберите продукты или ингредиенты из рецептов. Nabo сравнит стоимость
+          корзины и покажет, где выгоднее.
+        </p>
+        <ul class="one-basket-stores" aria-label="Магазины для сравнения">
+          <li v-for="store in retailStores" :key="store.id">
+            {{ store.name }}
+          </li>
+        </ul>
+      </div>
+      <NuxtLink
+        :to="items.length ? '/compare' : '/products'"
+        class="secondary one-basket-link"
+      >
+        {{ items.length ? "Сравнить корзину" : "Собрать корзину"
+        }}<AppIcon name="ArrowRight" :size="18" />
+      </NuxtLink>
+    </section>
     <section class="inspiration">
       <div class="section-head">
         <h2>Начните с блюда</h2>
@@ -108,15 +132,6 @@ const { items, title } = useBasket();
       <NuxtLink to="/recipes" class="text-button"
         >Все рецепты <AppIcon name="ArrowRight" :size="16"
       /></NuxtLink>
-    </section>
-    <section class="store-proof" aria-label="Магазины для сравнения">
-      <p>Одна корзина. Шесть магазинов.</p>
-      <div>
-        <span v-for="store in retailStores" :key="store.id">{{
-          store.name
-        }}</span>
-      </div>
-      <small>Сравниваем товары. Доставка и сборы уточняются у магазина.</small>
     </section>
   </div>
 </template>

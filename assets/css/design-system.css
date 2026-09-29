@@ -1154,6 +1154,23 @@ ol {
   box-shadow: 0 30px 90px #20202026;
   overflow-y: auto;
   overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+.modal > *,
+.modal :where(form, label, input, select, textarea) {
+  min-width: 0;
+}
+.modal :where(input, select, textarea) {
+  max-width: 100%;
+}
+.modal :where(.primary, .secondary, .text-button) {
+  white-space: normal;
+}
+.modal :where(button, a) > svg {
+  flex-shrink: 0;
+}
+.modal-head .icon-button {
+  flex-shrink: 0;
 }
 .modal::backdrop {
   background: #20202066;
@@ -1171,6 +1188,8 @@ ol {
   z-index: 3;
 }
 .modal-head h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 22px;
   margin: 0;
 }
@@ -1245,6 +1264,7 @@ ol {
 }
 .picker-tools {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
   align-items: center;
@@ -1293,6 +1313,8 @@ ol {
   flex: 1;
 }
 .picker-product strong {
+  overflow-wrap: anywhere;
+  white-space: normal;
   display: block;
   font-size: 13px;
   line-height: 1.5;
@@ -1301,6 +1323,10 @@ ol {
   display: block;
   font-size: 11px;
   margin-top: 4px;
+}
+.picker-product > :where(.product-image, .product-emoji, .in-cart-badge, svg),
+.picker-product b {
+  flex-shrink: 0;
 }
 .picker-product b {
   font-size: 13px;
@@ -1393,7 +1419,8 @@ ol {
   border-radius: 10px;
 }
 .replacement-option {
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) max-content;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -1409,6 +1436,8 @@ ol {
   min-width: 0;
 }
 .replacement-option strong {
+  overflow-wrap: anywhere;
+  white-space: normal;
   font-size: 12px;
   display: block;
   line-height: 1.5;
@@ -1418,7 +1447,7 @@ ol {
   font-size: 11px;
 }
 .replacement-option .replacement-action {
-  flex: 0;
+  white-space: nowrap;
   font-size: 12px;
   color: var(--ink);
 }
@@ -1437,7 +1466,7 @@ ol {
 }
 .location-form > div {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .location-form input {
@@ -3764,6 +3793,14 @@ input[type="checkbox"] {
 }
 .comparison-modal .chosen-product strong {
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.comparison-modal .chosen-product > div {
+  min-width: 0;
+}
+.comparison-modal .replacement-option .product-image {
+  width: 40px;
+  height: 48px;
 }
 .comparison-modal .chosen-product p {
   margin: 3px 0;
@@ -3828,6 +3865,29 @@ input[type="checkbox"] {
   font-size: 12px;
 }
 @media (max-width: 400px) {
+  .modal .picker-product {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) max-content;
+  }
+  .modal .picker-product > b {
+    grid-column: 2;
+  }
+  .modal .picker-product > :is(svg, .in-cart-badge) {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .replacement-option {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 6px 8px;
+  }
+  .replacement-option .product-image {
+    width: 32px;
+    height: 40px;
+  }
+  .replacement-option .replacement-action {
+    grid-column: 2;
+    justify-self: end;
+  }
   .comparison-modal .chosen-product {
     grid-template-columns: 32px minmax(0, 1fr);
     gap: 8px;
@@ -3838,5 +3898,73 @@ input[type="checkbox"] {
   }
   .comparison-modal .chosen-product b {
     grid-column: 2;
+  }
+}
+
+.home-one-basket {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  margin: 28px 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+}
+.one-basket-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 18px;
+  background: #c7ff3b;
+}
+.one-basket-copy {
+  flex: 1;
+  min-width: 0;
+}
+.one-basket-copy h2 {
+  font-size: 22px;
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.one-basket-copy p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+  max-width: 580px;
+}
+.one-basket-stores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.one-basket-link {
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .home-one-basket {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px;
+  }
+  .one-basket-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+  .one-basket-copy h2 {
+    font-size: 19px;
+  }
+  .one-basket-link {
+    width: 100%;
   }
 }

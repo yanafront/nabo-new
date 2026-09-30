@@ -192,6 +192,7 @@ const time = (value: string) =>
               <div>
                 <h2>{{ best.name }}</h2>
                 <p>Найдена вся корзина</p>
+                <NearbyStoresLink :store-id="best.id" />
               </div>
             </div>
             <div class="recommended-price">
@@ -244,6 +245,7 @@ const time = (value: string) =>
             :key="group.storeId"
           >
             <h3>{{ storeName(group.storeId) }}</h3>
+            <NearbyStoresLink :store-id="group.storeId" />
             <ul>
               <li v-for="line in group.lines" :key="line.itemId">
                 {{ line.selected!.name }} · {{ line.selected!.unit }} ×
@@ -281,6 +283,7 @@ const time = (value: string) =>
               }}</span>
               <div>
                 <h2>{{ offer.name }}</h2>
+                <NearbyStoresLink :store-id="offer.id" />
                 <span :class="offer.complete ? 'available' : 'unavailable'">{{
                   offer.hasError
                     ? "Не удалось проверить"
@@ -325,6 +328,11 @@ const time = (value: string) =>
         </p>
         <details class="trust-details">
           <summary>Почему такая цена и как считаем выгоду</summary>
+          <p>
+            «Магазины рядом» открывает поиск сети на Яндекс Картах рядом с
+            выбранной точкой. Цены и наличие в офлайн-магазине могут отличаться
+            от онлайн-каталога.
+          </p>
           <p>
             Сравниваем подобранные корзины с одинаковым списком и количеством
             позиций. Бренды и упаковки могут различаться. Экономия — разница с
@@ -451,6 +459,7 @@ const time = (value: string) =>
           ><strong>{{ money(selected.subtotal) }} BYN</strong>
         </div>
         <p>Список нужно добавить у магазина. Доставка и сборы отдельно.</p>
+        <NearbyStoresLink :store-id="selected.id" />
         <div class="comparison-footer-actions">
           <button class="secondary" @click="copy">
             {{ copied ? "Скопировано" : "Копировать список" }}

@@ -1,9 +1,12 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: false },
-  css: ["~/assets/css/design-system.css"],
+  css: ["leaflet/dist/leaflet.css", "~/assets/css/design-system.css"],
   runtimeConfig: {
     retailApiBase: "https://naboback-production.up.railway.app",
+    geocoderBase: "https://photon.komoot.io",
+    yandexGeocoderApiKey: "",
+    public: { yandexMapsApiKey: "" },
   },
   app: {
     head: {

@@ -1,3 +1,4 @@
+import { separateLegacyIngredientNames } from "~/shared/recipe/ingredient-names";
 import { products, type Item } from "~/data/catalog";
 import { retailStores } from "~/shared/yandex";
 export default defineNuxtPlugin(() => {
@@ -48,9 +49,9 @@ export default defineNuxtPlugin(() => {
             ),
           );
         if (Array.isArray(data.unresolved))
-          unresolved.value = data.unresolved
-            .filter((s: unknown) => typeof s === "string")
-            .slice(0, 20);
+          unresolved.value = separateLegacyIngredientNames(
+            data.unresolved.filter((s: unknown) => typeof s === "string"),
+          ).slice(0, 20);
         if (typeof data.title === "string") title.value = data.title;
         if (Array.isArray(data.saved))
           saved.value = data.saved.filter(
@@ -83,28 +84,43 @@ export default defineNuxtPlugin(() => {
       clearTimeout(saveTimer);
       if (!dirty) return;
       try {
-        localStorage.setItem("nabo-v2", JSON.stringify({
-          items: items.value, title: title.value, saved: saved.value,
-          location: location.value, unresolved: unresolved.value,
-          pendingIngredients: pendingIngredients.value,
-        }));
+        localStorage.setItem(
+          "nabo-v2",
+          JSON.stringify({
+            items: items.value,
+            title: title.value,
+            saved: saved.value,
+            location: location.value,
+            unresolved: unresolved.value,
+            pendingIngredients: pendingIngredients.value,
+          }),
+        );
         dirty = false;
       } catch {
-        notice.value = "Хранилище недоступно. Изменения сохранятся до закрытия страницы";
+        notice.value =
+          "Хранилище недоступно. Изменения сохранятся до закрытия страницы";
       }
     };
-    const stop = watch([items, title, saved, location, unresolved, pendingIngredients], () => {
-      dirty = true;
-      clearTimeout(saveTimer);
-      saveTimer = setTimeout(persist, 150);
-    }, { deep: true, flush: "sync" });
-    const hidden = () => { if (document.visibilityState === "hidden") persist(); };
+    const stop = watch(
+      [items, title, saved, location, unresolved, pendingIngredients],
+      () => {
+        dirty = true;
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(persist, 150);
+      },
+      { deep: true, flush: "sync" },
+    );
+    const hidden = () => {
+      if (document.visibilityState === "hidden") persist();
+    };
     window.addEventListener("pagehide", persist);
     document.addEventListener("visibilitychange", hidden);
-    if (import.meta.hot) import.meta.hot.dispose(() => {
-      persist(); stop();
-      window.removeEventListener("pagehide", persist);
-      document.removeEventListener("visibilitychange", hidden);
-    });
+    if (import.meta.hot)
+      import.meta.hot.dispose(() => {
+        persist();
+        stop();
+        window.removeEventListener("pagehide", persist);
+        document.removeEventListener("visibilitychange", hidden);
+      });
   });
 });

@@ -155,7 +155,11 @@ describe("ASP.NET backend bridge", () => {
     for (const path of ["/api/yandex/search", "/api/yandex/compare"]) {
       const body = {
         query: "молоко",
-        location: { lat: 53.9, lon: 27.56 },
+        location: {
+          lat: 53.9111735,
+          lon: 27.5006199,
+          label: "Минск, улица Притыцкого, 10",
+        },
         items: [{ id: "milk", quantity: 2 }],
       };
       const res = await post(path, body, { cookie: "unrelated=secret" });

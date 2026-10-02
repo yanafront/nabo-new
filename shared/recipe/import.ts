@@ -1,3 +1,4 @@
+import { separateIngredients } from "./ingredient-names";
 import { ingredients as commonIngredients } from "./ingredients";
 import {
   normalized,
@@ -32,52 +33,69 @@ const category = (title: string) => {
   if (/тахдиг|пюре|гречк|гарнир|полента/.test(t)) return "sides";
   return "mains";
 };
+function normalizeSourceIngredient(row: any): any[] {
+  const parts = separateIngredients[normalized(row.name?.ru || "")];
+  if (parts) {
+    if (row.quantity != null)
+      throw new Error(
+        `Уточните количество каждого ингредиента: ${row.name.ru}`,
+      );
+    return parts.map((name) => ({ ...row, name: { ru: name } }));
+  }
+  return [row];
+}
 export function migrateLegacy(input: any): RecipeCatalog {
   if (!Array.isArray(input?.recipes)) throw new Error("Нет массива recipes");
   const dictionary = new Map(
-    commonIngredients.map((i) => [i.id, structuredClone(i)]),
+    commonIngredients
+      .filter((i) => i.id !== "salt-pepper")
+      .map((i) => [i.id, structuredClone(i)]),
   );
   const aliases = new Map(
-    commonIngredients.flatMap((i) =>
-      [i.name, ...i.aliases].map((n) => [normalized(n), i.id] as const),
-    ),
+    commonIngredients
+      .filter((i) => i.id !== "salt-pepper")
+      .flatMap((i) =>
+        [i.name, ...i.aliases].map((n) => [normalized(n), i.id] as const),
+      ),
   );
   const recipes: Recipe[] = input.recipes.map((raw: any) => {
     const title = raw.name?.ru;
     if (!title || !Number.isFinite(raw.baseServings) || raw.baseServings <= 0)
       throw new Error("Неверный исходный рецепт");
-    const rows = raw.ingredients.map((row: any) => {
-      const name = row.name?.ru?.trim();
-      if (!name) throw new Error("Пустой ингредиент");
-      const key = normalized(name);
-      const id = aliases.get(key) || `ingredient-${hash(key)}`;
-      if (!dictionary.has(id))
-        dictionary.set(id, {
-          id,
+    const rows = raw.ingredients
+      .flatMap(normalizeSourceIngredient)
+      .map((row: any) => {
+        const name = row.name?.ru?.trim();
+        if (!name) throw new Error("Пустой ингредиент");
+        const key = normalized(name);
+        const id = aliases.get(key) || `ingredient-${hash(key)}`;
+        if (!dictionary.has(id))
+          dictionary.set(id, {
+            id,
+            name,
+            aliases: [name],
+            searchTerms: [name],
+            pantry: false,
+            common: false,
+          });
+        const entry = dictionary.get(id)!;
+        return {
+          ingredientId: id,
           name,
-          aliases: [name],
-          searchTerms: [name],
-          pantry: false,
-          common: false,
-        });
-      const entry = dictionary.get(id)!;
-      return {
-        ingredientId: id,
-        name,
-        quantity: row.quantity ?? 0,
-        unit: row.unit,
-        categoryId: entry.productCategoryId,
-        ...(row.quantity === null
-          ? { unquantified: true, optional: true }
-          : {}),
-        ...(row.unit === "g" && row.quantity !== null
-          ? { weightGrams: row.quantity }
-          : {}),
-        ...(row.unit === "kg" && row.quantity !== null
-          ? { weightGrams: row.quantity * 1000 }
-          : {}),
-      };
-    });
+          quantity: row.quantity ?? 0,
+          unit: row.unit,
+          categoryId: entry.productCategoryId,
+          ...(row.quantity === null
+            ? { unquantified: true, optional: true }
+            : {}),
+          ...(row.unit === "g" && row.quantity !== null
+            ? { weightGrams: row.quantity }
+            : {}),
+          ...(row.unit === "kg" && row.quantity !== null
+            ? { weightGrams: row.quantity * 1000 }
+            : {}),
+        };
+      });
     const main = rows.filter(
       (i: any) => !dictionary.get(i.ingredientId)?.pantry,
     );
@@ -120,6 +138,20 @@ export function migrateLegacy(input: any): RecipeCatalog {
       sourceId: raw.slug,
       sourceUrl: input.source,
       license: input.license,
+      ...(raw.nutritionPerServing
+        ? {
+            nutrition: {
+              ...raw.nutritionPerServing,
+              basis: "serving",
+              calculationType: "calculated",
+              source: "UniTools — расчёт по ингредиентам",
+            },
+          }
+        : {}),
+      ...(raw.steps
+        ? { instructions: raw.steps.map((s: any) => ({ text: s.text.ru })) }
+        : {}),
+      ...(raw.difficulty ? { difficulty: raw.difficulty } : {}),
       isActive: true,
       shopabilityScore: score,
     };
@@ -148,12 +180,14 @@ export function validateCatalog(value: unknown): RecipeCatalog {
     if (
       !safe(i.id) ||
       !safe(i.name) ||
+      /\s(?:и|или)\s|[;/]/i.test(i.name) ||
       ids.has(i.id) ||
       !Array.isArray(i.aliases) ||
       !i.aliases.every(safe) ||
       !Array.isArray(i.searchTerms) ||
       !i.searchTerms.length ||
       !i.searchTerms.every(safe) ||
+      i.searchTerms.some((term) => /\s(?:и|или)\s|[;/]/i.test(term)) ||
       typeof i.pantry !== "boolean" ||
       typeof i.common !== "boolean"
     )

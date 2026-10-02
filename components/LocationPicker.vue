@@ -1,89 +1,243 @@
 <script setup lang="ts">
+import {
+  validDeliveryPoint,
+  type AddressResult,
+} from "~/shared/delivery-location";
+import type { DeliveryLocation } from "~/shared/yandex";
 const emit = defineEmits<{ close: [] }>();
-const { location } = useRetail();
-const lat = ref(location.value.lat);
-const lon = ref(location.value.lon);
-const label = ref(location.value.label);
+const { location, invalidate } = useRetail();
+const address = ref("");
+const draft = ref<DeliveryLocation | null>({ ...location.value });
+const results = ref<AddressResult[]>([]);
 const error = ref("");
 const locating = ref(false);
-function save() {
-  if (
-    !Number.isFinite(lat.value) ||
-    !Number.isFinite(lon.value) ||
-    lat.value < 51 ||
-    lat.value > 57 ||
-    lon.value < 23 ||
-    lon.value > 33
-  ) {
-    error.value = "Укажите точку в Беларуси";
+const searching = ref(false);
+const accuracy = ref<number>();
+const precise = ref(true);
+const provider = ref("photon");
+let operation = 0;
+let controller: AbortController | undefined;
+const busy = computed(() => locating.value || searching.value);
+function cancelPending() {
+  operation++;
+  controller?.abort();
+  locating.value = false;
+  searching.value = false;
+}
+watch(address, () => {
+  cancelPending();
+  draft.value = null;
+  results.value = [];
+  accuracy.value = undefined;
+  error.value = "";
+});
+onBeforeUnmount(cancelPending);
+async function searchAddress() {
+  cancelPending();
+  error.value = "";
+  draft.value = null;
+  results.value = [];
+  if (address.value.trim().length < 5) {
+    error.value = "Введите город, улицу и номер дома.";
     return;
   }
-  location.value = {
-    lat: lat.value,
-    lon: lon.value,
-    label: label.value.trim() || "Моя точка",
-  };
-  emit("close");
+  const current = operation;
+  controller = new AbortController();
+  searching.value = true;
+  try {
+    const response = await $fetch<{
+      addresses: AddressResult[];
+      provider: string;
+    }>("/api/location/search", {
+      query: { q: address.value.trim() },
+      signal: controller.signal,
+      timeout: 12000,
+      retry: 0,
+    });
+    if (current !== operation) return;
+    results.value = response.addresses;
+    provider.value = response.provider;
+    if (!results.value.length)
+      error.value =
+        "Адрес не найден. Проверьте город, улицу и номер дома или используйте геолокацию.";
+  } catch (failure: any) {
+    if (current === operation && failure.statusCode === 429)
+      error.value = "Подождите пару секунд и повторите поиск.";
+    else if (current === operation)
+      error.value =
+        "Не удалось найти адрес. Повторите поиск или используйте геолокацию.";
+  } finally {
+    if (current === operation) searching.value = false;
+  }
+}
+function choose(point: AddressResult) {
+  draft.value = { lat: point.lat, lon: point.lon, label: point.label };
+  precise.value = point.precise;
+  accuracy.value = undefined;
+  error.value = "";
+}
+function selectOnMap(point: { lat: number; lon: number }) {
+  cancelPending();
+  draft.value = { ...point, label: "Точка на карте" };
+  precise.value = true;
+  accuracy.value = undefined;
+  results.value = [];
+  error.value = "";
 }
 function locate() {
+  cancelPending();
+  error.value = "";
   if (!navigator.geolocation) {
-    error.value = "Геолокация недоступна. Введите координаты вручную.";
+    error.value =
+      "Геолокация недоступна в этом браузере. Найдите адрес вручную.";
     return;
   }
   locating.value = true;
+  const current = operation;
   navigator.geolocation.getCurrentPosition(
-    (p) => {
-      lat.value = p.coords.latitude;
-      lon.value = p.coords.longitude;
-      label.value = "Моё местоположение";
+    (position) => {
+      if (current !== operation) return;
       locating.value = false;
+      const { latitude: lat, longitude: lon } = position.coords;
+      if (!validDeliveryPoint(lat, lon)) {
+        error.value =
+          "Сейчас поиск поддерживает точки в Беларуси. Введите адрес доставки в Беларуси.";
+        return;
+      }
+      draft.value = { lat, lon, label: "Моё местоположение" };
+      results.value = [];
+      precise.value = true;
+      accuracy.value = Math.round(position.coords.accuracy);
     },
-    () => {
+    (failure) => {
+      if (current !== operation) return;
+      locating.value = false;
       error.value =
-        "Не удалось определить местоположение. Введите координаты вручную.";
-      locating.value = false;
+        failure.code === 1
+          ? "Доступ к геолокации запрещён. Разрешите его в браузере или введите адрес."
+          : failure.code === 3
+            ? "Браузер не определил местоположение. Выберите нужный дом на карте или найдите адрес."
+            : "Не удалось определить местоположение. Введите адрес доставки.";
     },
-    { timeout: 10000 },
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 },
   );
+}
+function save() {
+  if (
+    busy.value ||
+    !draft.value ||
+    !validDeliveryPoint(draft.value.lat, draft.value.lon)
+  )
+    return;
+  location.value = { ...draft.value };
+  invalidate();
+  emit("close");
 }
 </script>
 <template>
-  <AppModal title="Точка доставки" @close="emit('close')"
-    ><p>
-      Координаты нужны, чтобы выбрать доступные витрины магазинов. Возможность
-      доставки уточняется при оформлении.
-    </p>
-    <button class="secondary full" :disabled="locating" @click="locate">
-      {{ locating ? "Определяем…" : "Моё местоположение" }}
-    </button>
-    <form class="location-form" @submit.prevent="save">
-      <label
-        >Название точки<input
-          v-model="label"
-          maxlength="60"
-          placeholder="Например, Дом"
-      /></label>
-      <div>
-        <label
-          >Широта<input
-            v-model.number="lat"
-            type="number"
-            step="any"
-            required
-            min="51"
-            max="57" /></label
-        ><label
-          >Долгота<input
-            v-model.number="lon"
-            type="number"
-            step="any"
-            required
-            min="23"
-            max="33"
-        /></label>
-      </div>
-      <p v-if="error" role="alert" class="error">{{ error }}</p>
-      <button class="primary full">Сохранить точку</button>
-    </form></AppModal
+  <AppModal
+    title="Точка доставки"
+    class="location-modal"
+    @close="emit('close')"
   >
+    <p class="muted">
+      Укажите, куда нужны продукты. По этой точке мы ищем доступные товары и
+      сравниваем магазины.
+    </p>
+    <button class="secondary full" :disabled="busy" @click="locate">
+      <AppIcon name="MapPin" :size="18" />{{
+        locating
+          ? "Определяем местоположение…"
+          : "Определить моё местоположение"
+      }}
+    </button>
+    <form class="address-search" @submit.prevent="searchAddress">
+      <label for="delivery-address">Или найдите адрес доставки</label>
+      <div class="address-search-row">
+        <input
+          id="delivery-address"
+          v-model="address"
+          autocomplete="street-address"
+          placeholder="Минск, улица Притыцкого, 10"
+          maxlength="160"
+        />
+        <button class="primary" :disabled="busy || address.trim().length < 5">
+          {{ searching ? "Поиск…" : "Найти" }}
+        </button>
+      </div>
+    </form>
+    <p v-if="error" role="alert" class="error">{{ error }}</p>
+    <div
+      v-if="results.length"
+      class="address-results"
+      aria-label="Найденные адреса"
+    >
+      <p class="muted">Выберите подходящий адрес</p>
+      <button
+        v-for="point in results"
+        :key="`${point.lat}:${point.lon}:${point.label}`"
+        type="button"
+        :aria-pressed="
+          draft?.label === point.label &&
+          draft?.lat === point.lat &&
+          draft?.lon === point.lon
+        "
+        @click="choose(point)"
+      >
+        <AppIcon name="MapPin" :size="18" /><span
+          >{{ point.label
+          }}<small v-if="!point.precise"
+            >Точка улицы или района — номер дома не найден</small
+          ></span
+        >
+      </button>
+    </div>
+    <ClientOnly>
+      <DeliveryMap :point="draft" :center="location" @select="selectOnMap" />
+      <template #fallback
+        ><div class="delivery-map muted">Загружаем карту…</div></template
+      >
+    </ClientOnly>
+    <div v-if="draft" class="delivery-point-summary" role="status">
+      <strong>{{ draft.label }}</strong>
+      <small
+        >{{ draft.lat.toFixed(6) }}, {{ draft.lon.toFixed(6)
+        }}<template v-if="accuracy !== undefined">
+          · точность около {{ accuracy }} м</template
+        ></small
+      >
+      <a
+        class="text-button"
+        :href="`https://yandex.by/maps/?pt=${draft.lon},${draft.lat}&z=17&l=map`"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Проверить точку на карте</a
+      >
+      <p v-if="!precise" class="muted">
+        Это приблизительная точка. Для более точного поиска укажите номер дома
+        или определите местоположение.
+      </p>
+      <p v-if="accuracy !== undefined && accuracy > 200" class="muted">
+        Браузер определил точку приблизительно. Поиск по адресу может быть
+        точнее.
+      </p>
+    </div>
+    <button class="primary full" :disabled="busy || !draft" @click="save">
+      Использовать эту точку
+    </button>
+    <p class="location-caption muted">
+      <template v-if="provider === 'photon'"
+        >Адреса:
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          >© OpenStreetMap</a
+        >
+        · Photon.</template
+      >
+      <template v-else>Адреса: Яндекс Карты.</template> Доставку по адресу
+      уточните у магазина.
+    </p>
+  </AppModal>
 </template>

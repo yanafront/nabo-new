@@ -3990,3 +3990,86 @@ input[type="checkbox"] {
 .comparison-footer > .nearby-stores-link {
   margin-bottom: 8px;
 }
+
+.product-store-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  margin-bottom: 12px;
+  scrollbar-width: thin;
+}
+.product-store-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.product-store-tabs button.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.product-store-tabs button span {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.products-load-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 0;
+}
+.products-list-end {
+  text-align: center;
+  margin: 24px 0;
+  font-size: 13px;
+}
+
+/* Delivery picker stays centered at every viewport size. */
+.modal.location-modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px;
+}
+.location-modal > .muted { font-size: 14px; }
+.address-search { display: grid; gap: 8px; margin: 20px 0 12px; }
+.address-search label { font-size: 14px; font-weight: 600; }
+.address-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.address-search-row input { width: 100%; min-width: 0; }
+.address-search-row .primary { padding-inline: 16px; }
+.address-results { display: grid; gap: 6px; margin: 12px 0; }
+.address-results button { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 12px; text-align: left; border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow-wrap: anywhere; }
+.address-results button[aria-pressed="true"] { border-color: var(--ink); background: var(--surface); }
+.address-results button > svg { flex-shrink: 0; }
+.address-results button > span { min-width: 0; }
+.address-results small, .delivery-point-summary small { display: block; color: var(--muted); margin-top: 4px; font-size: 12px; }
+.delivery-point-summary { padding: 14px; border-radius: 12px; background: #f6f7f8; margin: 16px 0; overflow-wrap: anywhere; }
+.location-modal .location-caption { font-size: 11px; margin-bottom: 0; }
+@media (max-width: 480px) {
+  .modal.location-modal { padding: 18px; }
+  .location-modal .modal-head { top: -18px; }
+  .address-search-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+.delivery-map-block { margin: 16px 0; }
+.delivery-map-instruction { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
+.delivery-map { width: 100%; height: clamp(220px, 30dvh, 300px); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #f6f7f8; isolation: isolate; }
+.delivery-map .leaflet-control a { color: #111; }
+.delivery-map .leaflet-control-attribution { font-size: 10px; }
+.delivery-pin { background: transparent; border: 0; }
+.delivery-pin span { display: block; width: 30px; height: 30px; background: #2f6bff; border: 3px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 8px #0005; }
+.delivery-pin span::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: #fff; }

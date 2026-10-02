@@ -21,6 +21,70 @@ const errors = ref<string[]>([]);
 const pending = ref(false);
 const completed = ref(0);
 let controller: AbortController | undefined;
+const activeStore = ref<StoreId>(
+  retailStores.find((entry) => entry.id === route.query.store)?.id ||
+    retailStores[0].id,
+);
+const pageSize = 12;
+const shown = ref<Partial<Record<StoreId, number>>>({});
+const sentinel = ref<HTMLElement>();
+let observer: IntersectionObserver | undefined;
+const activeGroup = computed(() =>
+  groups.value.find((group) => group.storeId === activeStore.value),
+);
+const visibleProducts = computed(
+  () =>
+    activeGroup.value?.products.slice(
+      0,
+      shown.value[activeStore.value] || pageSize,
+    ) || [],
+);
+const hasMore = computed(
+  () =>
+    visibleProducts.value.length < (activeGroup.value?.products.length || 0),
+);
+const activeFailed = computed(() =>
+  errors.value.includes(store(activeStore.value).name),
+);
+function loadMore() {
+  shown.value[activeStore.value] =
+    (shown.value[activeStore.value] || pageSize) + pageSize;
+}
+function selectStore(id: StoreId) {
+  activeStore.value = id;
+  router.replace({ query: { ...route.query, store: id } });
+}
+function tabKey(event: KeyboardEvent, index: number) {
+  let next = index;
+  if (event.key === "ArrowRight") next = (index + 1) % retailStores.length;
+  else if (event.key === "ArrowLeft")
+    next = (index + retailStores.length - 1) % retailStores.length;
+  else if (event.key === "Home") next = 0;
+  else if (event.key === "End") next = retailStores.length - 1;
+  else return;
+  event.preventDefault();
+  selectStore(retailStores[next]!.id);
+  const buttons = (
+    event.currentTarget as HTMLElement
+  ).parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+  buttons?.[next]?.focus();
+}
+watch(
+  [sentinel, activeStore, hasMore],
+  () => {
+    observer?.disconnect();
+    if (!sentinel.value || !hasMore.value) return;
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting) && hasMore.value)
+          loadMore();
+      },
+      { rootMargin: "240px" },
+    );
+    observer.observe(sentinel.value);
+  },
+  { flush: "post" },
+);
 const popular = ["Молоко", "Яйца", "Хлеб", "Сыр", "Овощи", "Фрукты"];
 
 const total = computed(() =>
@@ -42,12 +106,14 @@ async function search(value = query.value) {
   const current = new AbortController();
   controller = current;
   groups.value = [];
+  shown.value = {};
   errors.value = [];
   completed.value = 0;
   pending.value = true;
   router.replace({
     query: {
       q: clean,
+      store: activeStore.value,
       ...(replaceId.value ? { replace: replaceId.value } : {}),
     },
   });
@@ -65,9 +131,7 @@ async function search(value = query.value) {
             ...groups.value,
             {
               storeId: entry.id,
-              products: result.products
-                .filter((product) => product.available)
-                .slice(0, 8),
+              products: result.products,
             },
           ].sort(
             (a, b) =>
@@ -88,7 +152,10 @@ async function search(value = query.value) {
 
 watch(location, () => searched.value && search(searched.value), { deep: true });
 onMounted(() => searched.value && search(searched.value));
-onBeforeUnmount(() => controller?.abort());
+onBeforeUnmount(() => {
+  controller?.abort();
+  observer?.disconnect();
+});
 </script>
 
 <template>
@@ -154,32 +221,79 @@ onBeforeUnmount(() => controller?.abort());
       <p v-if="errors.length" class="info-note">
         Не ответили: {{ errors.join(", ") }}. Остальные результаты доступны.
       </p>
+      <div class="product-store-tabs" role="tablist" aria-label="Магазины">
+        <button
+          v-for="(entry, index) in retailStores"
+          :id="`store-tab-${entry.id}`"
+          :key="entry.id"
+          type="button"
+          role="tab"
+          :aria-selected="activeStore === entry.id"
+          :aria-controls="`store-panel-${entry.id}`"
+          :tabindex="activeStore === entry.id ? 0 : -1"
+          :class="{ active: activeStore === entry.id }"
+          @click="selectStore(entry.id)"
+          @keydown="tabKey($event, index)"
+        >
+          {{ entry.name }}
+          <span>{{
+            groups.find((group) => group.storeId === entry.id)?.products
+              .length ?? (errors.includes(entry.name) ? "!" : "…")
+          }}</span>
+        </button>
+      </div>
       <section
-        v-for="group in groups.filter((entry) => entry.products.length)"
-        :key="group.storeId"
+        :id="`store-panel-${activeStore}`"
+        :key="activeStore"
         class="product-store-results"
+        role="tabpanel"
+        :aria-labelledby="`store-tab-${activeStore}`"
+        :aria-busy="!activeGroup && pending"
       >
-        <div class="similar-store-title">
-          <span
-            class="store-logo"
-            :style="{ background: store(group.storeId).color }"
+        <p
+          v-if="!activeGroup && pending && !activeFailed"
+          role="status"
+          class="products-progress"
+        >
+          <span class="spinner" />Ищем в {{ store(activeStore).name }}…
+        </p>
+        <div v-else-if="activeFailed" class="empty-state compact">
+          <h2>Магазин не ответил</h2>
+          <p>Выберите другую вкладку или повторите поиск.</p>
+          <button
+            class="secondary"
+            :disabled="pending"
+            @click="search(searched)"
           >
-            {{ store(group.storeId).letter }}
-          </span>
-          <div>
-            <h2>{{ store(group.storeId).name }}</h2>
-            <small
-              >{{ group.products.length }} вариантов · цена за упаковку</small
-            >
-          </div>
+            Повторить поиск
+          </button>
         </div>
-        <div class="catalog-product-grid compact-grid">
-          <CatalogProductCard
-            v-for="product in group.products"
-            :key="product.id"
-            :product="product"
-            :replace-id="replaceId"
-          />
+        <template v-else-if="activeGroup?.products.length">
+          <p class="muted">
+            {{ activeGroup.products.length }} товаров · цена за упаковку
+          </p>
+          <div class="catalog-product-grid compact-grid">
+            <CatalogProductCard
+              v-for="product in visibleProducts"
+              :key="product.id"
+              :product="product"
+              :replace-id="replaceId"
+            />
+          </div>
+          <div v-if="hasMore" ref="sentinel" class="products-load-more">
+            <span class="muted"
+              >Показано {{ visibleProducts.length }} из
+              {{ activeGroup.products.length }}</span
+            >
+            <button class="secondary" @click="loadMore">Показать ещё</button>
+          </div>
+          <p v-else class="products-list-end muted">
+            Все {{ activeGroup.products.length }} товаров показаны
+          </p>
+        </template>
+        <div v-else-if="activeGroup" class="empty-state compact">
+          <h2>В этом магазине ничего не найдено</h2>
+          <p>Посмотрите другие магазины или измените запрос.</p>
         </div>
       </section>
       <div v-if="!pending && !total" class="empty-state compact">

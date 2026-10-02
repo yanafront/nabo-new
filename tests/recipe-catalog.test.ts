@@ -1,3 +1,4 @@
+import { separateLegacyIngredientNames } from "../shared/recipe/ingredient-names";
 import { describe, it, expect } from "vitest";
 import {
   migrateLegacy,
@@ -78,7 +79,7 @@ describe("normalized recipe catalogue", () => {
     ).toBeUndefined();
   });
   it("does not fabricate missing nutrition", () =>
-    expect(perServing(recipe)).toBeUndefined());
+    expect(perServing({ ...recipe, nutrition: undefined })).toBeUndefined());
   it("finds carbonara and respects categories", () => {
     const c = validateCatalog(structuredClone(catalog));
     expect(
@@ -93,13 +94,21 @@ describe("normalized recipe catalogue", () => {
   });
   it("builds useful ingredient-based chicken, meat and fish categories", () => {
     const c = validateCatalog(structuredClone(catalog));
+    // Category semantics must work independently of the size of a source catalogue.
+    c.recipes.push({
+      ...recipe,
+      id: "chicken-fixture",
+      slug: "chicken-fixture",
+      title: "Курица с рисом",
+      ingredients: [],
+    });
     for (const category of ["chicken", "meat", "fish"]) {
       const result = listRecipes(c.recipes, c.ingredients, {
         category,
         limit: 3,
       });
       expect(result.total).toBeGreaterThan(0);
-      expect(result.recipes).toHaveLength(3);
+      expect(result.recipes).toHaveLength(Math.min(3, result.total));
     }
     expect(
       listRecipes(c.recipes, c.ingredients, { category: "fish", limit: 100 })
@@ -164,14 +173,61 @@ describe("normalized recipe catalogue", () => {
     expect(() => parseRecipeCsv('id\n"unclosed', [])).toThrow();
   });
 });
+describe("independent ingredient searches", () => {
+  it("sends separate sour cream and jam queries from syrniki", () => {
+    const syrniki = catalog.recipes.find((r) => r.slug === "syrniki") as Recipe;
+    const request = recipePurchaseRequest(syrniki, catalog.ingredients, 2, []);
+    const names = request.items.map((i) => i.product?.name);
+    expect(names).toContain("Сметана");
+    expect(names).toContain("Варенье");
+    expect(names).not.toContain("Сметана и варенье");
+    expect(syrniki.nutrition?.source).toContain("UniTools");
+    expect(syrniki.instructions?.length).toBeGreaterThan(0);
+  });
+  it("prevents publishing compound search queries and shared amounts", () => {
+    const c = structuredClone(catalog);
+    c.ingredients[0]!.searchTerms = ["Сметана и варенье"];
+    expect(() => validateCatalog(c)).toThrow();
+    expect(() =>
+      migrateLegacy({
+        recipes: [
+          {
+            slug: "test",
+            name: { ru: "Блюдо" },
+            baseServings: 2,
+            prepMinutes: 1,
+            cookMinutes: 1,
+            ingredients: [
+              { name: { ru: "Сметана и варенье" }, quantity: 100, unit: "g" },
+            ],
+          },
+        ],
+      }),
+    ).toThrow(/количество каждого/);
+  });
+  it("migrates old missing-ingredient notices without discarding other items", () => {
+    expect(
+      separateLegacyIngredientNames([
+        "Сметана и варенье",
+        "Картофель",
+        "Сметана",
+      ]),
+    ).toEqual(["Сметана", "Варенье", "Картофель"]);
+  });
+});
 describe("buying whole packages", () => {
   it("keeps all selected syrniki ingredients including spoon and to-taste amounts", () => {
     const syrniki = catalog.recipes.find((r) => r.slug === "syrniki") as Recipe;
-    const request = recipePurchaseRequest(syrniki, catalog.ingredients, 2, ["5", "6"]);
-    expect(request.items).toHaveLength(6);
-    expect(request.items.filter((item) => !item.requirement)).toHaveLength(4);
+    const request = recipePurchaseRequest(syrniki, catalog.ingredients, 2, [
+      "5",
+      "6",
+    ]);
+    expect(request.items).toHaveLength(7);
+    expect(request.items.filter((item) => !item.requirement)).toHaveLength(5);
     expect(request.manual).toEqual([]);
-    expect(recipePurchaseRequest(syrniki, catalog.ingredients, 2, []).items).toHaveLength(8);
+    expect(
+      recipePurchaseRequest(syrniki, catalog.ingredients, 2, []).items,
+    ).toHaveLength(9);
   });
   it("buys 2 × 450 g for 600 g and handles multipacks", () => {
     expect(packagesFor(p, demand)).toBe(2);

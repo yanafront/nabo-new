@@ -33,7 +33,7 @@ function replaceProduct(id: string, name: string) {
   <div class="inner-page basket-page">
     <div class="flow-steps">
       <NuxtLink to="/products">01 · Выбор</NuxtLink
-      ><span class="active">02 · Корзина</span><span>03 · Где дешевле</span>
+      ><span class="active">02 · Корзина</span><span>03 · Где выгоднее</span>
     </div>
     <div class="page-heading">
       <div>

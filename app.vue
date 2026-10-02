@@ -32,10 +32,8 @@ onUnmounted(() => {
     <a class="skip" href="#main">К содержимому</a>
     <header class="header">
       <NuxtLink to="/" class="logo" aria-label="Nabo — главная"
-        ><BrandMark /><span class="brand-tagline"
-          >покупки с умом</span
-        ></NuxtLink
-      >
+        ><BrandMark
+      /></NuxtLink>
       <nav class="desktop-nav" aria-label="Основная навигация">
         <NuxtLink to="/products">Товары</NuxtLink
         ><NuxtLink

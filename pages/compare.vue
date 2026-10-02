@@ -133,12 +133,12 @@ const time = (value: string) =>
     <div class="flow-steps">
       <NuxtLink to="/">01 · Список</NuxtLink
       ><NuxtLink to="/basket">02 · Корзина</NuxtLink
-      ><span class="active">03 · Где дешевле</span>
+      ><span class="active">03 · Где выгоднее</span>
     </div>
     <div class="page-heading">
       <div>
         <span class="eyebrow">ВЫБЕРИТЕ СВОЙ ВАРИАНТ</span>
-        <h1>Где дешевле</h1>
+        <h1>Где выгоднее</h1>
         <p class="muted">
           {{ quantityLabel(items.length, "позиция", "позиции", "позиций") }} ·
           {{ location.label }}

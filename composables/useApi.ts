@@ -1,6 +1,7 @@
 import { createRequestCache } from "~/utils/request-cache";
 import type {
   SearchResult,
+  SearchAllResult,
   DeliveryLocation,
   StoreId,
   RetailProduct,
@@ -51,17 +52,53 @@ export function useApi() {
       signal,
       (value) => value.status === "ok",
     );
-    for (const product of response.products) {
+    indexProducts(response.products, input.location);
+    return response;
+  }
+  function indexProducts(results: RetailProduct[], point: DeliveryLocation) {
+    for (const product of results) {
       const until = Math.min(
         Date.now() + 30000,
         Date.parse(product.fetchedAt) + 120000,
       );
-      index.set(productKey(product.storeId, product.id, input.location), {
+      index.set(productKey(product.storeId, product.id, point), {
         product,
         until,
       });
     }
     while (index.size > 500) index.delete(index.keys().next().value!);
+  }
+  async function searchAllProducts(
+    body: { query: string; location: DeliveryLocation },
+    signal?: AbortSignal,
+  ) {
+    const input = {
+      query: body.query.trim().toLowerCase(),
+      location: { ...body.location },
+    };
+    const key = JSON.stringify([
+      "all-stores",
+      input.query,
+      input.location.lat,
+      input.location.lon,
+    ]);
+    const response = await request<SearchAllResult>(
+      key,
+      () =>
+        $fetch("/api/search", {
+          method: "POST",
+          body: input,
+          retry: 0,
+          timeout: 70000,
+        }),
+      30000,
+      signal,
+      (value) =>
+        value.stores.length > 0 &&
+        value.stores.every((store) => store.status === "ok"),
+    );
+    for (const store of response.stores)
+      indexProducts(store.products, input.location);
     return response;
   }
   function cachedProduct(store: string, id: string, point: DeliveryLocation) {
@@ -113,6 +150,7 @@ export function useApi() {
   }
   return {
     searchProducts,
+    searchAllProducts,
     getProduct,
     resolveProducts,
     searchRecipes,

@@ -6,11 +6,26 @@ const {
   remove,
   change,
   save,
+  clear,
   unresolved,
   pendingIngredients,
 } = useBasket();
 const { retryMissing, resolving, resolveError } = useRecipeBasket();
 const { refreshPrices, pricesPending, pricesError } = useCartPrices();
+const confirmClear = ref(false);
+const hasContent = computed(
+  () =>
+    items.value.length > 0 ||
+    unresolved.value.length > 0 ||
+    pendingIngredients.value.length > 0,
+);
+function clearBasket() {
+  if (resolving.value || pricesPending.value) return;
+  clear();
+  resolveError.value = "";
+  pricesError.value = "";
+  confirmClear.value = false;
+}
 const unpriced = computed(
   () => rows.value.filter((row) => row.product.price === null).length,
 );
@@ -47,12 +62,19 @@ function replaceProduct(id: string, name: string) {
           }}
         </p>
       </div>
-      <div v-if="items.length" class="basket-heading-actions">
+      <div v-if="hasContent" class="basket-heading-actions">
         <NuxtLink to="/recipes?add=1" class="secondary">
           <AppIcon name="Plus" :size="18" /> Добавить блюдо
         </NuxtLink>
-        <button class="secondary" @click="save">
+        <button v-if="items.length" class="secondary" @click="save">
           <AppIcon name="Heart" :size="18" /> Сохранить список
+        </button>
+        <button
+          class="text-button"
+          :disabled="resolving || pricesPending"
+          @click="confirmClear = true"
+        >
+          <AppIcon name="Trash2" :size="18" /> Очистить корзину
         </button>
       </div>
     </div>
@@ -144,5 +166,27 @@ function replaceProduct(id: string, name: string) {
         >Найти товары <AppIcon name="ArrowRight" /></NuxtLink
       ><NuxtLink to="/recipes" class="text-button"> Выбрать рецепт</NuxtLink>
     </div>
+    <AppModal
+      v-if="confirmClear"
+      title="Очистить корзину?"
+      @close="confirmClear = false"
+    >
+      <p>Удалим все товары и недостающие ингредиенты из текущей корзины.</p>
+      <p class="muted">Сохранённые списки и корзина в аккаунте останутся.</p>
+      <template #footer>
+        <div class="account-cart-actions">
+          <button class="secondary" autofocus @click="confirmClear = false">
+            Отмена
+          </button>
+          <button
+            class="primary"
+            :disabled="resolving || pricesPending"
+            @click="clearBasket"
+          >
+            Очистить корзину
+          </button>
+        </div>
+      </template>
+    </AppModal>
   </div>
 </template>

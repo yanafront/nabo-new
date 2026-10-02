@@ -838,6 +838,15 @@ ol {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+.row-unit-price {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: normal;
+}
 .row-price small {
   display: block;
   font-size: 10px;

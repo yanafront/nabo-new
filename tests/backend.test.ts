@@ -102,6 +102,10 @@ beforeAll(async () => {
   vi.stubGlobal("defineEventHandler", defineEventHandler);
   const router = createRouter();
   router.post(
+    "/api/search",
+    (await import("../server/api/search.post")).default,
+  );
+  router.post(
     "/api/product",
     (await import("../server/api/product.post")).default,
   );
@@ -202,7 +206,11 @@ describe("ASP.NET backend bridge", () => {
     ).toBe(403);
   });
   it("forwards search and comparison contracts without browser cookies", async () => {
-    for (const path of ["/api/yandex/search", "/api/yandex/compare"]) {
+    for (const path of [
+      "/api/search",
+      "/api/yandex/search",
+      "/api/yandex/compare",
+    ]) {
       const body = {
         query: "молоко",
         location: {

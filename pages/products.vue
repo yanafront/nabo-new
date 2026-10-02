@@ -2,14 +2,13 @@
 import {
   retailStores,
   type RetailProduct,
-  type SearchResult,
   type StoreId,
 } from "~/shared/yandex";
 
 const route = useRoute();
 const router = useRouter();
 const { location } = useRetail();
-const { searchProducts } = useApi();
+const { searchAllProducts } = useApi();
 const { items } = useBasket();
 const query = ref(typeof route.query.q === "string" ? route.query.q : "");
 const searched = ref(query.value);
@@ -54,8 +53,6 @@ function loadMore() {
 function selectStore(id: StoreId) {
   activeStore.value = id;
   router.replace({ query: { ...route.query, store: id } });
-  searchError.value = "";
-  if (searched.value && controller) loadStore(id, controller);
 }
 function tabKey(event: KeyboardEvent, index: number) {
   let next = index;
@@ -120,39 +117,38 @@ async function search(value = query.value) {
       ...(replaceId.value ? { replace: replaceId.value } : {}),
     },
   });
-  await loadStore(activeStore.value, current);
-}
-async function loadStore(id: StoreId, current: AbortController) {
-  if (
-    groups.value.some((group) => group.storeId === id) ||
-    loading.value.includes(id)
-  )
-    return;
+  loading.value = retailStores.map((store) => store.id);
   const point = { ...location.value };
-  const clean = searched.value;
-  loading.value.push(id);
-  errors.value = errors.value.filter((name) => name !== store(id).name);
   try {
-    const result = await searchProducts(
-      { storeId: id, query: clean, location: point },
+    const result = await searchAllProducts(
+      { query: clean, location: point },
       current.signal,
     );
     if (controller !== current || current.signal.aborted) return;
-    if (result.status === "ok")
-      groups.value.push({ storeId: id, products: result.products });
-    else errors.value.push(store(id).name);
+    groups.value = result.stores
+      .filter((result) => result.status === "ok")
+      .map((result) => ({
+        storeId: result.storeId,
+        products: result.products,
+      }));
+    errors.value = retailStores
+      .filter(
+        (entry) =>
+          !result.stores.some(
+            (result) => result.storeId === entry.id && result.status === "ok",
+          ),
+      )
+      .map((entry) => entry.name);
   } catch (e: any) {
     if (controller === current && !current.signal.aborted) {
-      errors.value.push(store(id).name);
-      if (activeStore.value === id)
-        searchError.value =
-          e.statusCode === 429
-            ? "Слишком много запросов. Подождите минуту и повторите поиск."
-            : "Не удалось выполнить поиск. Повторите попытку.";
+      errors.value = retailStores.map((entry) => entry.name);
+      searchError.value =
+        e.statusCode === 429
+          ? "Слишком много запросов. Подождите минуту и повторите поиск."
+          : "Не удалось выполнить поиск. Повторите попытку.";
     }
   } finally {
-    if (controller === current)
-      loading.value = loading.value.filter((value) => value !== id);
+    if (controller === current) loading.value = [];
   }
 }
 
@@ -171,8 +167,8 @@ onBeforeUnmount(() => {
         <span class="eyebrow">ВЫБОР ВСЕГДА ЗА ВАМИ</span>
         <h1>{{ replaceId ? "Выберите замену" : "Товары" }}</h1>
         <p class="muted">
-          Выберите магазин и найдите конкретный товар. Добавляем только то, что
-          выберете вы.
+          Найдите товар и сравните предложения во вкладках магазинов. Добавляем
+          только то, что выберете вы.
         </p>
       </div>
       <NuxtLink v-if="items.length" to="/basket" class="secondary">
@@ -215,14 +211,20 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="pending" class="products-progress" role="status">
-      <span class="spinner" /> Ищем в {{ store(activeStore).name }}…
+      <span class="spinner" /> Ищем во всех магазинах…
     </div>
 
     <template v-if="searched">
       <div class="catalog-results-head">
         <h2>«{{ searched }}»</h2>
         <span>{{
-          pending ? "Ищем…" : `${activeGroup?.products.length || 0} товаров`
+          pending
+            ? "Ищем…"
+            : searchError
+              ? "Поиск не завершён"
+              : errors.length
+                ? `${total} товаров в ответивших магазинах`
+                : `${total} товаров во всех магазинах`
         }}</span>
       </div>
       <p v-if="searchError" class="error" role="alert">{{ searchError }}</p>
@@ -261,14 +263,14 @@ onBeforeUnmount(() => {
         class="product-store-results"
         role="tabpanel"
         :aria-labelledby="`store-tab-${activeStore}`"
-        :aria-busy="!activeGroup && pending"
+        :aria-busy="pending"
       >
         <p
           v-if="!activeGroup && pending && !activeFailed"
           role="status"
           class="products-progress"
         >
-          <span class="spinner" />Ищем в {{ store(activeStore).name }}…
+          <span class="spinner" />Ищем во всех магазинах…
         </p>
         <div v-else-if="activeFailed" class="empty-state compact">
           <h2>Магазин не ответил</h2>

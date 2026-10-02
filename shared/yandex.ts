@@ -97,6 +97,9 @@ export interface SearchResult {
   fetchedAt: string;
   currency: "BYN";
 }
+export interface SearchAllResult {
+  stores: SearchResult[];
+}
 export interface CompareItem {
   requirement?: import("./recipe/purchasing").IngredientDemand;
   id: string;

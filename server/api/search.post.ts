@@ -1,0 +1,4 @@
+import { proxyBackend } from "../utils/backend";
+export default defineEventHandler((event) =>
+  proxyBackend(event, "/api/search", "POST"),
+);

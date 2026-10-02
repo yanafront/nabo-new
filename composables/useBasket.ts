@@ -139,6 +139,13 @@ export function useBasket() {
     });
     notice.value = "Список сохранён в разделе «Сохранённое»";
   }
+  function clear() {
+    items.value = [];
+    unresolved.value = [];
+    pendingIngredients.value = [];
+    title.value = "Моя корзина";
+    notice.value = "Корзина очищена";
+  }
   return {
     items,
     title,
@@ -152,5 +159,6 @@ export function useBasket() {
     remove,
     change,
     save,
+    clear,
   };
 }

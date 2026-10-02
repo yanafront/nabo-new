@@ -40,10 +40,18 @@ defineEmits<{
       </p>
       <button class="text-button" @click="$emit('replace')">Заменить</button>
     </div>
-    <strong class="row-price"
-      >{{ product.price !== null ? money(product.price * quantity) : "—"
-      }}<small>BYN</small></strong
-    >
+    <div class="row-price">
+      <strong
+        >{{ product.price !== null ? money(product.price * quantity) : "—"
+        }}<small>BYN</small></strong
+      >
+      <span
+        v-if="product.price !== null && quantity > 1"
+        class="row-unit-price"
+      >
+        {{ money(product.price) }} BYN за 1 уп.
+      </span>
+    </div>
     <div class="quantity">
       <button
         :aria-label="`Уменьшить количество: ${product.name}`"

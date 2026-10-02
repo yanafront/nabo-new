@@ -50,3 +50,24 @@ it("saves a new selection if the quantity or store changes", () => {
   expect(basket.saved.value).toHaveLength(3);
   expect(basket.saved.value[2].items[0].quantity).toBe(2);
 });
+
+it("clears the current basket and missing ingredients without deleting saved lists", () => {
+  const basket = useBasket();
+  basket.items.value = [{ productId: "green:12", quantity: 2 }];
+  basket.title.value = "Сырники";
+  basket.save();
+  basket.unresolved.value = ["Варенье"];
+  basket.pendingIngredients.value = [
+    { productId: "recipe:smetana", quantity: 1 },
+  ];
+  basket.clear();
+  expect(basket.items.value).toEqual([]);
+  expect(basket.unresolved.value).toEqual([]);
+  expect(basket.pendingIngredients.value).toEqual([]);
+  expect(basket.title.value).toBe("Моя корзина");
+  expect(basket.notice.value).toBe("Корзина очищена");
+  expect(basket.saved.value).toHaveLength(1);
+  expect(basket.saved.value[0].items).toEqual([
+    { productId: "green:12", quantity: 2 },
+  ]);
+});

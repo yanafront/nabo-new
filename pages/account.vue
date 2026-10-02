@@ -65,7 +65,11 @@ async function logout() {
       <p class="account-eyebrow">ВАШ АККАУНТ</p>
       <h1>Вы вошли в Nabo</h1>
       <p>{{ user.phoneNumber }}</p>
-      <p>Корзины и избранное сохраняются в этом браузере.</p>
+      <p>
+        Текущую корзину можно сохранить в аккаунте. Списки для повторных покупок
+        остаются в этом браузере.
+      </p>
+      <AccountCart :authenticated="true" />
       <button class="account-submit" :disabled="pending" @click="logout">
         Выйти
       </button>

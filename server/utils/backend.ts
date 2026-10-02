@@ -1,7 +1,20 @@
-import { createError, getCookie, getRequestURL, readBody, setHeader, sendWebResponse, type H3Event } from "h3";
+import {
+  createError,
+  getCookie,
+  getRequestURL,
+  readBody,
+  setHeader,
+  sendWebResponse,
+  type H3Event,
+} from "h3";
 
 // Only fixed, application-owned paths are passed here, never a browser-supplied URL.
-export async function backendResponse(event: H3Event, path: string, method = "GET", body?: unknown) {
+export async function backendResponse(
+  event: H3Event,
+  path: string,
+  method = "GET",
+  body?: unknown,
+) {
   const base = useRuntimeConfig(event).retailApiBase.replace(/\/+$/, "");
   const headers = new Headers({ accept: "application/json" });
   if (body !== undefined) headers.set("content-type", "application/json");
@@ -9,15 +22,32 @@ export async function backendResponse(event: H3Event, path: string, method = "GE
   if (token) headers.set("authorization", `Bearer ${token}`);
   try {
     return await fetch(`${base}${path}`, {
-      method, headers, body: body === undefined ? undefined : JSON.stringify(body),
-      redirect: "error", signal: AbortSignal.timeout(path.includes("compare") ? 115000 : 65000),
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      redirect: "error",
+      signal: AbortSignal.timeout(
+        path.includes("compare") ||
+          path.includes("resolve") ||
+          path.includes("getCart")
+          ? 115000
+          : 65000,
+      ),
     });
   } catch {
-    throw createError({ statusCode: 502, statusMessage: "Backend unavailable", message: "Сервер временно недоступен. Попробуйте ещё раз." });
+    throw createError({
+      statusCode: 502,
+      statusMessage: "Backend unavailable",
+      message: "Сервер временно недоступен. Попробуйте ещё раз.",
+    });
   }
 }
 
-export async function proxyBackend(event: H3Event, path: string, method = "GET") {
+export async function proxyBackend(
+  event: H3Event,
+  path: string,
+  method = "GET",
+) {
   const body = method === "POST" ? await readBody(event) : undefined;
   const response = await backendResponse(event, path, method, body);
   // Preserve backend status, validation bodies, Retry-After and image headers.
@@ -26,7 +56,12 @@ export async function proxyBackend(event: H3Event, path: string, method = "GET")
 
 export function requireSameOrigin(event: H3Event) {
   const origin = event.headers.get("origin");
-  if (origin && origin !== getRequestURL(event, { xForwardedHost: true, xForwardedProto: true }).origin)
+  if (
+    origin &&
+    origin !==
+      getRequestURL(event, { xForwardedHost: true, xForwardedProto: true })
+        .origin
+  )
     throw createError({ statusCode: 403, statusMessage: "Forbidden origin" });
   setHeader(event, "cache-control", "no-store");
 }

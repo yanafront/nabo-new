@@ -1,3 +1,5 @@
+import { normalized } from "~/shared/recipe/model";
+import { packagesFor } from "~/shared/recipe/purchasing";
 import { retailProduct } from "~/shared/recipe-basket";
 import { products, type Item, type Product } from "~/data/catalog";
 import type { CompareItem, RetailProduct } from "~/shared/yandex";
@@ -73,6 +75,33 @@ export function useBasket() {
       old.productId = id;
       old.product = product;
     } else items.value.push({ productId: id, quantity: 1, product });
+    const matches = (name: string) => {
+      const query = normalized(name),
+        chosen = normalized(source.name);
+      return chosen === query || chosen.startsWith(query + " ");
+    };
+    const addedQuantity =
+      items.value.find((row) => row.productId === id)?.quantity || 0;
+    pendingIngredients.value = pendingIngredients.value.filter((row) => {
+      const query =
+        row.requirement?.query ||
+        row.product?.name ||
+        products.find((p) => p.id === row.productId)?.name ||
+        "";
+      const needed = row.requirement
+        ? packagesFor(source, row.requirement)
+        : row.quantity;
+      return !matches(query) || needed === undefined || addedQuantity < needed;
+    });
+    unresolved.value = unresolved.value.filter(
+      (name) =>
+        !matches(name) ||
+        pendingIngredients.value.some(
+          (row) =>
+            normalized(row.requirement?.query || row.product?.name || "") ===
+            normalized(name),
+        ),
+    );
     notice.value = replaceId ? "Товар заменён" : "Товар добавлен в корзину";
     return true;
   }
@@ -91,13 +120,24 @@ export function useBasket() {
   }
   function save() {
     if (!items.value.length) return;
+    const signature = (rows: Item[]) =>
+      JSON.stringify(
+        rows
+          .map((row) => [row.productId, row.quantity] as const)
+          .sort((a, b) => a[0].localeCompare(b[0])),
+      );
+    const current = signature(items.value);
+    if (saved.value.some((list) => signature(list.items) === current)) {
+      notice.value = "Такая подборка уже есть в сохранённом";
+      return;
+    }
     saved.value.unshift({
       id: crypto.randomUUID(),
       title: title.value,
       items: JSON.parse(JSON.stringify(items.value)),
       date: new Date().toLocaleDateString("ru-BY"),
     });
-    notice.value = "Корзина сохранена";
+    notice.value = "Список сохранён в разделе «Сохранённое»";
   }
   return {
     items,

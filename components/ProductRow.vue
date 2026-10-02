@@ -22,6 +22,22 @@ defineEmits<{
           · {{ providerName(product.storeId) }}</template
         >
       </p>
+      <p v-if="product.refreshStatus === 'not_found'" class="error">
+        Нет в наличии · в сумму не включён
+      </p>
+      <p
+        v-else-if="product.refreshError === 'PRODUCT_LOOKUP_UNSUPPORTED'"
+        class="muted"
+      >
+        Магазин пока не обновляет цену по ID. Выберите товар заново через
+        «Заменить».
+      </p>
+      <p
+        v-else-if="product.refreshStatus === 'error' || product.price === null"
+        class="muted"
+      >
+        Цена не подтверждена · в сумму не включён
+      </p>
       <button class="text-button" @click="$emit('replace')">Заменить</button>
     </div>
     <strong class="row-price"

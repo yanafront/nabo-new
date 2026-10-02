@@ -1,6 +1,7 @@
 import { products, type Item } from "~/data/catalog";
 import type { StoreComparison } from "~/shared/yandex";
 import { recipeBasket } from "~/shared/recipe-basket";
+import { normalized } from "~/shared/recipe/model";
 export function useRecipeBasket() {
   const { items, title, unresolved, pendingIngredients, notice } = useBasket();
   const { location } = useRetail();
@@ -68,12 +69,36 @@ export function useRecipeBasket() {
       title.value = keepCurrent ? "Корзина из нескольких блюд" : request.title;
       unresolved.value = [
         ...new Set([
-          ...(keepCurrent ? unresolved.value : []),
+          ...(keepCurrent
+            ? unresolved.value.filter(
+                (name) =>
+                  !basket.resolvedQueries.some(
+                    (query) => normalized(query) === normalized(name),
+                  ),
+              )
+            : []),
           ...(request.manual || []),
           ...basket.missing,
         ]),
       ];
-      pendingIngredients.value = [];
+      const queryFor = (row: Item) =>
+        row.requirement?.query ||
+        row.product?.name ||
+        products.find((p) => p.id === row.productId)?.name ||
+        "";
+      const requestedQueries = new Set(
+        request.items.map((row) => normalized(queryFor(row))),
+      );
+      pendingIngredients.value = [
+        ...(keepCurrent
+          ? pendingIngredients.value.filter(
+              (row) => !requestedQueries.has(normalized(queryFor(row))),
+            )
+          : []),
+        ...request.items.filter((row) =>
+          basket.missingIds.includes(row.productId),
+        ),
+      ];
       notice.value = keepCurrent
         ? "Продукты блюда добавлены в корзину"
         : basket.adjusted
@@ -89,5 +114,44 @@ export function useRecipeBasket() {
       resolving.value = false;
     }
   }
-  return { resolve, resolving, resolveError };
+  async function retryMissing() {
+    const pending = [...pendingIngredients.value];
+    const known = new Set(
+      pending.map((row) =>
+        normalized(
+          row.requirement?.query ||
+            row.product?.name ||
+            products.find((p) => p.id === row.productId)?.name ||
+            "",
+        ),
+      ),
+    );
+    for (const [index, name] of unresolved.value.entries()) {
+      if (known.has(normalized(name))) continue;
+      const id = `retry:ingredient:${index}`;
+      pending.push({
+        productId: id,
+        quantity: 1,
+        product: {
+          id,
+          name,
+          unit: "",
+          price: null,
+          brand: "",
+          emoji: "🛒",
+          keywords: [],
+        },
+      });
+    }
+    if (!pending.length) return false;
+    const currentTitle = title.value;
+    const success = await resolve(
+      { title: currentTitle, items: pending },
+      undefined,
+      true,
+    );
+    if (success) title.value = currentTitle;
+    return success;
+  }
+  return { resolve, retryMissing, resolving, resolveError };
 }

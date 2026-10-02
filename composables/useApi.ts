@@ -4,6 +4,7 @@ import type {
   DeliveryLocation,
   StoreId,
   RetailProduct,
+  ProductResult,
 } from "~/shared/yandex";
 import type { Recipe as RecipeResult } from "~/shared/recipe/model";
 const applications = new WeakMap<
@@ -83,5 +84,38 @@ export function useApi() {
       signal,
     );
   }
-  return { searchProducts, searchRecipes, cachedProduct };
+  function getProduct(
+    body: { storeId: StoreId; id: string; location: DeliveryLocation },
+    signal?: AbortSignal,
+  ) {
+    return $fetch<ProductResult>("/api/product", {
+      method: "POST",
+      body,
+      signal,
+      retry: 0,
+      timeout: 70000,
+    });
+  }
+  function resolveProducts(
+    body: {
+      items: Array<{ storeId: StoreId; id: string }>;
+      location: DeliveryLocation;
+    },
+    signal?: AbortSignal,
+  ) {
+    return $fetch<{ items: ProductResult[] }>("/api/products/resolve", {
+      method: "POST",
+      body,
+      signal,
+      retry: 0,
+      timeout: 120000,
+    });
+  }
+  return {
+    searchProducts,
+    getProduct,
+    resolveProducts,
+    searchRecipes,
+    cachedProduct,
+  };
 }

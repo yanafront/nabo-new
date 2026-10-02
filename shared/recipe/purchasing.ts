@@ -2,6 +2,7 @@ import type { Item } from "../../data/catalog";
 import type { CompareLine, RetailProduct, StoreComparison } from "../yandex";
 import {
   scaledIngredients,
+  normalized,
   type Ingredient,
   type Recipe,
   type RecipeIngredient,
@@ -158,7 +159,14 @@ export function packagesFor(
 }
 const preserved =
   /маринов|консерв|пюре|чипс|соус|салат|сок|приправа|жарен|сушен|солен/;
+export function ingredientProductMatches(p: RetailProduct, query: string) {
+  const ingredient = normalized(query);
+  if (!["сметана", "варенье"].includes(ingredient)) return true;
+  const name = normalized(p.name);
+  return name === ingredient || name.startsWith(ingredient + " ");
+}
 export function suitableProduct(p: RetailProduct, d: IngredientDemand) {
+  if (!ingredientProductMatches(p, d.query)) return false;
   const name = p.name.toLowerCase().replace(/ё/g, "е");
   if (d.productCategoryId === "vegetables" && preserved.test(name))
     return false;

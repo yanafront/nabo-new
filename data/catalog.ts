@@ -1,4 +1,6 @@
 export interface Product {
+  refreshError?: string | null;
+  refreshStatus?: "ok" | "not_found" | "error";
   id: string;
   name: string;
   brand: string;

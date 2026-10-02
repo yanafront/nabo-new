@@ -16,11 +16,11 @@ const initialName =
 const replaceId =
   typeof route.query.replace === "string" ? route.query.replace : undefined;
 const store = retailStores.find((item) => item.id === storeId);
-if (!store || !initialName)
+if (!store)
   throw createError({ statusCode: 404, statusMessage: "Товар не найден" });
 
 const { location } = useRetail();
-const { searchProducts, cachedProduct } = useApi();
+const { searchProducts, cachedProduct, getProduct } = useApi();
 const relatedPending = ref(false);
 const { addProduct, items } = useBasket();
 const product = ref<RetailProduct | null>(null);
@@ -97,20 +97,33 @@ async function load() {
   const point = { ...location.value };
   const valid = () => controller === current && !current.signal.aborted;
   const primary = async () => {
-    if (product.value) return;
     try {
-      const response = await searchProducts(
-        { storeId, query: initialName, location: point },
+      const result = await getProduct(
+        { storeId, id: productId, location: point },
         current.signal,
       );
       if (!valid()) return;
-      product.value =
-        response.products.find((item) => item.id === productId) || null;
-      if (!product.value)
+      if (result.status === "ok" && result.product)
+        product.value = result.product;
+      else if (result.error === "PRODUCT_LOOKUP_UNSUPPORTED" && initialName) {
+        const response = await searchProducts(
+          { storeId, query: initialName.slice(0, 160), location: point },
+          current.signal,
+        );
+        if (!valid()) return;
+        product.value =
+          response.products.find((item) => item.id === productId) || null;
+        if (!product.value)
+          error.value = "Этот товар больше не найден в каталоге.";
+      } else {
+        product.value = null;
         error.value =
-          response.status === "error"
-            ? "Не удалось загрузить товар. Повторите попытку."
-            : "Этот товар больше не найден в каталоге.";
+          result.status === "not_found"
+            ? "Этот товар больше не найден в каталоге."
+            : result.error === "PRODUCT_LOOKUP_UNSUPPORTED"
+              ? "Магазин пока не поддерживает загрузку по ID. Найдите товар через поиск."
+              : "Не удалось обновить товар. Повторите попытку.";
+      }
     } catch {
       if (valid())
         error.value = "Не удалось загрузить товар. Попробуйте ещё раз.";
@@ -119,26 +132,37 @@ async function load() {
     }
   };
   // Start the requested product first. Each secondary store can fail independently.
-  const main = primary();
-  const query = categoryQuery(initialName);
+  await primary();
+  if (!valid() || !product.value) {
+    if (valid()) relatedPending.value = false;
+    return;
+  }
+  const selectedName = product.value.name;
+  const query = categoryQuery(selectedName);
   const others = retailStores
     .filter((item) => item.id !== storeId)
     .map(async (store) => {
       try {
         const response = await searchProducts(
-          { storeId: store.id, query: initialName, location: point },
+          {
+            storeId: store.id,
+            query: selectedName.slice(0, 160),
+            location: point,
+          },
           current.signal,
         );
         if (!valid() || response.status !== "ok") return;
         const available = response.products.filter((item) => item.available);
         const exact = available
           .filter(
-            (item) => comparableName(item.name) === comparableName(initialName),
+            (item) =>
+              comparableName(item.name) === comparableName(selectedName),
           )
           .slice(0, 3);
         const similar = available
           .filter(
-            (item) => comparableName(item.name) !== comparableName(initialName),
+            (item) =>
+              comparableName(item.name) !== comparableName(selectedName),
           )
           .slice(0, 3);
         if (exact.length) addGroup(exactRelated, { store, products: exact });
@@ -161,7 +185,6 @@ async function load() {
       /* Similar items are optional. */
     }
   })();
-  await main;
   await Promise.all([...others, localAlternatives]);
   if (valid()) relatedPending.value = false;
 }
@@ -187,7 +210,7 @@ onBeforeUnmount(() => controller?.abort());
       :to="{
         path: '/products',
         query: {
-          q: categoryQuery(initialName),
+          q: categoryQuery(product?.name || initialName),
           ...(replaceId ? { replace: replaceId } : {}),
         },
       }"
@@ -214,6 +237,17 @@ onBeforeUnmount(() => controller?.abort());
             >{{ store!.name }} · {{ providerName(storeId) }}
           </div>
           <h1>{{ product.name }}</h1>
+          <p
+            v-if="product.categories?.some((category) => category.name)"
+            class="muted"
+          >
+            {{
+              product.categories
+                .filter((category) => category.name)
+                .map((category) => category.name)
+                .join(" · ")
+            }}
+          </p>
           <p class="product-unit">
             {{ product.unit }} ·
             <span :class="product.available ? 'available' : 'unavailable'">{{

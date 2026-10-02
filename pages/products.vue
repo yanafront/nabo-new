@@ -18,8 +18,9 @@ const replaceId = computed(() =>
 );
 const groups = ref<Array<{ storeId: StoreId; products: RetailProduct[] }>>([]);
 const errors = ref<string[]>([]);
-const pending = ref(false);
-const completed = ref(0);
+const searchError = ref("");
+const loading = ref<StoreId[]>([]);
+const pending = computed(() => loading.value.includes(activeStore.value));
 let controller: AbortController | undefined;
 const activeStore = ref<StoreId>(
   retailStores.find((entry) => entry.id === route.query.store)?.id ||
@@ -53,6 +54,8 @@ function loadMore() {
 function selectStore(id: StoreId) {
   activeStore.value = id;
   router.replace({ query: { ...route.query, store: id } });
+  searchError.value = "";
+  if (searched.value && controller) loadStore(id, controller);
 }
 function tabKey(event: KeyboardEvent, index: number) {
   let next = index;
@@ -108,8 +111,8 @@ async function search(value = query.value) {
   groups.value = [];
   shown.value = {};
   errors.value = [];
-  completed.value = 0;
-  pending.value = true;
+  searchError.value = "";
+  loading.value = [];
   router.replace({
     query: {
       q: clean,
@@ -117,37 +120,40 @@ async function search(value = query.value) {
       ...(replaceId.value ? { replace: replaceId.value } : {}),
     },
   });
+  await loadStore(activeStore.value, current);
+}
+async function loadStore(id: StoreId, current: AbortController) {
+  if (
+    groups.value.some((group) => group.storeId === id) ||
+    loading.value.includes(id)
+  )
+    return;
   const point = { ...location.value };
-  await Promise.all(
-    retailStores.map(async (entry) => {
-      try {
-        const result: SearchResult = await searchProducts(
-          { storeId: entry.id, query: clean, location: point },
-          current.signal,
-        );
-        if (controller !== current || current.signal.aborted) return;
-        if (result.status === "ok") {
-          groups.value = [
-            ...groups.value,
-            {
-              storeId: entry.id,
-              products: result.products,
-            },
-          ].sort(
-            (a, b) =>
-              retailStores.findIndex((item) => item.id === a.storeId) -
-              retailStores.findIndex((item) => item.id === b.storeId),
-          );
-        } else errors.value = [...errors.value, entry.name];
-      } catch {
-        if (!current.signal.aborted)
-          errors.value = [...errors.value, entry.name];
-      } finally {
-        if (controller === current) completed.value++;
-      }
-    }),
-  );
-  if (controller === current) pending.value = false;
+  const clean = searched.value;
+  loading.value.push(id);
+  errors.value = errors.value.filter((name) => name !== store(id).name);
+  try {
+    const result = await searchProducts(
+      { storeId: id, query: clean, location: point },
+      current.signal,
+    );
+    if (controller !== current || current.signal.aborted) return;
+    if (result.status === "ok")
+      groups.value.push({ storeId: id, products: result.products });
+    else errors.value.push(store(id).name);
+  } catch (e: any) {
+    if (controller === current && !current.signal.aborted) {
+      errors.value.push(store(id).name);
+      if (activeStore.value === id)
+        searchError.value =
+          e.statusCode === 429
+            ? "Слишком много запросов. Подождите минуту и повторите поиск."
+            : "Не удалось выполнить поиск. Повторите попытку.";
+    }
+  } finally {
+    if (controller === current)
+      loading.value = loading.value.filter((value) => value !== id);
+  }
 }
 
 watch(location, () => searched.value && search(searched.value), { deep: true });
@@ -165,8 +171,8 @@ onBeforeUnmount(() => {
         <span class="eyebrow">ВЫБОР ВСЕГДА ЗА ВАМИ</span>
         <h1>{{ replaceId ? "Выберите замену" : "Товары" }}</h1>
         <p class="muted">
-          Ищем конкретные товары сразу в нескольких магазинах. Добавляем только
-          то, что выберете вы.
+          Выберите магазин и найдите конкретный товар. Добавляем только то, что
+          выберете вы.
         </p>
       </div>
       <NuxtLink v-if="items.length" to="/basket" class="secondary">
@@ -209,16 +215,18 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="pending" class="products-progress" role="status">
-      <span class="spinner" /> Проверяем магазины: {{ completed }} из
-      {{ retailStores.length }}
+      <span class="spinner" /> Ищем в {{ store(activeStore).name }}…
     </div>
 
     <template v-if="searched">
       <div class="catalog-results-head">
         <h2>«{{ searched }}»</h2>
-        <span>{{ pending ? "Ищем…" : `${total} товаров` }}</span>
+        <span>{{
+          pending ? "Ищем…" : `${activeGroup?.products.length || 0} товаров`
+        }}</span>
       </div>
-      <p v-if="errors.length" class="info-note">
+      <p v-if="searchError" class="error" role="alert">{{ searchError }}</p>
+      <p v-else-if="errors.length" class="info-note">
         Не ответили: {{ errors.join(", ") }}. Остальные результаты доступны.
       </p>
       <div class="product-store-tabs" role="tablist" aria-label="Магазины">
@@ -238,7 +246,12 @@ onBeforeUnmount(() => {
           {{ entry.name }}
           <span>{{
             groups.find((group) => group.storeId === entry.id)?.products
-              .length ?? (errors.includes(entry.name) ? "!" : "…")
+              .length ??
+            (errors.includes(entry.name)
+              ? "!"
+              : loading.includes(entry.id)
+                ? "…"
+                : "—")
           }}</span>
         </button>
       </div>
@@ -296,7 +309,10 @@ onBeforeUnmount(() => {
           <p>Посмотрите другие магазины или измените запрос.</p>
         </div>
       </section>
-      <div v-if="!pending && !total" class="empty-state compact">
+      <div
+        v-if="!pending && !total && !errors.length"
+        class="empty-state compact"
+      >
         <h2>Товар не найден</h2>
         <p>Попробуйте более общее название, например «молоко» вместо бренда.</p>
       </div>

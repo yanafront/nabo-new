@@ -102,6 +102,16 @@ beforeAll(async () => {
   vi.stubGlobal("defineEventHandler", defineEventHandler);
   const router = createRouter();
   router.post(
+    "/api/product",
+    (await import("../server/api/product.post")).default,
+  );
+  router.post(
+    "/api/products/resolve",
+    (await import("../server/api/products/resolve.post")).default,
+  );
+  router.post("/api/cart", (await import("../server/api/cart.post")).default);
+  router.get("/api/cart", (await import("../server/api/cart.get")).default);
+  router.post(
     "/api/yandex/search",
     (await import("../server/api/yandex/search.post")).default,
   );
@@ -151,6 +161,46 @@ const post = (path: string, body: unknown, headers = {}) =>
     body: JSON.stringify(body),
   });
 describe("ASP.NET backend bridge", () => {
+  it("forwards new retail endpoints with the exact contracts", async () => {
+    const point = { lat: 53.95, lon: 27.66, label: "Дом" };
+    for (const [path, body] of [
+      ["/api/product", { storeId: "green", id: "123", location: point }],
+      [
+        "/api/products/resolve",
+        { items: [{ storeId: "green", id: "123" }], location: point },
+      ],
+    ] as const) {
+      const res = await post(path, body);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ received: body });
+      expect(last.url).toBe(path);
+    }
+  });
+  it("saves the authenticated cart and loads it with delivery coordinates", async () => {
+    const items = [
+      { storeId: "green", id: "123", name: "Молоко", count: 2, unit: "1 л" },
+    ];
+    const res = await post(
+      "/api/cart",
+      { items },
+      { cookie: "nabo-session=opaque-test-token", origin: base },
+    );
+    expect(res.status).toBe(200);
+    expect(last.url).toBe("/api/cart/saveCart");
+    expect(JSON.parse(last.body)).toEqual({ items });
+    expect(last.authorization).toBe("Bearer opaque-test-token");
+    expect(last.cookie).toBeUndefined();
+    await fetch(base + "/api/cart?lat=53.95&lon=27.66", {
+      headers: { cookie: "nabo-session=opaque-test-token" },
+    });
+    expect(last.url).toBe("/api/cart/getCart?lat=53.95&lon=27.66");
+    expect(last.authorization).toBe("Bearer opaque-test-token");
+    expect((await fetch(base + "/api/cart?lat=53.9")).status).toBe(400);
+    expect(
+      (await post("/api/cart", { items }, { origin: "https://other.example" }))
+        .status,
+    ).toBe(403);
+  });
   it("forwards search and comparison contracts without browser cookies", async () => {
     for (const path of ["/api/yandex/search", "/api/yandex/compare"]) {
       const body = {

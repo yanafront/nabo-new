@@ -28,9 +28,40 @@ export default defineNuxtPlugin(() => {
                 typeof i.product.unit === "string" &&
                 typeof i.product.sourceId === "string" &&
                 retailStores.some((s) => s.id === i.product.storeId) &&
-                typeof i.product.price === "number" &&
-                Number.isFinite(i.product.price) &&
-                i.product.price > 0)),
+                (i.product.price === null ||
+                  (typeof i.product.price === "number" &&
+                    Number.isFinite(i.product.price) &&
+                    i.product.price > 0)))),
+        );
+      const validPending = (rows: unknown): rows is Item[] =>
+        Array.isArray(rows) &&
+        rows.length <= 20 &&
+        rows.every(
+          (row) =>
+            row &&
+            typeof row.productId === "string" &&
+            Number.isInteger(row.quantity) &&
+            row.quantity > 0 &&
+            row.quantity <= 99 &&
+            (products.some((product) => product.id === row.productId) ||
+              (row.product &&
+                !row.product.sourceId &&
+                typeof row.product.name === "string" &&
+                row.product.name.trim().length > 0 &&
+                row.product.name.length <= 160 &&
+                typeof row.product.unit === "string")) &&
+            (!row.requirement ||
+              (typeof row.requirement.query === "string" &&
+                row.requirement.query.length > 0 &&
+                row.requirement.query.length <= 160 &&
+                typeof row.requirement.ingredientId === "string" &&
+                row.requirement.ingredientId.length <= 150 &&
+                Number.isFinite(row.requirement.amount) &&
+                row.requirement.amount > 0 &&
+                row.requirement.amount <= 100000 &&
+                ["mass", "volume", "count"].includes(
+                  row.requirement.dimension,
+                ))),
         );
       if (data) {
         if (valid(data.items)) {
@@ -39,7 +70,7 @@ export default defineNuxtPlugin(() => {
             (i: Item) => !i.product?.sourceId,
           );
         }
-        if (valid(data.pendingIngredients))
+        if (validPending(data.pendingIngredients))
           pendingIngredients.value.push(
             ...data.pendingIngredients.filter(
               (i: Item) =>

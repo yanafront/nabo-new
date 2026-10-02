@@ -54,11 +54,29 @@ export interface DeliveryLocation {
   lon: number;
   label: string;
 }
+export interface ProductResult {
+  storeId: StoreId;
+  id: string;
+  status: "ok" | "not_found" | "error";
+  product: RetailProduct | null;
+  fetchedAt: string;
+  error?: string | null;
+}
+export interface AccountCartItem {
+  id: string;
+  storeId: StoreId;
+  name: string;
+  count: number;
+  image?: string | null;
+  unit?: string | null;
+  current?: ProductResult;
+}
 export interface RetailProduct {
   id: string;
   storeId: StoreId;
   placeSlug: string;
   name: string;
+  categories?: Array<{ id: string | null; name: string | null }>;
   description?: string;
   rating?: string;
   unit: string;

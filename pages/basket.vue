@@ -9,7 +9,11 @@ const {
   unresolved,
   pendingIngredients,
 } = useBasket();
-const { resolve, resolving, resolveError } = useRecipeBasket();
+const { retryMissing, resolving, resolveError } = useRecipeBasket();
+const { refreshPrices, pricesPending, pricesError } = useCartPrices();
+const unpriced = computed(
+  () => rows.value.filter((row) => row.product.price === null).length,
+);
 const total = computed(
   () =>
     rows.value.reduce(
@@ -48,10 +52,16 @@ function replaceProduct(id: string, name: string) {
           <AppIcon name="Plus" :size="18" /> Добавить блюдо
         </NuxtLink>
         <button class="secondary" @click="save">
-          <AppIcon name="Heart" :size="18" /> Сохранить
+          <AppIcon name="Heart" :size="18" /> Сохранить список
         </button>
       </div>
     </div>
+    <AccountCart />
+    <p v-if="pricesError" class="error" role="alert">{{ pricesError }}</p>
+    <p v-if="unpriced" class="info-note" role="status">
+      Для {{ unpriced }} позиций цена не подтверждена. Они не включены в сумму —
+      обновите цены или замените товар.
+    </p>
     <div
       v-if="unresolved.length || pendingIngredients.length"
       class="basket-notice"
@@ -68,17 +78,8 @@ function replaceProduct(id: string, name: string) {
           query: unresolved[0] ? { q: unresolved[0] } : {},
         }"
         >Найти вручную</NuxtLink
-      ><button
-        v-if="pendingIngredients.length"
-        class="text-button"
-        :disabled="resolving"
-        @click="resolve({ title, items: pendingIngredients }, undefined, true)"
-      >
-        {{
-          resolving
-            ? "Подбираем…"
-            : `Подобрать ещё ${pendingIngredients.length}`
-        }}
+      ><button class="text-button" :disabled="resolving" @click="retryMissing">
+        {{ resolving ? "Подбираем…" : "Подобрать недостающие" }}
       </button>
       <p v-if="resolveError" class="error">{{ resolveError }}</p>
     </div>
@@ -86,7 +87,13 @@ function replaceProduct(id: string, name: string) {
       <section class="basket-list panel">
         <div class="panel-heading">
           <h2>Ваши продукты</h2>
-          <span>Цена при выборе</span>
+          <button
+            class="text-button"
+            :disabled="pricesPending"
+            @click="refreshPrices"
+          >
+            {{ pricesPending ? "Обновляем…" : "Обновить цены" }}
+          </button>
         </div>
         <template v-for="row in rows" :key="row.productId"
           ><ProductRow
@@ -109,7 +116,8 @@ function replaceProduct(id: string, name: string) {
           ><strong>{{ money(total) }} <small>BYN</small></strong>
         </div>
         <p>
-          По ценам при добавлении. Проверим, где весь список обойдётся дешевле.
+          Сумма по подтверждённым ценам. При обновлении проверяем выбранные
+          товары без автоматической замены.
         </p>
         <div class="basket-actions">
           <NuxtLink to="/compare" class="primary full"

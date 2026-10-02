@@ -148,3 +148,21 @@ it("combines equal ingredient requirements without changing input", () => {
   expect(result?.items[0].requirement?.amount).toBe(1000);
   expect(requirement.amount).toBe(500);
 });
+it("does not add sour-cream flavoured chips instead of recipe sour cream", () => {
+  const chips = { ...p, id: "chips", name: "Чипсы Лэйс Сметана-Лук 140г" };
+  const cream = { ...p, id: "cream", name: "Сметана Брест-Литовск 20% 180г" };
+  const result = recipeBasket([
+    {
+      ...offer,
+      lines: [
+        {
+          ...line,
+          query: "Сметана",
+          selected: chips,
+          alternatives: [chips, cream],
+        },
+      ],
+    },
+  ]);
+  expect(result?.items[0].product?.sourceId).toBe("cream");
+});

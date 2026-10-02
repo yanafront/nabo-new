@@ -1,16 +1,15 @@
-import { packagesFor } from "./recipe/purchasing";
+import { packagesFor, ingredientProductMatches } from "./recipe/purchasing";
 import type { Item, Product } from "../data/catalog";
-import type { RetailProduct, StoreComparison } from "./yandex";
+import {
+  providerName,
+  type RetailProduct,
+  type StoreComparison,
+} from "./yandex";
 export function retailProduct(source: RetailProduct): Product {
   return {
     id: `${source.storeId}:${source.id}`,
     name: source.name,
-    brand:
-      source.storeId === "sosedi"
-        ? "Соседи"
-        : source.storeId === "evroopt"
-          ? "Е-доставка"
-          : "Яндекс Еда",
+    brand: providerName(source.storeId),
     unit: source.unit,
     price: source.price,
     image: source.image,
@@ -39,10 +38,13 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
   const options = offers.map((offer) => {
     const items: Item[] = [];
     const missing: string[] = [];
+    const missingIds: string[] = [];
+    const resolvedQueries: string[] = [];
     let adjusted = false;
     for (const line of offer.lines) {
       const suitable = (p: RetailProduct) =>
         p.available &&
+        ingredientProductMatches(p, line.query) &&
         (line.demand
           ? packagesFor(p, line.demand) !== undefined
           : p.stock === null || p.stock >= line.quantity) &&
@@ -54,6 +56,7 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
           : line.alternatives.find(suitable);
       if (!source || !source.available) {
         missing.push(line.query);
+        missingIds.push(line.itemId);
         continue;
       }
       const product = retailProduct(source);
@@ -63,8 +66,10 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
         (line.demand ? packagesFor(source, line.demand)! : line.quantity);
       if (quantity > 99 || (source.stock !== null && quantity > source.stock)) {
         missing.push(line.query);
+        missingIds.push(line.itemId);
         continue;
       }
+      resolvedQueries.push(line.query);
       if (source.id !== line.selected?.id) adjusted = true;
       if (existing) {
         existing.quantity = quantity;
@@ -95,6 +100,8 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
     return {
       items,
       missing,
+      missingIds,
+      resolvedQueries,
       adjusted,
       storeId: offer.storeId,
       matched: offer.lines.length - missing.length,

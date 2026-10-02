@@ -20,12 +20,12 @@ function restore(id: string) {
     <div class="page-heading">
       <div>
         <div class="eyebrow small"></div>
-        <h1>Покупки на повтор</h1>
-        <p class="muted">
-          Ваши готовые списки. Откройте и проверьте свежие цены.
-        </p>
+        <h1>Сохранённое</h1>
+        <p class="muted">Корзина аккаунта и списки для повторных покупок.</p>
       </div>
     </div>
+    <AccountCart />
+    <h2 v-if="saved.length">Списки в этом браузере</h2>
     <div v-if="saved.length" class="saved-grid">
       <article
         v-for="basket in saved"
@@ -68,8 +68,8 @@ function restore(id: string) {
       <span>♡</span>
       <h2>Место для ваших любимых корзин</h2>
       <p>
-        Соберите первую и нажмите «Сохранить»,<br />чтобы в следующий раз начать
-        с готового.
+        Соберите первую и нажмите «Сохранить список»,<br />чтобы в следующий раз
+        начать с готового.
       </p>
       <NuxtLink to="/products" class="primary"
         >Найти товары <AppIcon name="ArrowRight"

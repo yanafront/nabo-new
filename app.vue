@@ -1,6 +1,10 @@
 <script setup lang="ts">
 const { items, notice } = useBasket();
 const { location } = useRetail();
+const route = useRoute();
+const recipesActive = computed(
+  () => route.path === "/recipes" || route.path.startsWith("/recipes/"),
+);
 const info = ref(false);
 const showLocation = ref(false);
 const offline = ref(false);
@@ -34,13 +38,24 @@ onUnmounted(() => {
       >
       <nav class="desktop-nav" aria-label="Основная навигация">
         <NuxtLink to="/products">Товары</NuxtLink
-        ><NuxtLink to="/recipes">Рецепты</NuxtLink
+        ><NuxtLink
+          to="/recipes"
+          :class="{ 'section-active': recipesActive }"
+          :aria-current="
+            recipesActive
+              ? route.path === '/recipes'
+                ? 'page'
+                : 'location'
+              : undefined
+          "
+          >Рецепты</NuxtLink
         ><NuxtLink to="/basket"
           >Моя корзина
           <span v-if="items.length" class="count">{{
             items.length
           }}</span></NuxtLink
         >
+        <NuxtLink to="/saved">Сохранённое</NuxtLink>
       </nav>
       <button class="location" @click="showLocation = true">
         <AppIcon name="MapPin" :size="16" /><span>{{ location.label }}</span
@@ -64,11 +79,23 @@ onUnmounted(() => {
     </footer>
     <nav class="mobile-nav" aria-label="Мобильная навигация">
       <NuxtLink to="/products"><AppIcon name="Search" />Товары</NuxtLink>
-      <NuxtLink to="/recipes"><AppIcon name="Leaf" />Рецепты</NuxtLink>
+      <NuxtLink
+        to="/recipes"
+        :class="{ 'section-active': recipesActive }"
+        :aria-current="
+          recipesActive
+            ? route.path === '/recipes'
+              ? 'page'
+              : 'location'
+            : undefined
+        "
+        ><AppIcon name="Leaf" />Рецепты</NuxtLink
+      >
       <NuxtLink to="/basket"
         ><AppIcon name="ShoppingBasket" />Корзина
         <span v-if="items.length">{{ items.length }}</span></NuxtLink
       >
+      <NuxtLink to="/saved"><AppIcon name="Heart" />Сохранённое</NuxtLink>
     </nav>
     <div v-if="notice" class="toast" role="status">
       <AppIcon name="Check" :size="18" />{{ notice

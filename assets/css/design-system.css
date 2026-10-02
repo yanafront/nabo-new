@@ -219,7 +219,8 @@ ol {
   border-radius: 9px;
   white-space: nowrap;
 }
-.desktop-nav .router-link-exact-active {
+.desktop-nav .router-link-exact-active,
+.desktop-nav .section-active {
   background: #f3ffda;
   color: var(--ink);
 }
@@ -1940,7 +1941,7 @@ ol {
   }
   .mobile-nav {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     position: fixed;
     bottom: 0;
     left: 0;
@@ -1966,11 +1967,13 @@ ol {
     width: 21px;
     height: 21px;
   }
-  .mobile-nav a.router-link-exact-active {
+  .mobile-nav a.router-link-exact-active,
+  .mobile-nav a.section-active {
     color: var(--ink);
     font-weight: 700;
   }
-  .mobile-nav a.router-link-exact-active:before {
+  .mobile-nav a.router-link-exact-active:before,
+  .mobile-nav a.section-active:before {
     content: "";
     position: absolute;
     top: -8px;
@@ -2801,7 +2804,8 @@ ol {
 .desktop-nav a {
   border-radius: 24px;
 }
-.desktop-nav .router-link-exact-active {
+.desktop-nav .router-link-exact-active,
+.desktop-nav .section-active {
   background: white;
   box-shadow: 0 2px 8px #0f0f1009;
 }
@@ -3033,10 +3037,12 @@ input[type="checkbox"] {
     gap: 16px;
     justify-content: space-between;
   }
-  .mobile-nav a.router-link-exact-active {
+  .mobile-nav a.router-link-exact-active,
+  .mobile-nav a.section-active {
     color: var(--ink);
   }
-  .mobile-nav a.router-link-exact-active:before {
+  .mobile-nav a.router-link-exact-active:before,
+  .mobile-nav a.section-active:before {
     top: 0;
     width: 52px;
     height: 29px;
@@ -3044,7 +3050,8 @@ input[type="checkbox"] {
     background: var(--brand-soft);
     z-index: -1;
   }
-  .mobile-nav a.router-link-exact-active svg {
+  .mobile-nav a.router-link-exact-active svg,
+  .mobile-nav a.section-active svg {
     stroke: var(--ink);
   }
 }
@@ -3619,7 +3626,7 @@ input[type="checkbox"] {
 }
 @media (max-width: 760px) {
   .mobile-nav {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .recipe-search {
     gap: 6px;
@@ -4110,3 +4117,9 @@ input[type="checkbox"] {
 .delivery-pin { background: transparent; border: 0; }
 .delivery-pin span { display: block; width: 30px; height: 30px; background: #2f6bff; border: 3px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 8px #0005; }
 .delivery-pin span::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: #fff; }
+
+.account-cart { padding: 18px 20px; margin: 0 0 20px; }
+.account-cart h2 { font-size: 17px; margin: 0 0 6px; }
+.account-cart p { font-size: 13px; margin: 6px 0 12px; }
+.account-cart-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.account-cart-actions > * { min-width: 0; white-space: normal; }

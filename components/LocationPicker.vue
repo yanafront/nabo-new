@@ -9,7 +9,8 @@ const { location, invalidate } = useRetail();
 const address = ref("");
 const draft = ref<DeliveryLocation | null>({ ...location.value });
 const results = ref<AddressResult[]>([]);
-const error = ref("");
+const addressError = ref("");
+const geoError = ref("");
 const locating = ref(false);
 const searching = ref(false);
 const accuracy = ref<number>();
@@ -24,21 +25,27 @@ function cancelPending() {
   locating.value = false;
   searching.value = false;
 }
-watch(address, () => {
-  cancelPending();
-  draft.value = null;
-  results.value = [];
-  accuracy.value = undefined;
-  error.value = "";
-});
+watch(
+  address,
+  () => {
+    cancelPending();
+    draft.value = null;
+    results.value = [];
+    accuracy.value = undefined;
+    addressError.value = "";
+    geoError.value = "";
+  },
+  { flush: "sync" },
+);
 onBeforeUnmount(cancelPending);
 async function searchAddress() {
   cancelPending();
-  error.value = "";
+  addressError.value = "";
+  geoError.value = "";
   draft.value = null;
   results.value = [];
   if (address.value.trim().length < 5) {
-    error.value = "Введите город, улицу и номер дома.";
+    addressError.value = "Введите город, улицу и номер дома.";
     return;
   }
   const current = operation;
@@ -51,20 +58,20 @@ async function searchAddress() {
     }>("/api/location/search", {
       query: { q: address.value.trim() },
       signal: controller.signal,
-      timeout: 12000,
+      timeout: 20000,
       retry: 0,
     });
     if (current !== operation) return;
     results.value = response.addresses;
     provider.value = response.provider;
     if (!results.value.length)
-      error.value =
-        "Адрес не найден. Проверьте город, улицу и номер дома или используйте геолокацию.";
+      addressError.value =
+        "Поиск не нашёл этот адрес. Попробуйте белорусское название улицы или поставьте метку на нужный дом на карте ниже.";
   } catch (failure: any) {
     if (current === operation && failure.statusCode === 429)
-      error.value = "Подождите пару секунд и повторите поиск.";
+      addressError.value = "Подождите пару секунд и повторите поиск.";
     else if (current === operation)
-      error.value =
+      addressError.value =
         "Не удалось найти адрес. Повторите поиск или используйте геолокацию.";
   } finally {
     if (current === operation) searching.value = false;
@@ -74,7 +81,8 @@ function choose(point: AddressResult) {
   draft.value = { lat: point.lat, lon: point.lon, label: point.label };
   precise.value = point.precise;
   accuracy.value = undefined;
-  error.value = "";
+  addressError.value = "";
+  geoError.value = "";
 }
 function selectOnMap(point: { lat: number; lon: number }) {
   cancelPending();
@@ -82,13 +90,16 @@ function selectOnMap(point: { lat: number; lon: number }) {
   precise.value = true;
   accuracy.value = undefined;
   results.value = [];
-  error.value = "";
+  addressError.value = "";
+  geoError.value = "";
 }
 function locate() {
   cancelPending();
-  error.value = "";
+  geoError.value = "";
+  addressError.value = "";
+  results.value = [];
   if (!navigator.geolocation) {
-    error.value =
+    geoError.value =
       "Геолокация недоступна в этом браузере. Найдите адрес вручную.";
     return;
   }
@@ -100,7 +111,7 @@ function locate() {
       locating.value = false;
       const { latitude: lat, longitude: lon } = position.coords;
       if (!validDeliveryPoint(lat, lon)) {
-        error.value =
+        geoError.value =
           "Сейчас поиск поддерживает точки в Беларуси. Введите адрес доставки в Беларуси.";
         return;
       }
@@ -112,7 +123,7 @@ function locate() {
     (failure) => {
       if (current !== operation) return;
       locating.value = false;
-      error.value =
+      geoError.value =
         failure.code === 1
           ? "Доступ к геолокации запрещён. Разрешите его в браузере или введите адрес."
           : failure.code === 3
@@ -144,13 +155,19 @@ function save() {
       Укажите, куда нужны продукты. По этой точке мы ищем доступные товары и
       сравниваем магазины.
     </p>
-    <button class="secondary full" :disabled="busy" @click="locate">
+    <button
+      type="button"
+      class="secondary full"
+      :disabled="locating"
+      @click="locate"
+    >
       <AppIcon name="MapPin" :size="18" />{{
         locating
           ? "Определяем местоположение…"
           : "Определить моё местоположение"
       }}
     </button>
+    <p v-if="geoError" role="alert" class="error">{{ geoError }}</p>
     <form class="address-search" @submit.prevent="searchAddress">
       <label for="delivery-address">Или найдите адрес доставки</label>
       <div class="address-search-row">
@@ -166,7 +183,7 @@ function save() {
         </button>
       </div>
     </form>
-    <p v-if="error" role="alert" class="error">{{ error }}</p>
+    <p v-if="addressError" role="alert" class="error">{{ addressError }}</p>
     <div
       v-if="results.length"
       class="address-results"
@@ -222,7 +239,12 @@ function save() {
         точнее.
       </p>
     </div>
-    <button class="primary full" :disabled="busy || !draft" @click="save">
+    <button
+      type="button"
+      class="primary full"
+      :disabled="busy || !draft"
+      @click="save"
+    >
       Использовать эту точку
     </button>
     <p class="location-caption muted">

@@ -1,3 +1,4 @@
+import { photonQueryVariants } from "../../../shared/address-query";
 import { createError, defineEventHandler, getQuery, setHeader } from "h3";
 import {
   photonAddresses,
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
     url.searchParams.set("rspn", "1");
     url.searchParams.set("results", "5");
   } else {
-    url.searchParams.set("q", q.trim());
+    url.searchParams.set("q", photonQueryVariants(q)[0]!);
     url.searchParams.set("countrycode", "BY");
     url.searchParams.set("bbox", "23,51,33,57");
     url.searchParams.set("limit", "5");
@@ -41,10 +42,25 @@ export default defineEventHandler(async (event) => {
   try {
     const response = await fetch(url.toString(), {
       headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) throw new Error("Geocoder unavailable");
-    const data = await response.json();
+    let data = await response.json();
+    // OSM uses local Belarusian names for many streets. Keep the original
+    // as a fallback when the reviewed alternate spelling does not match.
+    if (
+      !yandex &&
+      !photonAddresses(data).length &&
+      photonQueryVariants(q).length > 1
+    ) {
+      url.searchParams.set("q", q.trim());
+      const original = await fetch(url.toString(), {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!original.ok) throw new Error("Geocoder unavailable");
+      data = await original.json();
+    }
     return {
       addresses: yandex ? yandexAddresses(data) : photonAddresses(data),
       provider: yandex ? "yandex" : "photon",

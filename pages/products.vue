@@ -85,7 +85,7 @@ watch(
   },
   { flush: "post" },
 );
-const popular = ["Молоко", "Яйца", "Хлеб", "Сыр", "Овощи", "Фрукты"];
+const popular = ["Молоко", "Яйца", "Сметана", "Картофель", "Яблоки", "Бананы"];
 
 const total = computed(() =>
   groups.value.reduce((sum, group) => sum + group.products.length, 0),
@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
       <input
         v-model="query"
         aria-label="Поиск товаров"
-        placeholder="Молоко, яйца, авокадо…"
+        placeholder="Например, сметана"
         maxlength="160"
         autofocus
       />

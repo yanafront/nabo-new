@@ -36,29 +36,25 @@ const failed = ref(false);
     </div>
     <div class="dish-info">
       <span class="dish-tag">{{
-        recipe.shopabilityScore >= 80
-          ? "Из привычных продуктов"
-          : recipeCategories.find((c) => c.id === recipe.categoryId)?.title
+        recipeCategories.find((c) => c.id === recipe.categoryId)?.title
       }}</span>
-      <h2>{{ recipe.title }}</h2>
-      <div v-if="nutrition" class="dish-nutrition">
-        <strong>{{ Math.round(nutrition.calories) }} ккал</strong
-        ><span
-          >Б {{ Math.round(nutrition.protein) }} · Ж
-          {{ Math.round(nutrition.fat) }} · У
-          {{ Math.round(nutrition.carbs) }}</span
-        ><small>на порцию</small>
-      </div>
+      <h2 :title="recipe.title">{{ recipe.title }}</h2>
+      <RecipeNutrition v-if="nutrition" :nutrition="nutrition" compact />
       <p v-else class="muted nutrition-unavailable">
-        КБЖУ не указаны источником
+        Пищевая ценность не указана
       </p>
       <div class="dish-bottom">
         <span>{{
           quantityLabel(recipe.servings, "порция", "порции", "порций")
         }}</span
-        ><span class="dish-action"
-          >Открыть рецепт <AppIcon name="ArrowRight" :size="16"
-        /></span>
+        ><span>{{
+          quantityLabel(
+            recipe.ingredients.length,
+            "ингредиент",
+            "ингредиента",
+            "ингредиентов",
+          )
+        }}</span>
       </div>
     </div>
   </NuxtLink>

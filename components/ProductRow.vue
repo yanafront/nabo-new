@@ -1,19 +1,15 @@
 <script setup lang="ts">
-import { productSourceUrl, providerName } from "~/shared/yandex";
+import { providerName } from "~/shared/yandex";
 import type { Product } from "~/data/catalog";
 defineProps<{
   product: Product;
   quantity: number;
-  required?: boolean;
-  allowReplacement?: boolean;
 }>();
 defineEmits<{
   change: [delta: number];
   remove: [];
   replace: [];
-  preference: [key: "required" | "allowReplacement", value: boolean];
 }>();
-const options = ref(false);
 </script>
 <template>
   <article class="product-row">
@@ -26,18 +22,7 @@ const options = ref(false);
           · {{ providerName(product.storeId) }}</template
         >
       </p>
-      <div class="row-tags">
-        <span v-if="required">Обязательно</span
-        ><span v-if="allowReplacement === false">Без замен</span>
-      </div>
-      <button class="text-button" @click="$emit('replace')">Заменить</button
-      ><button
-        class="text-button subtle"
-        :aria-expanded="options"
-        @click="options = !options"
-      >
-        {{ options ? "Скрыть" : "Пожелания" }}
-      </button>
+      <button class="text-button" @click="$emit('replace')">Заменить</button>
     </div>
     <strong class="row-price"
       >{{ product.price !== null ? money(product.price * quantity) : "—"
@@ -65,52 +50,5 @@ const options = ref(false);
     >
       <AppIcon name="X" :size="17" />
     </button>
-    <div v-if="options" class="row-options">
-      <label class="checkbox"
-        ><input
-          type="checkbox"
-          :checked="required"
-          @change="
-            $emit(
-              'preference',
-              'required',
-              ($event.target as HTMLInputElement).checked,
-            )
-          "
-        />Обязательный товар</label
-      ><label class="checkbox"
-        ><input
-          type="checkbox"
-          :checked="allowReplacement !== false"
-          @change="
-            $emit(
-              'preference',
-              'allowReplacement',
-              ($event.target as HTMLInputElement).checked,
-            )
-          "
-        />Можно предложить замену</label
-      ><small
-        >Без замен сравним только это название и упаковку. Обязательные позиции
-        выделим, если магазин их не найдёт.</small
-      ><a
-        v-if="product.storeId && product.sourceId"
-        :href="
-          productSourceUrl({
-            id: product.sourceId,
-            storeId: product.storeId,
-            externalUrl: product.externalUrl,
-          })
-        "
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-button"
-        >Цена у {{ providerName(product.storeId) }}
-        <AppIcon name="ExternalLink" :size="12" /></a
-      ><small v-if="product.fetchedAt"
-        >Получена
-        {{ new Date(product.fetchedAt).toLocaleString("ru-BY") }}</small
-      >
-    </div>
   </article>
 </template>

@@ -131,7 +131,7 @@ test("товар из Яндекса → корзина → сравнение �
   await page.getByRole("button", { name: /Увеличить количество/ }).click();
   await expect(page.locator(".quantity span")).toHaveText("2");
   await page.getByRole("button", { name: "Сохранить", exact: true }).click();
-  await page.getByRole("link", { name: "Найти дешевле" }).click();
+  await page.getByRole("link", { name: "Сравнить в магазинах" }).click();
   await expect(page.locator(".offer")).toHaveCount(5);
   await expect(
     page.locator(".offer").filter({ hasText: "Не удалось проверить" }),

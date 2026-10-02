@@ -8,7 +8,6 @@ const {
   save,
   unresolved,
   pendingIngredients,
-  setPreference,
 } = useBasket();
 const { resolve, resolving, resolveError } = useRecipeBasket();
 const total = computed(
@@ -93,14 +92,9 @@ function replaceProduct(id: string, name: string) {
           ><ProductRow
             :product="row.product"
             :quantity="row.quantity"
-            :required="row.required"
-            :allow-replacement="row.allowReplacement"
             @change="change(row.productId, $event)"
             @remove="remove(row.productId)"
             @replace="replaceProduct(row.productId, row.product.name)"
-            @preference="
-              (key, value) => setPreference(row.productId, key, value)
-            "
         /></template>
         <NuxtLink to="/products" class="add-product">
           <AppIcon name="Plus" :size="20" /> Добавить продукт
@@ -119,7 +113,8 @@ function replaceProduct(id: string, name: string) {
         </p>
         <div class="basket-actions">
           <NuxtLink to="/compare" class="primary full"
-            >Найти дешевле <AppIcon name="ArrowRight" :size="18" /></NuxtLink
+            >Сравнить в магазинах
+            <AppIcon name="ArrowRight" :size="18" /></NuxtLink
           ><small>6 магазинов · без доставки и сборов</small>
         </div>
         <details class="trust-details">

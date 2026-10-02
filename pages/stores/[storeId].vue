@@ -16,7 +16,7 @@ const pending = ref(false);
 const error = ref("");
 const visibleCount = ref(24);
 let controller: AbortController | undefined;
-const popular = ["Молоко", "Овощи", "Хлеб", "Яйца", "Сыр"];
+const popular = ["Молоко", "Яйца", "Сметана", "Картофель", "Яблоки", "Бананы"];
 
 async function search(value = query.value) {
   if (value.trim().length < 2) return;

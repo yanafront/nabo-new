@@ -7,8 +7,6 @@ import {
   type Ingredient,
 } from "~/shared/recipe/model";
 import { recipePurchaseRequest } from "~/shared/recipe/purchasing";
-import { recipeBasket } from "~/shared/recipe-basket";
-import type { StoreComparison } from "~/shared/yandex";
 const route = useRoute();
 const slug = String(route.params.slug);
 const { data, error, refresh } = await useAsyncData(`recipe:${slug}`, () =>
@@ -28,7 +26,6 @@ const excluded = ref<string[]>([]);
 const imageFailed = ref(false);
 const { resolve, resolving, resolveError } = useRecipeBasket();
 const { items } = useBasket();
-const { location } = useRetail();
 resolveError.value = "";
 const localError = ref("");
 let controller: AbortController | undefined;
@@ -71,9 +68,6 @@ watch(
   },
   { immediate: true },
 );
-watch(servings, () => {
-  quote.value = null;
-});
 async function build() {
   localError.value = "";
   if (!request.value) return;
@@ -81,80 +75,8 @@ async function build() {
   if (await resolve(request.value, controller.signal, items.value.length > 0))
     await navigateTo("/basket");
 }
-const budget = ref(
-  typeof route.query.budget === "string" ? route.query.budget : "25",
-);
-const checking = ref(false);
-const quote = ref<{
-  total: number;
-  complete: boolean;
-  matched: number;
-  count: number;
-} | null>(null);
-const quoteError = ref("");
-watch(
-  [servings, excluded, location, budget],
-  () => {
-    quote.value = null;
-    quoteController?.abort();
-    quoteError.value = "";
-  },
-  { deep: true },
-);
-let quoteController: AbortController | undefined;
-async function checkBudget() {
-  if (!request.value || !request.value.items.length) return;
-  checking.value = true;
-  quoteError.value = "";
-  quote.value = null;
-  quoteController?.abort();
-  const current = new AbortController();
-  quoteController = current;
-  const point = JSON.stringify(location.value),
-    key = JSON.stringify(request.value);
-  try {
-    const result = await $fetch<{ offers: StoreComparison[] }>(
-      "/api/yandex/compare",
-      {
-        method: "POST",
-        body: {
-          items: request.value.items.map((i) => ({
-            id: i.productId,
-            query: i.product!.name,
-            quantity: 1,
-            requirement: i.requirement,
-          })),
-          location: location.value,
-        },
-        signal: current.signal,
-        timeout: 120000,
-        retry: 0,
-      },
-    );
-    if (
-      current.signal.aborted ||
-      point !== JSON.stringify(location.value) ||
-      key !== JSON.stringify(request.value)
-    )
-      return;
-    const b = recipeBasket(result.offers, request.value.items);
-    if (!b) throw new Error();
-    quote.value = {
-      total: b.total,
-      complete: b.missing.length === 0,
-      matched: b.matched,
-      count: request.value.items.length,
-    };
-  } catch {
-    if (!current.signal.aborted)
-      quoteError.value = "Не удалось проверить цены. Попробуйте ещё раз.";
-  } finally {
-    if (quoteController === current) checking.value = false;
-  }
-}
 onBeforeUnmount(() => {
   controller?.abort();
-  quoteController?.abort();
 });
 </script>
 <template>
@@ -200,24 +122,12 @@ onBeforeUnmount(() => {
               quantityLabel(servings, "порция", "порции", "порций")
             }}</span>
           </div>
-          <div v-if="nutrition" class="nutrition-panel">
-            <span
-              v-for="(value, key) in {
-                Ккал: nutrition.calories,
-                'Белки, г': nutrition.protein,
-                'Жиры, г': nutrition.fat,
-                'Углеводы, г': nutrition.carbs,
-              }"
-              :key="key"
-              ><strong>{{ Math.round(value) }}</strong
-              ><small>{{ key }}</small></span
-            >
-          </div>
+          <RecipeNutrition v-if="nutrition" :nutrition="nutrition" />
           <p class="muted nutrition-caption">
             {{
               nutrition
-                ? `На одну порцию · ${nutrition.calculationType === "source" ? "данные источника" : "расчёт по ингредиентам"}`
-                : "Источник не передал КБЖУ. Мы не подставляем приблизительные цифры."
+                ? "Значения могут отличаться в зависимости от выбранных продуктов."
+                : "Для этого рецепта пищевая ценность пока не указана."
             }}
           </p>
         </div>
@@ -280,66 +190,6 @@ onBeforeUnmount(() => {
             >
           </div>
         </div>
-      </section>
-      <section class="recipe-budget panel">
-        <h2>Уложимся в бюджет?</h2>
-        <p class="muted">
-          Проверим стоимость целых упаковок в магазинах для
-          {{ servings }} порций. Без доставки и сборов.
-        </p>
-        <div class="budget-input">
-          <label
-            >Бюджет, BYN<input
-              v-model="budget"
-              type="number"
-              min="1"
-              max="10000" /></label
-          ><button
-            class="secondary"
-            :disabled="
-              checking ||
-              !request?.items.length ||
-              !Number.isFinite(Number(budget)) ||
-              Number(budget) <= 0
-            "
-            @click="checkBudget"
-          >
-            {{ checking ? "Проверяем цены…" : "Проверить цены" }}</button
-          ><button
-            v-if="checking"
-            class="text-button"
-            @click="
-              quoteController?.abort();
-              checking = false;
-            "
-          >
-            Отменить
-          </button>
-        </div>
-        <p v-if="request?.manual.length" class="muted">
-          Не включили в автоматический подбор: {{ request.manual.join(", ") }}.
-          Их можно добавить в корзину вручную после сравнения.
-        </p>
-        <p v-if="quoteError" role="alert" class="error">{{ quoteError }}</p>
-        <p v-if="quote" role="status">
-          <template v-if="quote.complete"
-            ><strong>{{ money(quote.total) }} BYN за корзину</strong> ·
-            {{
-              quote.total <= Number(budget)
-                ? "Укладывается в бюджет"
-                : "Выше бюджета на " +
-                  money(quote.total - Number(budget)) +
-                  " BYN"
-            }}.<br /><small
-              >{{ money(quote.total / servings) }} BYN на порцию по стоимости
-              покупок. В упаковках могут остаться продукты.</small
-            ></template
-          ><template v-else
-            >Найдено {{ quote.matched }} из {{ quote.count }} продуктов.
-            {{ money(quote.total) }} BYN — только за найденное; пока нельзя
-            подтвердить бюджет.</template
-          >
-        </p>
       </section>
       <details class="recipe-instructions">
         <summary>Приготовление и источник</summary>

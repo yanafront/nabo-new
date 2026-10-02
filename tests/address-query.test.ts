@@ -9,6 +9,12 @@ it("searches reviewed local street aliases while retaining the original and hous
     "Мінск, праспект Незалежнасці, 24А",
   );
 });
+it("supports the short Russian address from the delivery picker", () => {
+  expect(photonQueryVariants("Авиационная 15")).toEqual([
+    "Авіяцыйная 15",
+    "Авиационная 15",
+  ]);
+});
 it("does not transform parts of names or invent an address", () => {
   expect(photonQueryVariants("  Мiнск, Новая улица 999  ")).toEqual([
     "Мiнск, Новая вуліца 999",

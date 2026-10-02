@@ -36,6 +36,7 @@ export function photonAddresses(value: unknown): AddressResult[] {
       ...new Set(
         [
           text("city") || text("town") || text("village"),
+          text("locality"),
           street,
           text("name"),
         ].filter(Boolean),

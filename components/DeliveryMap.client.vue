@@ -5,6 +5,7 @@ import type { Map as LeafletMap, Marker } from "leaflet";
 const props = defineProps<{
   point: DeliveryLocation | null;
   center: DeliveryLocation;
+  compact?: boolean;
 }>();
 const emit = defineEmits<{ select: [point: { lat: number; lon: number }] }>();
 const container = ref<HTMLElement>();
@@ -12,11 +13,20 @@ const pending = ref(true);
 const failure = ref("");
 const source = ref("");
 let disposed = false;
+let resizeObserver: ResizeObserver | undefined;
 let leaflet: LeafletMap | undefined;
 let marker: Marker | undefined;
 let L: typeof import("leaflet") | undefined;
 let ymap: any;
 let placemark: any;
+let frame: number | undefined;
+function queueSyncPoint() {
+  if (frame !== undefined) cancelAnimationFrame(frame);
+  frame = requestAnimationFrame(() => {
+    frame = undefined;
+    if (!disposed) syncPoint();
+  });
+}
 function select(lat: number, lon: number) {
   if (!validDeliveryPoint(lat, lon)) {
     failure.value = "Выберите точку в Беларуси.";
@@ -61,8 +71,12 @@ async function loadYandex(key: string) {
   return windowMap.__naboYandexReady;
 }
 function syncPoint() {
+  // Address results hide the map. Wait for its restored viewport before
+  // centering; a hidden map has no usable pixel bounds.
+  if (!container.value?.clientWidth || !container.value.clientHeight) return;
   const point = props.point;
   if (leaflet && L) {
+    leaflet.invalidateSize({ pan: false, animate: false });
     if (!point) {
       marker?.remove();
       marker = undefined;
@@ -83,12 +97,14 @@ function syncPoint() {
       marker.on("dragend", () => {
         const p = marker!.getLatLng();
         select(p.lat, p.lng);
-        syncPoint();
       });
     } else marker.setLatLng([point.lat, point.lon]);
-    leaflet.panTo([point.lat, point.lon]);
+    leaflet.setView([point.lat, point.lon], leaflet.getZoom(), {
+      animate: false,
+    });
   }
   if (ymap) {
+    ymap.container.fitToViewport();
     if (!point) {
       if (placemark) ymap.geoObjects.remove(placemark);
       placemark = undefined;
@@ -103,14 +119,13 @@ function syncPoint() {
       placemark.events.add("dragend", () => {
         const p = placemark.geometry.getCoordinates();
         select(p[0], p[1]);
-        syncPoint();
       });
       ymap.geoObjects.add(placemark);
     } else placemark.geometry.setCoordinates([point.lat, point.lon]);
     ymap.setCenter([point.lat, point.lon]);
   }
 }
-watch(() => props.point, syncPoint, { deep: true });
+watch(() => props.point, queueSyncPoint, { deep: true, flush: "post" });
 onMounted(async () => {
   const key = useRuntimeConfig().public.yandexMapsApiKey;
   const p = props.point || props.center;
@@ -152,7 +167,11 @@ onMounted(async () => {
       );
       source.value = "OpenStreetMap";
     }
-    syncPoint();
+    queueSyncPoint();
+    if (container.value) {
+      resizeObserver = new ResizeObserver(queueSyncPoint);
+      resizeObserver.observe(container.value);
+    }
   } catch {
     failure.value =
       "Карта не загрузилась. Попробуйте поиск адреса или геолокацию.";
@@ -162,22 +181,38 @@ onMounted(async () => {
 });
 onBeforeUnmount(() => {
   disposed = true;
+  if (frame !== undefined) cancelAnimationFrame(frame);
+  resizeObserver?.disconnect();
   leaflet?.remove();
   ymap?.destroy();
 });
 </script>
 <template>
-  <div class="delivery-map-block">
+  <div class="delivery-map-block" :class="{ compact }">
     <p class="delivery-map-instruction">
-      Нажмите на нужный дом или перетащите метку
+      {{
+        compact
+          ? "Уточните точку на карте"
+          : "Нажмите на нужный дом или перетащите метку"
+      }}
     </p>
     <div
       ref="container"
       class="delivery-map"
       aria-label="Карта для выбора точки доставки"
     />
+    <button
+      v-if="point"
+      type="button"
+      class="map-center-button"
+      aria-label="Центрировать выбранную точку"
+      title="К выбранной точке"
+      @click="queueSyncPoint"
+    >
+      <AppIcon name="MapPin" :size="18" />
+    </button>
     <p v-if="pending" role="status" class="muted">Загружаем карту…</p>
     <p v-if="failure" role="status" class="error">{{ failure }}</p>
-    <small v-if="source" class="muted">{{ source }}</small>
+    <small v-if="source && !compact" class="muted">{{ source }}</small>
   </div>
 </template>

@@ -69,6 +69,10 @@ a:hover {
   outline: 3px solid #2f6bff;
   outline-offset: 4px;
 }
+input:focus, input:focus-visible, textarea:focus, textarea:focus-visible, select:focus, select:focus-visible {
+  outline: none;
+  border-color: #2f6bff;
+}
 h1,
 h2,
 h3,
@@ -4034,38 +4038,72 @@ input[type="checkbox"] {
   font-size: 13px;
 }
 
-/* Delivery picker stays centered at every viewport size. */
+/* Compact delivery picker: controls and confirmation remain in view. */
 .modal.location-modal {
   position: fixed;
   inset: 0;
   margin: auto;
   width: min(520px, calc(100vw - 24px));
-  max-height: calc(100dvh - 32px);
+  height: min(620px, calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  max-height: none;
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 24px;
+  padding: 20px;
+  overflow: hidden;
 }
-.location-modal > .muted { font-size: 14px; }
-.address-search { display: grid; gap: 8px; margin: 20px 0 12px; }
-.address-search label { font-size: 14px; font-weight: 600; }
+.modal.location-modal[open] { display: flex; flex-direction: column; }
+.location-modal .modal-head { position: static; flex-shrink: 0; margin: 0 0 12px; padding: 0; gap: 10px; }
+.location-modal .modal-head h2 { font-size: 20px; }
+.location-picker-body { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden; }
+.location-picker-body > :not(.location-map-area) { flex-shrink: 0; }
+.location-modal .address-search { display: grid; margin: 0; }
 .address-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.address-search-row input { width: 100%; min-width: 0; }
-.address-search-row .primary { padding-inline: 16px; }
-.address-results { display: grid; gap: 6px; margin: 12px 0; }
-.address-results button { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 12px; text-align: left; border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow-wrap: anywhere; }
-.address-results button[aria-pressed="true"] { border-color: var(--ink); background: var(--surface); }
+.address-search-row input { width: 100%; min-width: 0; font-size: 16px; }
+.location-modal :is(.primary, .secondary, input) { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+.location-modal input { font-size: 16px; }
+.location-geolocation-row { display: flex; align-items: center; gap: 8px; }
+.location-geolocation-row .secondary { flex: 1; }
+.location-geolocation-row .text-button { flex-shrink: 0; }
+.location-modal .location-error { margin: 0; font-size: 12px; line-height: 1.4; }
+.location-map-area { flex: 1; min-height: 0; overflow: hidden; }
+.location-map-view { height: 100%; }
+.address-results { display: grid; align-content: start; gap: 6px; height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.address-results p { margin: 0; }
+.address-results button { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 10px; text-align: left; border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow-wrap: anywhere; font-size: 13px; }
 .address-results button > svg { flex-shrink: 0; }
 .address-results button > span { min-width: 0; }
-.address-results small, .delivery-point-summary small { display: block; color: var(--muted); margin-top: 4px; font-size: 12px; }
-.delivery-point-summary { padding: 14px; border-radius: 12px; background: #f6f7f8; margin: 16px 0; overflow-wrap: anywhere; }
-.location-modal .location-caption { font-size: 11px; margin-bottom: 0; }
+.address-results small, .delivery-point-summary small { display: block; color: var(--muted); margin-top: 3px; font-size: 12px; }
+.location-picker-footer { flex-shrink: 0; display: grid; gap: 8px; padding-top: 10px; }
+.delivery-point-summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #f1f5ff; overflow-wrap: anywhere; }
+.delivery-point-summary > svg { color: var(--blue, #2f6bff); flex-shrink: 0; }
+.delivery-point-summary > div { min-width: 0; }
+.delivery-point-summary strong { font-size: 14px; line-height: 1.3; }
+.location-caption { text-align: center; font-size: 10px; line-height: 1.2; }
+.delivery-map-block.compact { height: 100%; display: flex; flex-direction: column; gap: 6px; margin: 0; min-height: 0; }
+.delivery-map-block.compact .delivery-map-instruction { margin: 0; font-size: 12px; line-height: 1.3; flex-shrink: 0; }
+.delivery-map-block.compact .delivery-map { flex: 1; min-height: 0; height: auto; }
+.location-map-view > .delivery-map { height: 100%; }
 @media (max-width: 480px) {
-  .modal.location-modal { padding: 18px; }
-  .location-modal .modal-head { top: -18px; }
-  .address-search-row { grid-template-columns: minmax(0, 1fr); }
+  .modal.location-modal { width: calc(100vw - 16px); padding: 14px; height: min(620px, calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); }
+  .location-modal .modal-head { margin-bottom: 10px; }
+  .location-modal .modal-head h2 { font-size: 18px; }
+  .location-picker-body { gap: 8px; }
+}
+@media (max-height: 440px) {
+  .location-modal .modal-head { margin-bottom: 6px; }
+  .location-picker-body { gap: 6px; }
+  .location-picker-body:has(input:focus) .location-geolocation-row { display: none; }
+  .delivery-map-block.compact .delivery-map-instruction { display: none; }
+  .location-picker-footer { padding-top: 6px; gap: 6px; }
+  .delivery-point-summary { padding: 6px 10px; }
+  .delivery-point-summary small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .location-caption { display: none; }
 }
 
-.delivery-map-block { margin: 16px 0; }
+.delivery-map-block { position: relative; margin: 16px 0; }
+.map-center-button { position: absolute; top: 32px; right: 10px; z-index: 1000; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); box-shadow: 0 1px 5px #0002; }
+.delivery-coordinates { font-variant-numeric: tabular-nums; }
+@media (max-height: 440px) { .delivery-map-block.compact .map-center-button { top: 8px; } }
 .delivery-map-instruction { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
 .delivery-map { width: 100%; height: clamp(220px, 30dvh, 300px); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #f6f7f8; isolation: isolate; }
 .delivery-map .leaflet-control a { color: #111; }

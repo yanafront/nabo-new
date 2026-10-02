@@ -2,13 +2,25 @@ import { photonQueryVariants } from "../../../shared/address-query";
 import { createError, defineEventHandler, getQuery, setHeader } from "h3";
 import {
   photonAddresses,
+  validDeliveryPoint,
   yandexAddresses,
 } from "../../../shared/delivery-location";
 let nextRequestAt = 0;
 // Fixed server-side provider; never forward cookies or arbitrary browser URLs.
 export default defineEventHandler(async (event) => {
   setHeader(event, "cache-control", "no-store");
-  const q = getQuery(event).q;
+  const query = getQuery(event);
+  const q = query.q;
+  const lat = typeof query.lat === "string" ? Number(query.lat) : undefined;
+  const lon = typeof query.lon === "string" ? Number(query.lon) : undefined;
+  if (
+    (query.lat !== undefined || query.lon !== undefined) &&
+    !validDeliveryPoint(lat, lon)
+  )
+    throw createError({
+      statusCode: 400,
+      message: "Некорректная точка поиска.",
+    });
   if (typeof q !== "string" || q.trim().length < 5 || q.trim().length > 160)
     throw createError({
       statusCode: 400,
@@ -38,6 +50,12 @@ export default defineEventHandler(async (event) => {
     url.searchParams.set("countrycode", "BY");
     url.searchParams.set("bbox", "23,51,33,57");
     url.searchParams.set("limit", "5");
+    if (validDeliveryPoint(lat, lon)) {
+      // Bias ranking toward the saved delivery point; never treat it as GPS
+      // or restrict an explicitly entered city to the current neighbourhood.
+      url.searchParams.set("lat", String(lat));
+      url.searchParams.set("lon", String(lon));
+    }
   }
   try {
     const response = await fetch(url.toString(), {

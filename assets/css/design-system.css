@@ -3182,14 +3182,14 @@ input[type="checkbox"] {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 18px;
   background: white;
   box-shadow: 0 4px 18px #151c2906;
 }
 .dish-card:hover { border-color: #ccd7f5; box-shadow: 0 4px 18px #151c2910; }
 .dish-photo {
   position: relative;
-  aspect-ratio: 16/9;
+  aspect-ratio: 2/1;
   background: #f3f4f6;
 }
 .dish-photo img {
@@ -3232,14 +3232,14 @@ input[type="checkbox"] {
   font-size: 11px;
 }
 .dish-info {
-  padding: 12px;
-  gap: 8px;
+  padding: 10px 12px;
+  gap: 6px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 .dish-info h2 {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.3;
   margin: 0;
   display: -webkit-box;
@@ -3273,6 +3273,36 @@ input[type="checkbox"] {
   margin: auto 0 0;
   font-size: 12px;
 }
+.dish-nutrition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: auto;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.dish-nutrition strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.dish-nutrition strong > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+.dish-macros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--muted);
+}
+.dish-macros > span {
+  white-space: nowrap;
+}
+.dish-macros abbr {
+  text-decoration: none;
+}
 .dish-bottom {
   display: flex;
   justify-content: space-between;
@@ -3283,7 +3313,7 @@ input[type="checkbox"] {
   font-size: 11px;
 }
 .dish-skeleton {
-  height: 330px;
+  height: 230px;
   background: #f1f2f4;
   border-radius: 24px;
 }
@@ -3637,6 +3667,31 @@ input[type="checkbox"] {
   .mobile-nav {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+  .product-start {
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 16px;
+  }
+  .product-start > svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .product-start > div {
+    min-width: 0;
+  }
+  .product-start h2 {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .product-start p {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
   .recipe-search {
     gap: 6px;
     padding: 6px 10px;
@@ -3653,10 +3708,13 @@ input[type="checkbox"] {
     gap: 12px;
   }
   .dish-info {
-    padding: 12px;
+    padding: 10px;
   }
   .dish-info h2 {
-    font-size: 16px;
+    font-size: 14px;
+  }
+  .dish-skeleton {
+    height: 160px;
   }
   .dish-bottom {
     flex-wrap: wrap;
@@ -4132,3 +4190,55 @@ input[type="checkbox"] {
 .account-cart p { font-size: 13px; margin: 6px 0 12px; }
 .account-cart-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .account-cart-actions > * { min-width: 0; white-space: normal; }
+
+@media (max-width: 760px) {
+  .basket-page .page-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .basket-page .page-heading > div { min-width: 0; width: 100%; }
+  .basket-page .page-heading h1 { margin-bottom: 8px; line-height: 1.2; }
+  .basket-heading-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .basket-heading-actions > .secondary {
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 8px;
+    gap: 6px;
+    font-size: 12px;
+    white-space: normal;
+    text-align: center;
+    justify-content: center;
+  }
+  .basket-heading-actions svg { flex-shrink: 0; }
+  .basket-heading-actions > .text-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 44px;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+  .basket-page .flow-steps { flex-wrap: wrap; gap: 8px 14px; padding-bottom: 16px; }
+  .basket-page .account-cart { padding: 14px; border-radius: 16px; }
+  .basket-page .account-cart-actions { gap: 8px; }
+  .basket-page .account-cart-actions > button { font-size: 12px; max-width: 100%; }
+  .basket-page .product-row { grid-template-columns: 44px minmax(0, 1fr) minmax(90px, max-content); }
+  .basket-page .product-row > .quantity { grid-column: 1 / 3; }
+  .basket-page .row-price { min-width: 0; font-size: 15px; }
+  .basket-page .row-unit-price { font-size: 10px; max-width: 115px; }
+  .basket-page .panel-heading { flex-wrap: wrap; gap: 6px 12px; }
+  .basket-page .summary-total { flex-wrap: wrap; gap: 8px; }
+}
+@media (max-width: 760px) {
+  .header .location { min-width: 0; flex: 1; }
+  .header .location span { min-width: 0; }
+  .header .location svg, .header .account-link { flex-shrink: 0; }
+}
+@media (max-width: 360px) {
+  .header .brand-mark { width: 110px; }
+}

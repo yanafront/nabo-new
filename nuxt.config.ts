@@ -12,6 +12,14 @@ export default defineNuxtConfig({
     head: {
       title: "Nabo — что сегодня приготовим?",
       htmlAttrs: { lang: "ru" },
+      noscript: [
+        {
+          key: "yandex-metrika",
+          tagPosition: "bodyClose",
+          innerHTML:
+            '<div><img src="https://mc.yandex.ru/watch/113355204" style="position:absolute; left:-9999px;" alt="" /></div>',
+        },
+      ],
       meta: [
         {
           name: "description",

@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  recipeCategories,
-  recipeCollections,
-  type Recipe,
-} from "~/shared/recipe/model";
+import { recipeCategories, type Recipe } from "~/shared/recipe/model";
 const route = useRoute();
 const router = useRouter();
 const query = ref(typeof route.query.q === "string" ? route.query.q : "");
@@ -96,13 +92,6 @@ function chooseCategory(id: string) {
   category.value = id;
   page.value = 1;
 }
-function chooseCollection(id: string) {
-  query.value = "";
-  search.value = "";
-  category.value = "";
-  collection.value = collection.value === id ? "" : id;
-  page.value = 1;
-}
 function submitSearch() {
   search.value = query.value.trim();
   if (search.value) {
@@ -123,7 +112,6 @@ function reset() {
   <div class="inner-page recipe-catalog">
     <div class="page-heading">
       <div>
-        <span class="eyebrow">ИДЕЯ БЛЮДА → ВЫГОДНАЯ КОРЗИНА</span>
         <h1>Что приготовить</h1>
         <p class="muted">Выберите блюдо. Порции и покупки подстроим под вас.</p>
       </div>
@@ -161,21 +149,6 @@ function reset() {
         {{ c.title }}
       </button>
     </nav>
-    <details class="recipe-more-filters" :open="Boolean(collection)">
-      <summary>
-        <AppIcon name="SlidersHorizontal" :size="16" /> Подборки
-      </summary>
-      <div class="recipe-collections" aria-label="Подборки">
-        <button
-          v-for="c in recipeCollections"
-          :key="c.id"
-          :aria-pressed="collection === c.id"
-          @click="chooseCollection(c.id)"
-        >
-          {{ c.title }}
-        </button>
-      </div>
-    </details>
     <p v-if="collection === 'budget'" class="info-note">
       Ищем блюдо на
       <label class="inline-number"

@@ -9,6 +9,7 @@ const props = defineProps<{
   contextQuery?: Record<string, string | number>;
 }>();
 const nutrition = computed(() => perServing(props.recipe));
+const grams = (value: number) => Math.round(value).toLocaleString("ru-RU");
 const failed = ref(false);
 </script>
 <template>
@@ -35,19 +36,33 @@ const failed = ref(false);
       >
     </div>
     <div class="dish-info">
-      <span class="dish-tag">{{
-        recipeCategories.find((c) => c.id === recipe.categoryId)?.title
-      }}</span>
       <h2 :title="recipe.title">{{ recipe.title }}</h2>
-      <RecipeNutrition v-if="nutrition" :nutrition="nutrition" compact />
-      <p v-else class="muted nutrition-unavailable">
-        Пищевая ценность не указана
-      </p>
+      <div
+        v-if="nutrition"
+        class="dish-nutrition"
+        aria-label="КБЖУ на одну порцию"
+      >
+        <strong
+          >{{ Math.round(nutrition.calories) }} ккал<span>
+            / порция</span
+          ></strong
+        >
+        <span class="dish-macros">
+          <span
+            ><abbr title="Белки">Б</abbr> {{ grams(nutrition.protein) }} г</span
+          >
+          <span><abbr title="Жиры">Ж</abbr> {{ grams(nutrition.fat) }} г</span>
+          <span
+            ><abbr title="Углеводы">У</abbr>
+            {{ grams(nutrition.carbs) }} г</span
+          >
+        </span>
+      </div>
       <div class="dish-bottom">
         <span>{{
           quantityLabel(recipe.servings, "порция", "порции", "порций")
-        }}</span
-        ><span>{{
+        }}</span>
+        <span>{{
           quantityLabel(
             recipe.ingredients.length,
             "ингредиент",

@@ -199,14 +199,16 @@ onBeforeUnmount(() => {
           </li>
         </ol>
         <p v-else>Шаги приготовления не переданы источником.</p>
-        <p>
-          {{ recipe.source }} · {{ recipe.license }}<br /><a
+        <p class="muted">
+          Источник данных:
+          <a
             v-if="recipe.sourceUrl"
             :href="recipe.sourceUrl"
             target="_blank"
             rel="noopener noreferrer"
-            >Открыть источник</a
-          >
+            >{{ recipe.source }}</a
+          ><span v-else>{{ recipe.source }}</span>
+          <template v-if="recipe.license"> · {{ recipe.license }}</template>
         </p>
         <small v-if="recipe.imageAttribution"
           >Фото: {{ recipe.imageAttribution }}</small

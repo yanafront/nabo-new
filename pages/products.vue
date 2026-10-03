@@ -164,7 +164,6 @@ onBeforeUnmount(() => {
   <div class="inner-page products-page">
     <div class="page-heading">
       <div>
-        <span class="eyebrow">ВЫБОР ВСЕГДА ЗА ВАМИ</span>
         <h1>{{ replaceId ? "Выберите замену" : "Товары" }}</h1>
         <p class="muted">
           Найдите товар и сравните предложения во вкладках магазинов. Добавляем

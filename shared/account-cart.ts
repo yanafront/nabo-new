@@ -14,13 +14,23 @@ export function accountCartItems(items: Item[]): AccountCartItem[] {
     }));
 }
 export function refreshedItem(item: Item, result?: ProductResult): Item {
+  if (!item.product) return item;
   if (
-    !item.product ||
     !result ||
     item.product.sourceId !== result.id ||
     item.product.storeId !== result.storeId
-  )
-    return item;
+  ) {
+    return {
+      ...item,
+      product: {
+        ...item.product,
+        price: null,
+        refreshStatus: "error",
+        refreshError:
+          "Бэкенд не подтвердил цену этого товара. Обновите цены ещё раз.",
+      },
+    };
+  }
   if (
     result.status === "ok" &&
     result.product &&

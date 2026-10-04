@@ -58,7 +58,7 @@ describe("Реальные товары для рецепта", () => {
       recipeBasket([{ ...offer, lines: [line, { ...line, itemId: "second" }] }])
         ?.items[0].quantity,
     ).toBe(2));
-  it("учитывает остаток при объединении", () =>
+  it("не отбрасывает выбор бэкенда по локальному пересчёту остатка", () =>
     expect(
       recipeBasket([
         {
@@ -68,8 +68,8 @@ describe("Реальные товары для рецепта", () => {
             { ...line, itemId: "second", quantity: 10 },
           ],
         },
-      ])?.missing,
-    ).toEqual(["молоко"]));
+      ])?.items[0].quantity,
+    ).toBe(20));
   it("предпочитает более полную корзину", () => {
     const empty = {
       ...offer,
@@ -80,7 +80,7 @@ describe("Реальные товары для рецепта", () => {
   });
 });
 
-it("для свежих томатов не подставляет маринованные", () => {
+it("не меняет выбранные бэкендом томаты на локальную альтернативу", () => {
   const pickled = { ...p, name: "Томаты маринованные черри", id: "pickled" };
   const fresh = { ...p, name: "Томаты черри свежие", id: "fresh" };
   const result = recipeBasket([
@@ -97,10 +97,10 @@ it("для свежих томатов не подставляет марино�
       ],
     },
   ]);
-  expect(result?.items[0].product?.sourceId).toBe("fresh");
+  expect(result?.items[0].product?.sourceId).toBe("pickled");
 });
 
-it("recalculates packages when a selected recipe product is unavailable", () => {
+it("does not pick an alternative when the backend selected product is unavailable", () => {
   const demand = {
     ingredientId: "milk",
     query: "молоко",
@@ -128,7 +128,8 @@ it("recalculates packages when a selected recipe product is unavailable", () => 
       ],
     },
   ]);
-  expect(result?.items[0].quantity).toBe(2);
+  expect(result?.items).toEqual([]);
+  expect(result?.missing).toEqual(["молоко"]);
 });
 it("combines equal ingredient requirements without changing input", () => {
   const requirement = {
@@ -148,7 +149,7 @@ it("combines equal ingredient requirements without changing input", () => {
   expect(result?.items[0].requirement?.amount).toBe(1000);
   expect(requirement.amount).toBe(500);
 });
-it("does not add sour-cream flavoured chips instead of recipe sour cream", () => {
+it("preserves the backend selection even when a local ingredient filter disagrees", () => {
   const chips = { ...p, id: "chips", name: "Чипсы Лэйс Сметана-Лук 140г" };
   const cream = { ...p, id: "cream", name: "Сметана Брест-Литовск 20% 180г" };
   const result = recipeBasket([
@@ -164,5 +165,41 @@ it("does not add sour-cream flavoured chips instead of recipe sour cream", () =>
       ],
     },
   ]);
-  expect(result?.items[0].product?.sourceId).toBe("cream");
+  expect(result?.items[0].product?.sourceId).toBe("chips");
+});
+
+it("keeps backend quantity rather than inferring packs from ingredient demand", () => {
+  const demand = {
+    ingredientId: "milk",
+    query: "молоко",
+    amount: 1500,
+    dimension: "volume" as const,
+  };
+  const result = recipeBasket([
+    {
+      ...offer,
+      lines: [
+        { ...line, quantity: 3, demand, selected: { ...p, unit: "1 л" } },
+      ],
+    },
+  ]);
+  expect(result?.items[0].quantity).toBe(3);
+});
+it("does not silently add an alternative when selected is null", () => {
+  const result = recipeBasket([
+    { ...offer, lines: [{ ...line, selected: null, alternatives: [p] }] },
+  ]);
+  expect(result?.items).toEqual([]);
+  expect(result?.missing).toEqual(["молоко"]);
+});
+
+it("keeps backend store ordering instead of choosing the cheaper local subtotal", () => {
+  const cheaper = {
+    ...offer,
+    storeId: "santa" as const,
+    lines: [
+      { ...line, selected: { ...p, storeId: "santa" as const, price: 0.01 } },
+    ],
+  };
+  expect(recipeBasket([offer, cheaper])?.storeId).toBe("gippo");
 });

@@ -4635,15 +4635,3 @@ input[type="checkbox"] {
     font-size: 18px;
   }
 }
-
-/* Delivery estimates stay beside each store, without changing product ranking. */
-.recommended-offer .delivery-cost { margin: 14px 0; }
-.offer-delivery { grid-column: 1 / -1; grid-row: 2; }
-.offer > .secondary { grid-column: 3; grid-row: 1; }
-.comparison-footer .delivery-cost { margin: 8px 0; }
-@media (max-width: 600px) {
-  .offer > .secondary { grid-column: 1 / -1; grid-row: 3; }
-  .offer-delivery { grid-row: 2; }
-}
-
-.comparison-scroll > .delivery-cost { padding: 0 16px 12px; border-top: 0; }

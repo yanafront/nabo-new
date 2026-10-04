@@ -1,4 +1,3 @@
-import { packagesFor, ingredientProductMatches } from "./recipe/purchasing";
 import type { Item, Product } from "../data/catalog";
 import {
   providerName,
@@ -23,37 +22,15 @@ export function retailProduct(source: RetailProduct): Product {
 }
 /** Only actual upstream products enter a basket; missing ingredients stay outside it. */
 export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
-  const freshIngredients = new Set([
-    "tomato",
-    "potato",
-    "beet",
-    "carrot",
-    "cabbage",
-    "onion",
-    "avocado",
-    "banana",
-  ]);
-  const preserved =
-    /маринов|сол[её]н|консерв|пюре|суш[её]н|чипс|соус|салат|паста|сок|приправа|жарен|заморож/i;
   const options = offers.map((offer) => {
     const items: Item[] = [];
     const missing: string[] = [];
     const missingIds: string[] = [];
     const resolvedQueries: string[] = [];
-    let adjusted = false;
+    const adjusted = false;
     for (const line of offer.lines) {
-      const suitable = (p: RetailProduct) =>
-        p.available &&
-        ingredientProductMatches(p, line.query) &&
-        (line.demand
-          ? packagesFor(p, line.demand) !== undefined
-          : p.stock === null || p.stock >= line.quantity) &&
-        (!freshIngredients.has(line.itemId) || !preserved.test(p.name));
-      const source = line.error
-        ? null
-        : line.selected && suitable(line.selected)
-          ? line.selected
-          : line.alternatives.find(suitable);
+      // Use the backend choice only. Alternatives require an explicit user action.
+      const source = line.error ? null : line.selected;
       if (!source || !source.available) {
         missing.push(line.query);
         missingIds.push(line.itemId);
@@ -61,16 +38,8 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
       }
       const product = retailProduct(source);
       const existing = items.find((i) => i.productId === product.id);
-      const quantity =
-        (existing?.quantity || 0) +
-        (line.demand ? packagesFor(source, line.demand)! : line.quantity);
-      if (quantity > 99 || (source.stock !== null && quantity > source.stock)) {
-        missing.push(line.query);
-        missingIds.push(line.itemId);
-        continue;
-      }
+      const quantity = (existing?.quantity || 0) + line.quantity;
       resolvedQueries.push(line.query);
-      if (source.id !== line.selected?.id) adjusted = true;
       if (existing) {
         existing.quantity = quantity;
         const demand = requests.find(
@@ -111,5 +80,6 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
       ),
     };
   });
-  return options.sort((a, b) => b.matched - a.matched || a.total - b.total)[0];
+  // Keep backend ordering; do not choose a cheaper or locally "better" store.
+  return options.find((option) => option.items.length > 0) || options[0];
 }

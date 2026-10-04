@@ -65,7 +65,36 @@ describe("account basket", () => {
     expect(result.quantity).toBe(3);
     expect(result.requirement).toEqual(row.requirement);
     expect(row.product?.price).toBe(2);
-    expect(refreshedItem(row, { ...fresh, storeId: "sosedi" })).toBe(row);
+    const mismatched = refreshedItem(row, { ...fresh, storeId: "sosedi" });
+    expect(mismatched.product?.price).toBeNull();
+    expect(mismatched.product?.storeId).toBe("green");
+    expect(mismatched.product?.refreshStatus).toBe("error");
+  });
+  it("does not retain stale prices when the backend omits an item", () => {
+    const result = refreshedItem(row);
+    expect(result.product?.price).toBeNull();
+    expect(result.product?.refreshStatus).toBe("error");
+    expect(result.quantity).toBe(3);
+    expect(result.product?.sourceId).toBe("12");
+    expect(row.product?.price).toBe(2);
+  });
+  it("does not substitute a different product returned with the same response ID", () => {
+    const result = refreshedItem(row, {
+      ...fresh,
+      product: { ...fresh.product!, id: "other", name: "Другой товар" },
+    });
+    expect(result.product?.price).toBeNull();
+    expect(result.product?.sourceId).toBe("12");
+    expect(result.product?.name).toBe("Молоко");
+    expect(result.quantity).toBe(3);
+  });
+  it("restores an unconfirmed saved item without inventing its price", () => {
+    const restored = restoredCartItems([
+      { id: "12", storeId: "green", name: "Молоко", count: 3 },
+    ]);
+    expect(restored[0].product?.price).toBeNull();
+    expect(restored[0].product?.refreshStatus).toBe("error");
+    expect(restored[0].quantity).toBe(3);
   });
   it("does not include failed, missing or unavailable products in the total", () => {
     for (const status of ["not_found", "error"] as const) {

@@ -24,15 +24,10 @@ export function useRetail() {
   const keyFor = (items: CompareItem[]) =>
     JSON.stringify([items, location.value.lat, location.value.lon]);
   const offers = computed(() =>
-    comparisons.value
-      .map((offer) => {
-        const store = retailStores.find((s) => s.id === offer.storeId)!;
-        return { ...offer, ...store, ...summarizeComparison(offer) };
-      })
-      .sort(
-        (a, b) =>
-          Number(b.complete) - Number(a.complete) || a.subtotal - b.subtotal,
-      ),
+    comparisons.value.map((offer) => {
+      const store = retailStores.find((s) => s.id === offer.storeId)!;
+      return { ...offer, ...store, ...summarizeComparison(offer) };
+    }),
   );
   async function compare(items: CompareItem[]) {
     if (!items.length) return;

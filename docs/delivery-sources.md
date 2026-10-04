@@ -1,4 +1,6 @@
-# Delivery conditions checked 2026-10-04
+# Archived delivery research, checked 2026-10-04
+
+Local estimates are no longer displayed: the current comparison screen uses backend data only. The published tariffs below are retained for reference, not used to calculate checkout totals.
 
 The comparison API returns product subtotals only. Frontend estimates are published tariffs, not delivery availability or checkout quotes. Product ranking and savings remain product-only.
 

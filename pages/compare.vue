@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { packagesFor } from "~/shared/recipe/purchasing";
-import { recommend } from "~/shared/recommendation";
-import { retailStores } from "~/shared/yandex";
 import {
   productSourceUrl,
   providerName,
@@ -9,7 +6,7 @@ import {
   type StoreId,
   type RetailProduct,
 } from "~/shared/yandex";
-const { items, compareItems, notice, unresolved } = useBasket();
+const { items, compareItems, unresolved } = useBasket();
 const {
   offers,
   comparisons,
@@ -25,15 +22,6 @@ const onlyComplete = ref(false);
 const visible = computed(() =>
   offers.value.filter((o) => !onlyComplete.value || o.complete),
 );
-const recommendation = computed(() => recommend(offers.value));
-const best = computed(() =>
-  offers.value.find((o) => o.id === recommendation.value.best?.storeId),
-);
-const otherOffers = computed(() =>
-  visible.value.filter((o) => o.id !== best.value?.id),
-);
-const storeName = (id: string) =>
-  retailStores.find((s) => s.id === id)?.name || id;
 const requiredMissing = (offer: (typeof offers.value)[number]) =>
   offer.lines.filter(
     (line) =>
@@ -46,21 +34,6 @@ function openOffer(id: StoreId) {
   detail.value = id;
   copied.value = false;
   copyError.value = "";
-}
-async function copySplit() {
-  try {
-    await navigator.clipboard.writeText(
-      recommendation.value
-        .split!.groups.map(
-          (group) =>
-            `${storeName(group.storeId)}\n${group.lines.map((line) => `${line.selected!.name} · ${line.selected!.unit} × ${line.quantity}`).join("\n")}`,
-        )
-        .join("\n\n"),
-    );
-    notice.value = "Списки двух магазинов скопированы";
-  } catch {
-    copyError.value = "Не удалось скопировать список. Выделите товары ниже.";
-  }
 }
 const detail = ref<StoreId | null>(null);
 const selected = computed(() =>
@@ -96,11 +69,6 @@ function choose(itemId: string, id: string) {
   const line = store?.lines.find((l) => l.itemId === itemId);
   if (line) {
     line.selected = line.alternatives.find((p) => p.id === id) || null;
-    if (line.demand && line.selected) {
-      const quantity = packagesFor(line.selected, line.demand);
-      if (quantity === undefined) line.selected = null;
-      else line.quantity = quantity;
-    }
     line.replacement = line.selected?.name !== line.query;
     expanded.value = null;
   }
@@ -180,115 +148,15 @@ const time = (value: string) =>
         >
       </div>
       <template v-if="!pending && offers.length">
-        <section v-if="best" class="recommended-offer">
-          <div class="recommendation-label">
-            <AppIcon name="Check" :size="18" />Выгоднее по стоимости товаров
-          </div>
-          <div class="recommended-main">
-            <div class="store-identity">
-              <span class="store-logo" :style="{ background: best.color }">{{
-                best.letter
-              }}</span>
-              <div>
-                <h2>{{ best.name }}</h2>
-                <p>Найдена вся корзина</p>
-                <NearbyStoresLink :store-id="best.id" />
-              </div>
-            </div>
-            <div class="recommended-price">
-              {{ money(best.subtotal) }} <small>BYN · за товары</small>
-            </div>
-          </div>
-          <p v-if="recommendation.saving > 0" class="saving">
-            Товары на {{ money(recommendation.saving) }} BYN дешевле, чем в
-            {{ storeName(recommendation.baseline!) }}
-          </p>
-          <p v-else class="recommendation-reason">
-            {{
-              offers.filter((o) => o.complete).length === 1
-                ? "Единственный магазин, где найдена вся корзина."
-                : "Минимальная сумма среди найденных полных корзин."
-            }}
-          </p>
-          <DeliveryCost :store-id="best.id" :subtotal="best.subtotal" />
-          <button class="primary" @click="openOffer(best.id)">
-            Проверить и перейти к покупке
-            <AppIcon name="ArrowRight" :size="18" /></button
-          ><small>Окончательную сумму подтвердит магазин</small>
-        </section>
-        <div v-else class="basket-notice">
-          <strong>Целиком корзину пока не нашли</strong>
-          <p>
-            Ниже — доступные товары в каждом магазине. Проверьте недостающие
-            позиции перед покупкой.
-          </p>
-        </div>
-        <details v-if="recommendation.split" class="split-offer">
-          <summary>
-            <span
-              ><AppIcon name="ShoppingBasket" :size="19" />{{
-                recommendation.split.saving > 0
-                  ? `Ещё ${money(recommendation.split.saving)} BYN можно сэкономить`
-                  : "Весь список есть в двух магазинах"
-              }}<small
-                >Если купить в двух местах · без двух доставок и сборов</small
-              ></span
-            ><AppIcon name="ChevronDown" :size="18" />
-          </summary>
-          <p>
-            Товары обойдутся в
-            <strong>{{ money(recommendation.split.subtotal) }} BYN</strong>.
-            Дополнительная доставка и время могут перекрыть выгоду. Проверьте
-            выбранные упаковки.
-          </p>
-          <div
-            v-for="group in recommendation.split.groups"
-            :key="group.storeId"
-          >
-            <h3>{{ storeName(group.storeId) }}</h3>
-            <NearbyStoresLink :store-id="group.storeId" />
-            <DeliveryCost
-              :store-id="group.storeId"
-              :subtotal="
-                group.lines.reduce(
-                  (total, line) =>
-                    total + (line.selected?.price || 0) * line.quantity,
-                  0,
-                )
-              "
-              context="split"
-            />
-            <ul>
-              <li v-for="line in group.lines" :key="line.itemId">
-                {{ line.selected!.name }} · {{ line.selected!.unit }} ×
-                {{ line.quantity }}
-              </li>
-            </ul>
-            <a
-              class="text-button"
-              :href="storeUrl(group.storeId)"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Открыть {{ storeName(group.storeId) }}
-              <AppIcon name="ExternalLink" :size="14"
-            /></a>
-          </div>
-          <button class="secondary" @click="copySplit">
-            Скопировать оба списка
-          </button>
-        </details>
-        <p v-if="copyError && !selected" class="error" role="alert">
-          {{ copyError }}
-        </p>
         <div class="compare-toolbar">
-          <h2>{{ best ? "Другие варианты" : "Что нашли магазины" }}</h2>
+          <h2>Предложения магазинов</h2>
           <label class="checkbox"
             ><input v-model="onlyComplete" type="checkbox" />Только
             полные</label
           >
         </div>
         <div class="offers">
-          <article v-for="offer in otherOffers" :key="offer.id" class="offer">
+          <article v-for="offer in visible" :key="offer.id" class="offer">
             <div class="store-identity">
               <span class="store-logo" :style="{ background: offer.color }">{{
                 offer.letter
@@ -329,41 +197,26 @@ const time = (value: string) =>
                 offer.complete ? "За все товары" : "За найденные товары"
               }}</span>
             </div>
-            <DeliveryCost
-              class="offer-delivery"
-              :store-id="offer.id"
-              :subtotal="offer.subtotal"
-              :complete="offer.complete"
-            />
             <button class="secondary" @click="openOffer(offer.id)">
               {{ offer.complete ? "Посмотреть" : "Проверить состав"
               }}<AppIcon name="ArrowRight" :size="16" />
             </button>
           </article>
         </div>
-        <p v-if="!otherOffers.length" class="empty-search">
-          Других {{ onlyComplete ? "полных " : "" }}корзин пока нет.
+        <p v-if="!visible.length" class="empty-search">
+          {{ onlyComplete ? "Полных корзин" : "Предложений" }} пока нет.
         </p>
         <details class="trust-details">
-          <summary>Почему такая цена и как считаем выгоду</summary>
+          <summary>Откуда цены и товары</summary>
           <p>
             «Магазины рядом» открывает поиск сети на Яндекс Картах рядом с
             выбранной точкой. Цены и наличие в офлайн-магазине могут отличаться
             от онлайн-каталога.
           </p>
           <p>
-            Сравниваем подобранные корзины с одинаковым списком и количеством
-            позиций. Бренды и упаковки могут различаться. Экономия — разница с
-            ближайшей по цене полной корзиной, а не обещание одинаковых товаров
-            во всех магазинах.
-          </p>
-          <p>
-            Неполные корзины не участвуют в выборе лучшей полной корзины. Цены
-            из каталогов магазинов и Яндекс Еды, кеш до 2 минут. Рейтинг и
-            экономия сравнивают только товары. Доставка показана отдельно по
-            опубликованным условиям; неизвестные сборы не считаются нулевыми.
-            Адрес, интервал, упаковка и скидки могут изменить сумму при
-            оформлении.
+            Показываем выбранные товары, количества и варианты замены из ответа
+            бэкенда. Сумма за товары — цена каждой позиции × количество.
+            Доставка и сборы в эту сумму не входят.
           </p>
           <p v-for="offer in offers" :key="offer.id">
             {{ offer.name }} · проверено {{ time(offer.fetchedAt) }}
@@ -385,12 +238,6 @@ const time = (value: string) =>
       :title="`${selected.name} · состав корзины`"
       @close="detail = null"
       ><div class="comparison-scroll">
-        <DeliveryCost
-          :store-id="selected.id"
-          :subtotal="selected.subtotal"
-          :complete="selected.complete"
-          conditions-only
-        />
         <div class="comparison-lines">
           <div
             v-for="line in selected.lines"
@@ -485,14 +332,9 @@ const time = (value: string) =>
           <span>{{ selected.lines.length }} позиций · за товары</span
           ><strong>{{ money(selected.subtotal) }} BYN</strong>
         </div>
-        <DeliveryCost
-          :store-id="selected.id"
-          :subtotal="selected.subtotal"
-          :complete="selected.complete"
-          summary-only
-        />
         <p>
-          Список нужно добавить у магазина. Итог подтвердится при оформлении.
+          Список нужно добавить у магазина. Доставка и сборы уточняются при
+          оформлении.
         </p>
         <NearbyStoresLink :store-id="selected.id" />
         <div class="comparison-footer-actions">

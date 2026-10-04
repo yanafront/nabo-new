@@ -227,31 +227,23 @@ describe("ASP.NET backend bridge", () => {
       expect(last.cookie).toBeUndefined();
     }
   });
-  it("sizes recipe quantities while keeping the backend contract unchanged", async () => {
+  it("preserves recipe request and backend response without local selection or sizing", async () => {
     const requirement = {
       ingredientId: "chicken-breast",
       query: "Куриное филе",
       amount: 600,
       dimension: "mass",
     };
-    const res = await post("/api/yandex/compare", {
-      items: [{ id: "recipe-test", query: "Филе", quantity: 1, requirement }],
-    });
+    const body = {
+      items: [{ id: "recipe-test", query: "Филе", quantity: 3, requirement }],
+    };
+    const res = await post("/api/yandex/compare", body);
     expect(res.status).toBe(200);
     const result = await res.json();
-    expect(result.offers[0].lines[0].quantity).toBe(2);
-    expect(result.offers[0].lines[0].demand).toEqual(requirement);
-    expect(JSON.parse(last.body).items[0]).toEqual({
-      id: "recipe-test",
-      query: "Куриное филе",
-      quantity: 1,
-    });
-    const invalid = await post("/api/yandex/compare", {
-      items: [
-        { id: "recipe-test", requirement: { ...requirement, amount: -1 } },
-      ],
-    });
-    expect(invalid.status).toBe(400);
+    expect(result.offers[0].lines[0].quantity).toBe(1);
+    expect(result.offers[0].lines[0].selected.id).toBe("chicken");
+    expect(result.offers[0].lines[0].demand).toBeUndefined();
+    expect(JSON.parse(last.body)).toEqual(body);
   });
   it("preserves rate limit status and retry header", async () => {
     const res = await post("/api/yandex/search", { query: "limited" });

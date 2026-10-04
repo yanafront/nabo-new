@@ -182,7 +182,7 @@ const time = (value: string) =>
       <template v-if="!pending && offers.length">
         <section v-if="best" class="recommended-offer">
           <div class="recommendation-label">
-            <AppIcon name="Check" :size="18" />Самая выгодная полная корзина
+            <AppIcon name="Check" :size="18" />Выгоднее по стоимости товаров
           </div>
           <div class="recommended-main">
             <div class="store-identity">
@@ -196,11 +196,11 @@ const time = (value: string) =>
               </div>
             </div>
             <div class="recommended-price">
-              {{ money(best.subtotal) }} <small>BYN</small>
+              {{ money(best.subtotal) }} <small>BYN · за товары</small>
             </div>
           </div>
           <p v-if="recommendation.saving > 0" class="saving">
-            На {{ money(recommendation.saving) }} BYN дешевле, чем в
+            Товары на {{ money(recommendation.saving) }} BYN дешевле, чем в
             {{ storeName(recommendation.baseline!) }}
           </p>
           <p v-else class="recommendation-reason">
@@ -210,10 +210,11 @@ const time = (value: string) =>
                 : "Минимальная сумма среди найденных полных корзин."
             }}
           </p>
+          <DeliveryCost :store-id="best.id" :subtotal="best.subtotal" />
           <button class="primary" @click="openOffer(best.id)">
             Проверить и перейти к покупке
             <AppIcon name="ArrowRight" :size="18" /></button
-          ><small>За товары · доставка и сборы отдельно</small>
+          ><small>Окончательную сумму подтвердит магазин</small>
         </section>
         <div v-else class="basket-notice">
           <strong>Целиком корзину пока не нашли</strong>
@@ -246,6 +247,17 @@ const time = (value: string) =>
           >
             <h3>{{ storeName(group.storeId) }}</h3>
             <NearbyStoresLink :store-id="group.storeId" />
+            <DeliveryCost
+              :store-id="group.storeId"
+              :subtotal="
+                group.lines.reduce(
+                  (total, line) =>
+                    total + (line.selected?.price || 0) * line.quantity,
+                  0,
+                )
+              "
+              context="split"
+            />
             <ul>
               <li v-for="line in group.lines" :key="line.itemId">
                 {{ line.selected!.name }} · {{ line.selected!.unit }} ×
@@ -317,6 +329,12 @@ const time = (value: string) =>
                 offer.complete ? "За все товары" : "За найденные товары"
               }}</span>
             </div>
+            <DeliveryCost
+              class="offer-delivery"
+              :store-id="offer.id"
+              :subtotal="offer.subtotal"
+              :complete="offer.complete"
+            />
             <button class="secondary" @click="openOffer(offer.id)">
               {{ offer.complete ? "Посмотреть" : "Проверить состав"
               }}<AppIcon name="ArrowRight" :size="16" />
@@ -341,8 +359,11 @@ const time = (value: string) =>
           </p>
           <p>
             Неполные корзины не участвуют в выборе лучшей полной корзины. Цены
-            из каталогов магазинов и Яндекс Еды, кеш до 2 минут. Доставка и
-            сборы не включены.
+            из каталогов магазинов и Яндекс Еды, кеш до 2 минут. Рейтинг и
+            экономия сравнивают только товары. Доставка показана отдельно по
+            опубликованным условиям; неизвестные сборы не считаются нулевыми.
+            Адрес, интервал, упаковка и скидки могут изменить сумму при
+            оформлении.
           </p>
           <p v-for="offer in offers" :key="offer.id">
             {{ offer.name }} · проверено {{ time(offer.fetchedAt) }}
@@ -364,6 +385,12 @@ const time = (value: string) =>
       :title="`${selected.name} · состав корзины`"
       @close="detail = null"
       ><div class="comparison-scroll">
+        <DeliveryCost
+          :store-id="selected.id"
+          :subtotal="selected.subtotal"
+          :complete="selected.complete"
+          conditions-only
+        />
         <div class="comparison-lines">
           <div
             v-for="line in selected.lines"
@@ -458,7 +485,15 @@ const time = (value: string) =>
           <span>{{ selected.lines.length }} позиций · за товары</span
           ><strong>{{ money(selected.subtotal) }} BYN</strong>
         </div>
-        <p>Список нужно добавить у магазина. Доставка и сборы отдельно.</p>
+        <DeliveryCost
+          :store-id="selected.id"
+          :subtotal="selected.subtotal"
+          :complete="selected.complete"
+          summary-only
+        />
+        <p>
+          Список нужно добавить у магазина. Итог подтвердится при оформлении.
+        </p>
         <NearbyStoresLink :store-id="selected.id" />
         <div class="comparison-footer-actions">
           <button class="secondary" @click="copy">

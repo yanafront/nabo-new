@@ -21,7 +21,10 @@ function restore(id: string) {
       <div>
         <div class="eyebrow small"></div>
         <h1>Сохранённое</h1>
-        <p class="muted">Корзина аккаунта и списки для повторных покупок.</p>
+        <p class="muted">
+          Сохранение доступно после входа. Списки — в этом браузере, корзина
+          аккаунта — на других устройствах.
+        </p>
       </div>
     </div>
     <AccountCart />

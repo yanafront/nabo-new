@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { providerName } from "~/shared/yandex";
 const {
   items,
   title,
@@ -6,6 +7,7 @@ const {
   remove,
   change,
   save,
+  saving,
   clear,
   unresolved,
   pendingIngredients,
@@ -13,6 +15,11 @@ const {
 const { retryMissing, resolving, resolveError } = useRecipeBasket();
 const { refreshPrices, pricesPending, pricesError } = useCartPrices();
 const confirmClear = ref(false);
+const stores = computed(() =>
+  [
+    ...new Set(rows.value.map((row) => row.product.storeId).filter(Boolean)),
+  ].map((id) => providerName(id!)),
+);
 const hasContent = computed(
   () =>
     items.value.length > 0 ||
@@ -46,64 +53,42 @@ function replaceProduct(id: string, name: string) {
 </script>
 <template>
   <div class="inner-page basket-page">
-    <div class="flow-steps">
-      <NuxtLink to="/products">01 · Выбор</NuxtLink
-      ><span class="active">02 · Корзина</span><span>03 · Где выгоднее</span>
-    </div>
-    <div class="page-heading">
+    <div class="page-heading basket-heading">
       <div>
-        <span class="eyebrow">ПРОВЕРЬТЕ СПИСОК</span>
-        <h1>{{ title }}</h1>
-        <p class="muted">
-          {{
-            items.length
-              ? `${quantityLabel(items.length, "позиция", "позиции", "позиций")} · ${quantityLabel(count, "упаковка", "упаковки", "упаковок")}`
-              : "Все ваши покупки в одном месте"
-          }}
+        <h1>Корзина</h1>
+        <p v-if="hasContent" class="muted basket-context">
+          {{ title
+          }}<span v-if="stores.length"> · {{ stores.join(" · ") }}</span>
         </p>
       </div>
       <div v-if="hasContent" class="basket-heading-actions">
-        <NuxtLink to="/recipes?add=1" class="secondary">
-          <AppIcon name="Plus" :size="18" /> Добавить блюдо
-        </NuxtLink>
-        <button v-if="items.length" class="secondary" @click="save">
-          <AppIcon name="Heart" :size="18" /> Сохранить список
-        </button>
-        <button
-          class="text-button"
-          :disabled="resolving || pricesPending"
-          @click="confirmClear = true"
+        <NuxtLink to="/products" class="text-button"
+          ><AppIcon name="Plus" :size="16" /> Добавить товары</NuxtLink
         >
-          <AppIcon name="Trash2" :size="18" /> Очистить корзину
-        </button>
+        <details class="basket-tools">
+          <summary>Ещё <AppIcon name="ChevronDown" :size="16" /></summary>
+          <div class="basket-tools-menu">
+            <NuxtLink to="/recipes?add=1" class="text-button"
+              >Добавить блюдо</NuxtLink
+            >
+            <button
+              v-if="items.length"
+              class="text-button"
+              :disabled="saving"
+              @click="save"
+            >
+              {{ saving ? "Проверяем вход…" : "Сохранить список" }}
+            </button>
+            <button
+              class="text-button"
+              :disabled="resolving || pricesPending"
+              @click="confirmClear = true"
+            >
+              Очистить корзину
+            </button>
+          </div>
+        </details>
       </div>
-    </div>
-    <AccountCart />
-    <p v-if="pricesError" class="error" role="alert">{{ pricesError }}</p>
-    <p v-if="unpriced" class="info-note" role="status">
-      Для {{ unpriced }} позиций цена не подтверждена. Они не включены в сумму —
-      обновите цены или замените товар.
-    </p>
-    <div
-      v-if="unresolved.length || pendingIngredients.length"
-      class="basket-notice"
-      role="status"
-    >
-      <strong>Некоторые продукты ещё нужно найти</strong>
-      <p v-if="unresolved.length">
-        {{ unresolved.join(", ") }}. В сумму не включены.
-      </p>
-      <NuxtLink
-        class="text-button"
-        :to="{
-          path: '/products',
-          query: unresolved[0] ? { q: unresolved[0] } : {},
-        }"
-        >Найти вручную</NuxtLink
-      ><button class="text-button" :disabled="resolving" @click="retryMissing">
-        {{ resolving ? "Подбираем…" : "Подобрать недостающие" }}
-      </button>
-      <p v-if="resolveError" class="error">{{ resolveError }}</p>
     </div>
     <div v-if="items.length" class="basket-layout">
       <section class="basket-list panel">
@@ -117,6 +102,36 @@ function replaceProduct(id: string, name: string) {
             {{ pricesPending ? "Обновляем…" : "Обновить цены" }}
           </button>
         </div>
+        <p v-if="pricesError" class="error" role="alert">{{ pricesError }}</p>
+        <p v-if="unpriced" class="basket-price-note" role="status">
+          Без цены: {{ unpriced }}. Не включены в итог — замените или обновите.
+        </p>
+        <div
+          v-if="unresolved.length || pendingIngredients.length"
+          class="basket-notice"
+          role="status"
+        >
+          <strong
+            >Нужно найти:
+            {{ unresolved.join(", ") || "ингредиенты рецепта" }}</strong
+          >
+          <NuxtLink
+            class="text-button"
+            :to="{
+              path: '/products',
+              query: unresolved[0] ? { q: unresolved[0] } : {},
+            }"
+            >Найти вручную</NuxtLink
+          >
+          <button
+            class="text-button"
+            :disabled="resolving"
+            @click="retryMissing"
+          >
+            {{ resolving ? "Подбираем…" : "Подобрать" }}
+          </button>
+          <p v-if="resolveError" class="error">{{ resolveError }}</p>
+        </div>
         <template v-for="row in rows" :key="row.productId"
           ><ProductRow
             :product="row.product"
@@ -129,34 +144,50 @@ function replaceProduct(id: string, name: string) {
           <AppIcon name="Plus" :size="20" /> Добавить продукт
         </NuxtLink>
       </section>
-      <aside class="basket-summary">
-        <span class="eyebrow">ВАША КОРЗИНА</span>
-        <div class="summary-total">
-          <span>{{
-            quantityLabel(count, "упаковка", "упаковки", "упаковок")
-          }}</span
-          ><strong>{{ money(total) }} <small>BYN</small></strong>
+      <aside class="basket-summary" aria-label="Итог корзины">
+        <div class="summary-total" aria-live="polite" aria-atomic="true">
+          <span
+            >{{ quantityLabel(rows.length, "позиция", "позиции", "позиций") }} ·
+            {{ quantityLabel(count, "упаковка", "упаковки", "упаковок") }}</span
+          >
+          <strong
+            >{{ money(total) }} <small>BYN</small
+            ><span v-if="unpriced" class="summary-partial">
+              Без цены: {{ unpriced }}</span
+            ></strong
+          >
         </div>
-        <p>
-          Сумма по подтверждённым ценам. При обновлении проверяем выбранные
-          товары без автоматической замены.
-        </p>
+        <p class="basket-store-summary">{{ stores.join(" · ") }}</p>
         <div class="basket-actions">
           <NuxtLink to="/compare" class="primary full"
-            >Сравнить в магазинах
-            <AppIcon name="ArrowRight" :size="18" /></NuxtLink
-          ><small>6 магазинов · без доставки и сборов</small>
+            >Сравнить в магазинах <AppIcon name="ArrowRight" :size="16"
+          /></NuxtLink>
         </div>
-        <details class="trust-details">
-          <summary>Как сравниваем цены</summary>
-          <p>
-            Ищем выбранные товары и подходящие замены. Разные бренды и упаковки
-            проверяйте перед покупкой. Цены могут измениться у магазина.
-          </p>
-        </details>
+        <p class="basket-next-step">
+          Далее — сравнение и выбор магазина для покупки. Доставка и сборы
+          отдельно.
+        </p>
       </aside>
     </div>
-    <div v-else class="empty-state">
+    <div v-if="hasContent && !items.length" class="basket-notice" role="status">
+      <strong
+        >Нужно найти:
+        {{ unresolved.join(", ") || "ингредиенты рецепта" }}</strong
+      >
+      <NuxtLink
+        class="text-button"
+        :to="{
+          path: '/products',
+          query: unresolved[0] ? { q: unresolved[0] } : {},
+        }"
+        >Найти вручную</NuxtLink
+      >
+      <button class="text-button" :disabled="resolving" @click="retryMissing">
+        {{ resolving ? "Подбираем…" : "Подобрать недостающие" }}
+      </button>
+      <p v-if="resolveError" class="error">{{ resolveError }}</p>
+    </div>
+    <div v-if="!hasContent" class="empty-state">
       <span class="empty-icon"
         ><AppIcon name="ShoppingBasket" :size="36"
       /></span>
@@ -166,6 +197,13 @@ function replaceProduct(id: string, name: string) {
         >Найти товары <AppIcon name="ArrowRight" /></NuxtLink
       ><NuxtLink to="/recipes" class="text-button"> Выбрать рецепт</NuxtLink>
     </div>
+    <details class="basket-account-tools">
+      <summary>
+        Сохранение и восстановление в аккаунте
+        <AppIcon name="ChevronDown" :size="16" />
+      </summary>
+      <AccountCart />
+    </details>
     <AppModal
       v-if="confirmClear"
       title="Очистить корзину?"

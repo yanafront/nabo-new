@@ -118,7 +118,25 @@ export function useBasket() {
       } else i.quantity = Math.min(99, i.quantity + delta);
     }
   }
-  function save() {
+  const saving = useState("basket-saving", () => false);
+  async function save() {
+    if (!items.value.length || saving.value) return;
+    saving.value = true;
+    try {
+      await $fetch("/api/auth/me", { retry: 0, timeout: 15000 });
+    } catch (error: any) {
+      if ((error.statusCode || error.status) === 401) {
+        notice.value =
+          "Войдите, чтобы сохранить список. Корзина останется на месте.";
+        await navigateTo({ path: "/account", query: { returnTo: "/basket" } });
+      } else {
+        notice.value =
+          "Не удалось проверить вход. Попробуйте сохранить ещё раз.";
+      }
+      return;
+    } finally {
+      saving.value = false;
+    }
     if (!items.value.length) return;
     const signature = (rows: Item[]) =>
       JSON.stringify(
@@ -159,6 +177,7 @@ export function useBasket() {
     remove,
     change,
     save,
+    saving,
     clear,
   };
 }

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+const route = useRoute();
+const returnTo = computed(() =>
+  route.query.returnTo === "/basket" ? "/basket" : null,
+);
 const phoneNumber = ref("");
 const password = ref("");
 const register = ref(false);
@@ -29,6 +33,7 @@ async function submit() {
       await $fetch("/api/auth/login", { method: "POST", body, retry: 0 });
       password.value = "";
       await refresh();
+      if (user.value && returnTo.value) await navigateTo(returnTo.value);
     }
   } catch (e: any) {
     const code = e.statusCode || e.status;
@@ -69,6 +74,9 @@ async function logout() {
         Текущую корзину можно сохранить в аккаунте. Списки для повторных покупок
         остаются в этом браузере.
       </p>
+      <NuxtLink v-if="returnTo" :to="returnTo" class="text-button"
+        >Вернуться к корзине</NuxtLink
+      >
       <AccountCart :authenticated="true" />
       <button class="account-submit" :disabled="pending" @click="logout">
         Выйти
@@ -77,7 +85,13 @@ async function logout() {
     <template v-else>
       <p class="account-eyebrow">ДОБРО ПОЖАЛОВАТЬ В NABO</p>
       <h1>{{ register ? "Создать аккаунт" : "Войти в аккаунт" }}</h1>
-      <p>Собирать корзину и сравнивать цены можно без входа.</p>
+      <p>
+        {{
+          returnTo
+            ? "Войдите, чтобы сохранить список. Ваша корзина останется на месте."
+            : "Собирать корзину и сравнивать цены можно без входа."
+        }}
+      </p>
       <form @submit.prevent="submit" class="account-form">
         <label for="phone">Номер телефона</label>
         <input

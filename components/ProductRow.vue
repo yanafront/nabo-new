@@ -23,56 +23,54 @@ defineEmits<{
         >
       </p>
       <p v-if="product.refreshStatus === 'not_found'" class="error">
-        Нет в наличии · в сумму не включён
+        Нет в наличии
       </p>
-      <p
-        v-else-if="product.refreshError === 'PRODUCT_LOOKUP_UNSUPPORTED'"
-        class="muted"
-      >
-        Магазин пока не обновляет цену по ID. Выберите товар заново через
-        «Заменить».
+      <p v-else-if="product.price === null" class="muted">
+        Цена не подтверждена
       </p>
-      <p
-        v-else-if="product.refreshStatus === 'error' || product.price === null"
-        class="muted"
-      >
-        Цена не подтверждена · в сумму не включён
-      </p>
-      <button class="text-button" @click="$emit('replace')">Заменить</button>
     </div>
-    <div class="row-price">
-      <strong
-        >{{ product.price !== null ? money(product.price * quantity) : "—"
-        }}<small>BYN</small></strong
-      >
-      <span
-        v-if="product.price !== null && quantity > 1"
-        class="row-unit-price"
-      >
-        {{ money(product.price) }} BYN за 1 уп.
-      </span>
-    </div>
-    <div class="quantity">
+    <div class="row-edit">
       <button
-        :aria-label="`Уменьшить количество: ${product.name}`"
-        @click="$emit('change', -1)"
+        class="text-button row-replace"
+        :aria-label="`Заменить: ${product.name}`"
+        @click="$emit('replace')"
       >
-        <AppIcon name="Minus" :size="16" /></button
-      ><span>{{ quantity }}</span
-      ><button
-        :disabled="quantity >= 99"
-        :aria-label="`Увеличить количество: ${product.name}`"
-        @click="$emit('change', 1)"
+        Заменить
+      </button>
+      <div class="row-price">
+        <strong
+          >{{ product.price !== null ? money(product.price * quantity) : "—"
+          }}<small>BYN</small></strong
+        >
+        <span
+          v-if="product.price !== null && quantity > 1"
+          class="row-unit-price"
+        >
+          {{ money(product.price) }} BYN за 1 уп.
+        </span>
+      </div>
+      <div class="quantity">
+        <button
+          :aria-label="`Уменьшить количество: ${product.name}`"
+          @click="$emit('change', -1)"
+        >
+          <AppIcon name="Minus" :size="16" /></button
+        ><span>{{ quantity }}</span
+        ><button
+          :disabled="quantity >= 99"
+          :aria-label="`Увеличить количество: ${product.name}`"
+          @click="$emit('change', 1)"
+        >
+          <AppIcon name="Plus" :size="16" />
+        </button>
+      </div>
+      <button
+        class="icon-button delete"
+        :aria-label="`Удалить: ${product.name}`"
+        @click="$emit('remove')"
       >
-        <AppIcon name="Plus" :size="16" />
+        <AppIcon name="X" :size="17" />
       </button>
     </div>
-    <button
-      class="icon-button delete"
-      :aria-label="`Удалить: ${product.name}`"
-      @click="$emit('remove')"
-    >
-      <AppIcon name="X" :size="17" />
-    </button>
   </article>
 </template>

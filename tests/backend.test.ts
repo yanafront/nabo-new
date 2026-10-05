@@ -13,6 +13,7 @@ let frontend: Server;
 let base: string;
 let last: {
   url?: string;
+  method?: string;
   body: string;
   authorization?: string;
   cookie?: string;
@@ -28,11 +29,22 @@ beforeAll(async () => {
     for await (const part of req) body += part;
     last = {
       url: req.url,
+      method: req.method,
       body,
       authorization: req.headers.authorization,
       cookie: req.headers.cookie,
     };
     res.setHeader("content-type", "application/json");
+    if (req.url === "/api/favorites") {
+      if (req.headers.authorization !== "Bearer opaque-test-token") {
+        res.statusCode = 401;
+        return res.end("{}");
+      }
+      if (req.method === "GET")
+        return res.end(JSON.stringify([{ storeId: "green", id: "12" }]));
+      res.statusCode = 204;
+      return res.end();
+    }
     if (req.url === "/api/auth/login")
       return res.end(
         JSON.stringify({
@@ -101,6 +113,18 @@ beforeAll(async () => {
   vi.stubGlobal("useRuntimeConfig", () => ({ retailApiBase: backend }));
   vi.stubGlobal("defineEventHandler", defineEventHandler);
   const router = createRouter();
+  router.get(
+    "/api/favorites",
+    (await import("../server/api/favorites.get")).default,
+  );
+  router.put(
+    "/api/favorites",
+    (await import("../server/api/favorites.put")).default,
+  );
+  router.delete(
+    "/api/favorites",
+    (await import("../server/api/favorites.delete")).default,
+  );
   router.post(
     "/api/search",
     (await import("../server/api/search.post")).default,
@@ -165,6 +189,39 @@ const post = (path: string, body: unknown, headers = {}) =>
     body: JSON.stringify(body),
   });
 describe("ASP.NET backend bridge", () => {
+  it("forwards authenticated favorites and DELETE JSON without caching", async () => {
+    const cookie = "nabo-session=opaque-test-token; unrelated=secret";
+    const list = await fetch(base + "/api/favorites", { headers: { cookie } });
+    expect(await list.json()).toEqual([{ storeId: "green", id: "12" }]);
+    expect(list.headers.get("cache-control")).toBe("no-store");
+    for (const method of ["PUT", "DELETE"]) {
+      const response = await fetch(base + "/api/favorites", {
+        method,
+        headers: { cookie, "content-type": "application/json" },
+        body: JSON.stringify({ storeId: "green", id: "12" }),
+      });
+      expect(response.status).toBe(204);
+      expect(last.method).toBe(method);
+      expect(last.authorization).toBe("Bearer opaque-test-token");
+      expect(last.cookie).toBeUndefined();
+      expect(JSON.parse(last.body)).toEqual({ storeId: "green", id: "12" });
+    }
+    expect((await fetch(base + "/api/favorites")).status).toBe(401);
+    expect(
+      (
+        await fetch(base + "/api/favorites", {
+          method: "PUT",
+          headers: {
+            cookie,
+            origin: "https://other.example",
+            "content-type": "application/json",
+          },
+          body: '{"storeId":"green","id":"12"}',
+        })
+      ).status,
+    ).toBe(403);
+  });
+
   it("forwards new retail endpoints with the exact contracts", async () => {
     const point = { lat: 53.95, lon: 27.66, label: "Дом" };
     for (const [path, body] of [

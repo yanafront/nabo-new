@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { authReturnPath } from "~/shared/auth-return";
 const route = useRoute();
-const returnTo = computed(() =>
-  route.query.returnTo === "/basket" ? "/basket" : null,
-);
+const returnTo = computed(() => authReturnPath(route.query.returnTo));
+const { reset: resetFavorites } = useFavorites();
 const phoneNumber = ref("");
 const password = ref("");
 const register = ref(false);
@@ -32,6 +32,7 @@ async function submit() {
     } else {
       await $fetch("/api/auth/login", { method: "POST", body, retry: 0 });
       password.value = "";
+      resetFavorites();
       await refresh();
       if (user.value && returnTo.value) await navigateTo(returnTo.value);
     }
@@ -57,6 +58,7 @@ async function logout() {
   try {
     await $fetch("/api/auth/logout", { method: "POST", retry: 0 });
     user.value = null;
+    resetFavorites();
   } catch {
     error.value = "Не удалось выйти. Попробуйте ещё раз.";
   } finally {
@@ -75,7 +77,7 @@ async function logout() {
         остаются в этом браузере.
       </p>
       <NuxtLink v-if="returnTo" :to="returnTo" class="text-button"
-        >Вернуться к корзине</NuxtLink
+        >Продолжить</NuxtLink
       >
       <AccountCart :authenticated="true" />
       <button class="account-submit" :disabled="pending" @click="logout">
@@ -88,7 +90,7 @@ async function logout() {
       <p>
         {{
           returnTo
-            ? "Войдите, чтобы сохранить список. Ваша корзина останется на месте."
+            ? "Войдите, чтобы сохранять товары и корзины в Nabo."
             : "Собирать корзину и сравнивать цены можно без входа."
         }}
       </p>

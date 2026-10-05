@@ -263,6 +263,11 @@ onBeforeUnmount(() => controller?.abort());
           <p v-if="product.rating" class="product-rating">
             <AppIcon name="Star" :size="15" /> {{ product.rating }}
           </p>
+          <FavoriteButton
+            :store-id="product.storeId"
+            :id="product.id"
+            :name="product.name"
+          />
           <div class="product-buy-row">
             <div>
               <strong>{{ money(product.price) }} BYN</strong

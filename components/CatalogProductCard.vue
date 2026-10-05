@@ -20,6 +20,12 @@ function add() {
 
 <template>
   <article class="catalog-product-card">
+    <FavoriteButton
+      class="catalog-favorite"
+      :store-id="product.storeId"
+      :id="product.id"
+      :name="product.name"
+    />
     <NuxtLink
       :to="{
         path: `/product/${product.storeId}/${product.id}`,
@@ -61,3 +67,15 @@ function add() {
     </button>
   </article>
 </template>
+
+<style scoped>
+.catalog-product-card {
+  position: relative;
+}
+.catalog-favorite {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  right: 10px;
+}
+</style>

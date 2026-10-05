@@ -48,7 +48,9 @@ export async function proxyBackend(
   path: string,
   method = "GET",
 ) {
-  const body = method === "POST" ? await readBody(event) : undefined;
+  const body = ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+    ? await readBody(event)
+    : undefined;
   const response = await backendResponse(event, path, method, body);
   // Preserve backend status, validation bodies, Retry-After and image headers.
   return sendWebResponse(event, response);

@@ -133,20 +133,28 @@ export function useApi() {
       timeout: 70000,
     });
   }
-  function resolveProducts(
+  async function resolveProducts(
     body: {
       items: Array<{ storeId: StoreId; id: string }>;
       location: DeliveryLocation;
     },
     signal?: AbortSignal,
   ) {
-    return $fetch<{ items: ProductResult[] }>("/api/products/resolve", {
-      method: "POST",
-      body,
-      signal,
-      retry: 0,
-      timeout: 120000,
-    });
+    const unique = [...new Map(body.items.map((item) => [
+      JSON.stringify([item.storeId, item.id]), item,
+    ])).values()];
+    const items: ProductResult[] = [];
+    for (let offset = 0; offset < unique.length; offset += 200) {
+      const result = await $fetch<{ items: ProductResult[] }>("/api/products/resolve", {
+        method: "POST",
+        body: { items: unique.slice(offset, offset + 200), location: body.location },
+        signal,
+        retry: 0,
+        timeout: 120000,
+      });
+      items.push(...result.items);
+    }
+    return { items };
   }
   return {
     searchProducts,

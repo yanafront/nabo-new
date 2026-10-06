@@ -65,6 +65,14 @@ function replaceProduct(id: string, name: string) {
         <NuxtLink to="/products" class="text-button"
           ><AppIcon name="Plus" :size="16" /> Добавить товары</NuxtLink
         >
+        <button
+          class="basket-clear-button"
+          :disabled="resolving || pricesPending"
+          @click="confirmClear = true"
+        >
+          <AppIcon name="Trash2" :size="16" />
+          Очистить корзину
+        </button>
         <details class="basket-tools">
           <summary>Ещё <AppIcon name="ChevronDown" :size="16" /></summary>
           <div class="basket-tools-menu">
@@ -78,13 +86,6 @@ function replaceProduct(id: string, name: string) {
               @click="save"
             >
               {{ saving ? "Проверяем вход…" : "Сохранить список" }}
-            </button>
-            <button
-              class="text-button"
-              :disabled="resolving || pricesPending"
-              @click="confirmClear = true"
-            >
-              Очистить корзину
             </button>
           </div>
         </details>
@@ -228,3 +229,35 @@ function replaceProduct(id: string, name: string) {
     </AppModal>
   </div>
 </template>
+
+<style scoped>
+.basket-clear-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.basket-clear-button:hover:not(:disabled) {
+  background: #ffe9e6;
+  border-color: var(--muted);
+}
+.basket-clear-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+@media (max-width: 760px) {
+  .basket-clear-button {
+    padding: 4px 0;
+    font-size: 12px;
+  }
+}
+</style>

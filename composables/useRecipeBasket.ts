@@ -25,7 +25,6 @@ export function useRecipeBasket() {
           query: p.name,
           unit: p.unit,
           quantity: i.quantity,
-          requirement: i.requirement,
         };
       });
       const response = await $fetch<{ offers: StoreComparison[] }>(

@@ -101,7 +101,6 @@ export interface SearchAllResult {
   stores: SearchResult[];
 }
 export interface CompareItem {
-  requirement?: import("./recipe/purchasing").IngredientDemand;
   id: string;
   query: string;
   quantity: number;

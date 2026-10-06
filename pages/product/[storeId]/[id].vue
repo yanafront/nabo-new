@@ -125,8 +125,10 @@ async function load() {
               : "Не удалось обновить товар. Повторите попытку.";
       }
     } catch {
-      if (valid())
+      if (valid()) {
+        product.value = null;
         error.value = "Не удалось загрузить товар. Попробуйте ещё раз.";
+      }
     } finally {
       if (valid()) pending.value = false;
     }

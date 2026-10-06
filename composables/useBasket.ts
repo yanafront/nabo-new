@@ -30,7 +30,6 @@ export function useBasket() {
       query: i.product.name.slice(0, 160),
       quantity: i.quantity,
       unit: i.product.unit,
-      ...(i.requirement ? { requirement: i.requirement } : {}),
       ...(i.product.sourceId
         ? { exactName: i.product.name, unit: i.product.unit }
         : {}),

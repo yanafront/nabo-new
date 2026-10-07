@@ -110,7 +110,8 @@ it("returns editor catalog only after backend authorization and never exposes st
   });
   const text = await response.text();
   const data = JSON.parse(text);
-  expect(data.catalog.recipes.length).toBeGreaterThan(0);
+  expect(data.records).toEqual([]);
+  expect(data).not.toHaveProperty("catalog");
   expect(data.photosConfigured).toBe(false);
   expect(text).not.toContain("privateSecret");
   expect(text).not.toContain("privateKey");

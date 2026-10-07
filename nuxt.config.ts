@@ -3,7 +3,6 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   css: ["leaflet/dist/leaflet.css", "~/assets/css/design-system.css"],
   runtimeConfig: {
-    managedRecipesEnabled: false,
     recipesApiBase: "",
     recipePhotos: {
       accountId: "",
@@ -21,6 +20,21 @@ export default defineNuxtConfig({
     head: {
       title: "Nabo — что сегодня приготовим?",
       htmlAttrs: { lang: "ru" },
+      link: [
+        { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "32x32",
+          href: "/favicon-32x32.png",
+        },
+        { rel: "shortcut icon", href: "/favicon.ico" },
+        {
+          rel: "apple-touch-icon",
+          sizes: "180x180",
+          href: "/apple-touch-icon.png",
+        },
+      ],
       noscript: [
         {
           key: "yandex-metrika",

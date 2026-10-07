@@ -1,0 +1,597 @@
+{
+  "version": 2,
+  "recipes": [
+    {
+      "id": "unitools:spaghetti-carbonara",
+      "slug": "spaghetti-carbonara",
+      "title": "Спагетти карбонара",
+      "description": "Паста на четырёх ингредиентах: гуанчале, яйца, пекорино и перец. Сливок в ней нет и никогда не было.",
+      "categoryId": "pasta",
+      "tags": [],
+      "cookingTime": 25,
+      "servings": 2,
+      "image": "https://theunitools.com/recipes/spaghetti-carbonara.jpg",
+      "imageAttribution": "Amin · CC BY-SA 4.0",
+      "ingredients": [
+        {
+          "ingredientId": "spaghetti",
+          "name": "Спагетти",
+          "quantity": 200,
+          "unit": "g",
+          "categoryId": "pasta",
+          "weightGrams": 200
+        },
+        {
+          "ingredientId": "ingredient-owx9fb",
+          "name": "Гуанчале",
+          "quantity": 100,
+          "unit": "g",
+          "weightGrams": 100
+        },
+        {
+          "ingredientId": "ingredient-l00838",
+          "name": "Яичные желтки",
+          "quantity": 3,
+          "unit": "piece"
+        },
+        {
+          "ingredientId": "egg",
+          "name": "Яйцо целиком",
+          "quantity": 1,
+          "unit": "piece",
+          "categoryId": "eggs"
+        },
+        {
+          "ingredientId": "ingredient-1pz26p7",
+          "name": "Пекорино романо",
+          "quantity": 60,
+          "unit": "g",
+          "weightGrams": 60
+        },
+        {
+          "ingredientId": "pepper",
+          "name": "Чёрный перец",
+          "quantity": 1,
+          "unit": "tsp",
+          "categoryId": "spices"
+        },
+        {
+          "ingredientId": "salt",
+          "name": "Соль для воды",
+          "quantity": 0,
+          "unit": "toTaste",
+          "categoryId": "spices",
+          "unquantified": true,
+          "optional": true
+        }
+      ],
+      "source": "UniTools",
+      "sourceId": "spaghetti-carbonara",
+      "sourceUrl": "https://theunitools.com/en/data",
+      "license": "CC BY-SA 4.0",
+      "nutrition": {
+        "calories": 690,
+        "protein": 32,
+        "fat": 34,
+        "carbs": 62,
+        "basis": "serving",
+        "calculationType": "calculated",
+        "source": "UniTools — расчёт по ингредиентам"
+      },
+      "instructions": [
+        {
+          "text": "Поставьте кастрюлю с водой на сильный огонь и посолите её как следует — это единственная соль в блюде, сыр и гуанчале солёные сами по себе."
+        },
+        {
+          "text": "Выложите гуанчале на холодную сковороду и включите средний огонь. Жир должен вытопиться постепенно, а кусочки — стать золотистыми и хрустящими по краям, минут за 6–8."
+        },
+        {
+          "text": "Пока топится жир, разотрите желтки, целое яйцо, тёртый пекорино и перец в густую пасту. Она должна быть комнатной температуры, иначе свернётся от горячей пасты."
+        },
+        {
+          "text": "Отварите спагетти на минуту меньше, чем написано на упаковке. Перед тем как сливать, отлейте стакан воды от варки — без неё соус не соберётся."
+        },
+        {
+          "text": "Снимите сковороду с огня, переложите в неё пасту и перемешайте с жиром. Дайте сковороде остыть секунд двадцать: она должна быть тёплой, а не горячей."
+        },
+        {
+          "text": "Влейте яичную смесь и энергично мешайте, подливая воду от пасты по ложке, пока соус не станет гладким и не обволочёт каждую нить. Подавайте сразу."
+        }
+      ],
+      "difficulty": "medium",
+      "isActive": true,
+      "shopabilityScore": 40
+    },
+    {
+      "id": "unitools:syrniki",
+      "slug": "syrniki",
+      "title": "Сырники",
+      "description": "Творожные оладьи, где творога должно быть много, а муки — ровно столько, чтобы они не развалились.",
+      "categoryId": "breakfast",
+      "tags": [
+        "family"
+      ],
+      "cookingTime": 30,
+      "servings": 4,
+      "image": "https://theunitools.com/recipes/syrniki.jpg",
+      "imageAttribution": "Juerg Vollmer from Zürich, Switzerland ; cut by Off-shell · CC BY-SA 2.0",
+      "ingredients": [
+        {
+          "ingredientId": "curd",
+          "name": "Творог 5–9 %",
+          "quantity": 500,
+          "unit": "g",
+          "categoryId": "dairy",
+          "weightGrams": 500
+        },
+        {
+          "ingredientId": "egg",
+          "name": "Яйцо",
+          "quantity": 1,
+          "unit": "piece",
+          "categoryId": "eggs"
+        },
+        {
+          "ingredientId": "flour",
+          "name": "Мука",
+          "quantity": 3,
+          "unit": "tbsp",
+          "categoryId": "baking"
+        },
+        {
+          "ingredientId": "sugar",
+          "name": "Сахар",
+          "quantity": 1,
+          "unit": "tbsp",
+          "categoryId": "baking"
+        },
+        {
+          "ingredientId": "ingredient-1uxrpos",
+          "name": "Ванильный сахар",
+          "quantity": 1,
+          "unit": "tsp"
+        },
+        {
+          "ingredientId": "salt",
+          "name": "Соль",
+          "quantity": 1,
+          "unit": "pinch",
+          "categoryId": "spices"
+        },
+        {
+          "ingredientId": "oil",
+          "name": "Масло для жарки",
+          "quantity": 30,
+          "unit": "g",
+          "categoryId": "oils",
+          "weightGrams": 30
+        },
+        {
+          "ingredientId": "sour-cream",
+          "name": "Сметана",
+          "quantity": 0,
+          "unit": "toTaste",
+          "categoryId": "dairy",
+          "unquantified": true,
+          "optional": true
+        },
+        {
+          "ingredientId": "ingredient-1us4nb8",
+          "name": "Варенье",
+          "quantity": 0,
+          "unit": "toTaste",
+          "unquantified": true,
+          "optional": true
+        }
+      ],
+      "source": "UniTools",
+      "sourceId": "syrniki",
+      "sourceUrl": "https://theunitools.com/en/data",
+      "license": "CC BY-SA 4.0",
+      "nutrition": {
+        "calories": 340,
+        "protein": 22,
+        "fat": 16,
+        "carbs": 26,
+        "basis": "serving",
+        "calculationType": "calculated",
+        "source": "UniTools — расчёт по ингредиентам"
+      },
+      "instructions": [
+        {
+          "text": "Протрите творог через сито или пробейте блендером. Зернистый творог даёт зернистые сырники — этот шаг пропускать нельзя."
+        },
+        {
+          "text": "Вмешайте яйцо, сахар, ваниль и соль, затем муку. Тесто останется липким — так и должно быть."
+        },
+        {
+          "text": "Мокрыми или подпылёнными мукой руками сформуйте шайбы толщиной около полутора сантиметров. Толще — не прожарятся, тоньше — пересохнут."
+        },
+        {
+          "text": "Жарьте на среднем огне под крышкой по три-четыре минуты с каждой стороны. Крышка здесь важнее масла: она пропаривает середину."
+        }
+      ],
+      "difficulty": "easy",
+      "isActive": true,
+      "shopabilityScore": 71
+    },
+    {
+      "id": "unitools:fish-and-chips",
+      "slug": "fish-and-chips",
+      "title": "Фиш-энд-чипс",
+      "description": "Треска в пивном кляре и картофель, жаренный дважды. Кляр держится на холоде и на газе в пиве.",
+      "categoryId": "mains",
+      "tags": [
+        "family"
+      ],
+      "cookingTime": 60,
+      "servings": 4,
+      "image": "https://theunitools.com/recipes/fish-and-chips.jpg",
+      "imageAttribution": "Matthias Meckel · CC BY-SA 4.0",
+      "ingredients": [
+        {
+          "ingredientId": "ingredient-116f0d1",
+          "name": "Филе трески",
+          "quantity": 800,
+          "unit": "g",
+          "weightGrams": 800
+        },
+        {
+          "ingredientId": "potato",
+          "name": "Картофель",
+          "quantity": 1,
+          "unit": "kg",
+          "categoryId": "vegetables",
+          "weightGrams": 1000
+        },
+        {
+          "ingredientId": "flour",
+          "name": "Мука",
+          "quantity": 200,
+          "unit": "g",
+          "categoryId": "baking",
+          "weightGrams": 200
+        },
+        {
+          "ingredientId": "ingredient-og1qle",
+          "name": "Кукурузный крахмал",
+          "quantity": 50,
+          "unit": "g",
+          "weightGrams": 50
+        },
+        {
+          "ingredientId": "ingredient-1rhtvha",
+          "name": "Светлое пиво",
+          "quantity": 300,
+          "unit": "ml"
+        },
+        {
+          "ingredientId": "ingredient-11oo7iz",
+          "name": "Разрыхлитель",
+          "quantity": 1,
+          "unit": "tsp"
+        },
+        {
+          "ingredientId": "oil",
+          "name": "Масло для фритюра",
+          "quantity": 1.5,
+          "unit": "l",
+          "categoryId": "oils"
+        },
+        {
+          "ingredientId": "ingredient-kqkb9",
+          "name": "Солодовый уксус",
+          "quantity": 0,
+          "unit": "toTaste",
+          "unquantified": true,
+          "optional": true
+        },
+        {
+          "ingredientId": "salt",
+          "name": "Соль",
+          "quantity": 0,
+          "unit": "toTaste",
+          "categoryId": "spices",
+          "unquantified": true,
+          "optional": true
+        }
+      ],
+      "source": "UniTools",
+      "sourceId": "fish-and-chips",
+      "sourceUrl": "https://theunitools.com/en/data",
+      "license": "CC BY-SA 4.0",
+      "nutrition": {
+        "calories": 890,
+        "protein": 46,
+        "fat": 40,
+        "carbs": 88,
+        "basis": "serving",
+        "calculationType": "calculated",
+        "source": "UniTools — расчёт по ингредиентам"
+      },
+      "instructions": [
+        {
+          "text": "Промойте нарезанный картофель от крахмала, обсушите досуха и обжарьте при 140 °C шесть минут. Он должен стать мягким, но остаться бледным. Выложите остывать."
+        },
+        {
+          "text": "Смешайте муку, крахмал и разрыхлитель. Влейте ледяное пиво и размешайте венчиком буквально несколько раз — комочки допустимы, перемешанный кляр становится жёстким."
+        },
+        {
+          "text": "Обсушите рыбу, обваляйте в сухой муке и стряхните излишки. Без этого шага кляр соскользнёт при жарке."
+        },
+        {
+          "text": "Разогрейте масло до 190 °C. Окуните рыбу в кляр, дайте лишнему стечь и опустите, придерживая пару секунд, чтобы кусок не прилип ко дну. Жарьте шесть минут."
+        },
+        {
+          "text": "Выньте рыбу и в том же масле дожарьте картофель три минуты до золотого цвета. Посолите сразу, пока горячий."
+        }
+      ],
+      "difficulty": "medium",
+      "isActive": true,
+      "shopabilityScore": 29
+    }
+  ],
+  "ingredients": [
+    {
+      "id": "potato",
+      "name": "Картофель",
+      "productCategoryId": "vegetables",
+      "aliases": [
+        "картофель",
+        "картошка"
+      ],
+      "searchTerms": [
+        "Картофель"
+      ],
+      "pantry": false,
+      "common": true
+    },
+    {
+      "id": "egg",
+      "name": "Яйца",
+      "productCategoryId": "eggs",
+      "aliases": [
+        "яйцо",
+        "яйца",
+        "яйцо целиком"
+      ],
+      "searchTerms": [
+        "Яйца"
+      ],
+      "pantry": false,
+      "common": true
+    },
+    {
+      "id": "curd",
+      "name": "Творог",
+      "productCategoryId": "dairy",
+      "aliases": [
+        "творог",
+        "творог 5 9",
+        "творог 5"
+      ],
+      "searchTerms": [
+        "Творог"
+      ],
+      "pantry": false,
+      "common": true
+    },
+    {
+      "id": "sour-cream",
+      "name": "Сметана",
+      "productCategoryId": "dairy",
+      "aliases": [
+        "сметана"
+      ],
+      "searchTerms": [
+        "Сметана"
+      ],
+      "pantry": false,
+      "common": true
+    },
+    {
+      "id": "spaghetti",
+      "name": "Спагетти",
+      "productCategoryId": "pasta",
+      "aliases": [
+        "спагетти"
+      ],
+      "searchTerms": [
+        "Спагетти"
+      ],
+      "pantry": false,
+      "common": true
+    },
+    {
+      "id": "flour",
+      "name": "Мука",
+      "productCategoryId": "baking",
+      "aliases": [
+        "мука",
+        "пшеничная мука"
+      ],
+      "searchTerms": [
+        "Мука"
+      ],
+      "pantry": false,
+      "common": true
+    },
+    {
+      "id": "sugar",
+      "name": "Сахар",
+      "productCategoryId": "baking",
+      "aliases": [
+        "сахар"
+      ],
+      "searchTerms": [
+        "Сахар"
+      ],
+      "pantry": false,
+      "common": true
+    },
+    {
+      "id": "oil",
+      "name": "Масло растительное",
+      "productCategoryId": "oils",
+      "aliases": [
+        "растительное масло",
+        "масло для жарки",
+        "масло для фритюра"
+      ],
+      "searchTerms": [
+        "Масло растительное"
+      ],
+      "pantry": true,
+      "common": true
+    },
+    {
+      "id": "salt",
+      "name": "Соль",
+      "productCategoryId": "spices",
+      "aliases": [
+        "соль",
+        "соль для воды"
+      ],
+      "searchTerms": [
+        "Соль"
+      ],
+      "pantry": true,
+      "common": true
+    },
+    {
+      "id": "pepper",
+      "name": "Перец черный",
+      "productCategoryId": "spices",
+      "aliases": [
+        "черный перец",
+        "перец черный",
+        "молотый черный перец"
+      ],
+      "searchTerms": [
+        "Перец черный"
+      ],
+      "pantry": true,
+      "common": true
+    },
+    {
+      "id": "ingredient-owx9fb",
+      "name": "Гуанчале",
+      "aliases": [
+        "Гуанчале"
+      ],
+      "searchTerms": [
+        "Гуанчале"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-l00838",
+      "name": "Яичные желтки",
+      "aliases": [
+        "Яичные желтки"
+      ],
+      "searchTerms": [
+        "Яичные желтки"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-1pz26p7",
+      "name": "Пекорино романо",
+      "aliases": [
+        "Пекорино романо"
+      ],
+      "searchTerms": [
+        "Пекорино романо"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-1uxrpos",
+      "name": "Ванильный сахар",
+      "aliases": [
+        "Ванильный сахар"
+      ],
+      "searchTerms": [
+        "Ванильный сахар"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-1us4nb8",
+      "name": "Варенье",
+      "aliases": [
+        "Варенье"
+      ],
+      "searchTerms": [
+        "Варенье"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-116f0d1",
+      "name": "Филе трески",
+      "aliases": [
+        "Филе трески"
+      ],
+      "searchTerms": [
+        "Филе трески"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-og1qle",
+      "name": "Кукурузный крахмал",
+      "aliases": [
+        "Кукурузный крахмал"
+      ],
+      "searchTerms": [
+        "Кукурузный крахмал"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-1rhtvha",
+      "name": "Светлое пиво",
+      "aliases": [
+        "Светлое пиво"
+      ],
+      "searchTerms": [
+        "Светлое пиво"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-11oo7iz",
+      "name": "Разрыхлитель",
+      "aliases": [
+        "Разрыхлитель"
+      ],
+      "searchTerms": [
+        "Разрыхлитель"
+      ],
+      "pantry": false,
+      "common": false
+    },
+    {
+      "id": "ingredient-kqkb9",
+      "name": "Солодовый уксус",
+      "aliases": [
+        "Солодовый уксус"
+      ],
+      "searchTerms": [
+        "Солодовый уксус"
+      ],
+      "pantry": false,
+      "common": false
+    }
+  ]
+}

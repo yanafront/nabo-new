@@ -2,10 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import type { RecipeCatalog } from "../../shared/recipe/model";
 const seed = JSON.parse(
-  readFileSync(
-    new URL("../../data/recipe-catalog.json", import.meta.url),
-    "utf8",
-  ),
+  readFileSync(new URL("../fixtures/recipes.json", import.meta.url), "utf8"),
 ) as RecipeCatalog;
 test("редактор сохраняет отдельные поисковые названия и различает черновик и публикацию", async ({
   page,
@@ -28,9 +25,7 @@ test("редактор сохраняет отдельные поисковые 
             document: { recipe, ingredients },
           },
         ],
-        catalog: { ...seed, recipes: [recipe] },
         photosConfigured: false,
-        catalogEnabled: true,
       },
     }),
   );

@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
-import { mergeRecipeDocuments } from "../shared/recipe/editor";
+import { recipeCatalogFromDocuments } from "../shared/recipe/editor";
 import { recipePurchaseRequest } from "../shared/recipe/purchasing";
-import catalog from "../data/recipe-catalog.json";
+import catalog from "./fixtures/recipes.json";
 import type { RecipeCatalog } from "../shared/recipe/model";
 const base = catalog as RecipeCatalog;
 it("overrides the search query without changing visible ingredient names or amounts", () => {
@@ -24,27 +24,48 @@ it("overrides the search query without changing visible ingredient names or amou
   ).toBe(true);
   expect(recipe.ingredients[0].name).toBe(base.recipes[0].ingredients[0].name);
 });
-it("scopes edited dictionaries to their recipe and retains unpublished original recipes", () => {
+it("uses only backend documents and isolates ingredient dictionaries", () => {
   const recipe = structuredClone(base.recipes[0]);
-  recipe.title = "Редакция";
   const dict = base.ingredients.filter((i) =>
     recipe.ingredients.some((row) => row.ingredientId === i.id),
   );
-  const result = mergeRecipeDocuments(base, [{ recipe, ingredients: dict }]);
+  const other = { ...recipe, slug: "another-recipe" };
+  const editedDict = structuredClone(dict);
+  editedDict.find(
+    (i) => i.id === recipe.ingredients[0].ingredientId,
+  )!.searchTerms = ["Точный запрос"];
+  const result = recipeCatalogFromDocuments([
+    { recipe, ingredients: editedDict },
+    { recipe: other, ingredients: dict },
+  ]);
+  expect(result.recipes).toHaveLength(2);
+  expect(result.recipes.some((r) => r.slug === "syrniki")).toBe(false);
   const edited = result.recipes.find((r) => r.slug === recipe.slug)!;
-  expect(edited.title).toBe("Редакция");
-  expect(edited.ingredients[0].ingredientId).toBe(
-    `managed:${recipe.slug}:${recipe.ingredients[0].ingredientId}`,
+  const unchanged = result.recipes.find((r) => r.slug === other.slug)!;
+  expect(
+    result.ingredients.find((i) => i.id === edited.ingredients[0].ingredientId)
+      ?.searchTerms,
+  ).toEqual(["Точный запрос"]);
+  expect(
+    result.ingredients.find(
+      (i) => i.id === unchanged.ingredients[0].ingredientId,
+    )?.searchTerms,
+  ).toEqual(
+    dict.find((i) => i.id === recipe.ingredients[0].ingredientId)!.searchTerms,
   );
-  expect(result.recipes.find((r) => r.slug === base.recipes[1].slug)).toEqual(
-    base.recipes[1],
-  );
-  expect(base.recipes[0].title).not.toBe("Редакция");
+  expect(recipe.ingredients[0].ingredientId).not.toContain("managed:");
+});
+it("does not invent recipes for an empty backend catalog", () => {
+  expect(recipeCatalogFromDocuments([])).toEqual({
+    version: 2,
+    recipes: [],
+    ingredients: [],
+  });
 });
 it("keeps a published inactive override so the original recipe cannot reappear", () => {
   const recipe = { ...base.recipes[0], isActive: false };
   expect(
-    mergeRecipeDocuments(base, [
+    recipeCatalogFromDocuments([
       { recipe, ingredients: base.ingredients },
     ]).recipes.find((r) => r.slug === recipe.slug)?.isActive,
   ).toBe(false);
@@ -56,7 +77,7 @@ it("keeps request IDs below the backend limit for long slugs and exact product n
   recipe.ingredients[0].searchQuery = "x".repeat(160);
   recipe.ingredients[0].exactName = "y".repeat(500);
   recipe.ingredients[0].exactUnit = "10 шт";
-  const scoped = mergeRecipeDocuments(base, [
+  const scoped = recipeCatalogFromDocuments([
     { recipe, ingredients: base.ingredients },
   ]);
   const r = scoped.recipes.find((r) => r.slug === recipe.slug)!;

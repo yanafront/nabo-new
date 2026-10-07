@@ -4,7 +4,7 @@ import { useBasket } from "../composables/useBasket";
 import { useRecipeBasket } from "../composables/useRecipeBasket";
 import { recipePurchaseRequest } from "../shared/recipe/purchasing";
 import { validateCatalog } from "../shared/recipe/import";
-import catalog from "../data/recipe-catalog.json";
+import catalog from "./fixtures/recipes.json";
 const source = (name: string, id = name) => ({
   id,
   storeId: "green" as const,

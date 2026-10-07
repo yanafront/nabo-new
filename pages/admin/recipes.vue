@@ -5,7 +5,6 @@ import {
   recipeCategories,
   recipeCollections,
   type Recipe,
-  type RecipeCatalog,
   type RecipeIngredient,
 } from "~/shared/recipe/model";
 import type { RecipeDocument } from "~/shared/recipe/editor";
@@ -16,11 +15,9 @@ interface RecordRow {
   revision: number;
   published: boolean;
 }
-const catalogEnabled = ref(false);
 const photosConfigured = ref(false),
   uploading = ref(false);
 const records = ref<RecordRow[]>([]);
-const catalog = ref<RecipeCatalog>();
 const pending = ref(true),
   saving = ref(false),
   error = ref(""),
@@ -40,29 +37,24 @@ let checkController: AbortController | undefined;
 const previewNutrition = computed(
   () => draft.value && perServing(draft.value.recipe),
 );
-const list = computed(() => {
-  const map = new Map(
-    (catalog.value?.recipes || []).map((recipe) => [recipe.slug, recipe]),
-  );
-  for (const r of records.value) map.set(r.slug, r.document.recipe);
-  return [...map.values()].filter((r) =>
-    r.title.toLowerCase().includes(filter.value.toLowerCase()),
-  );
-});
+const list = computed(() =>
+  records.value
+    .map((record) => record.document.recipe)
+    .filter((recipe) =>
+      recipe.title.toLowerCase().includes(filter.value.toLowerCase()),
+    ),
+);
+
 async function load() {
   pending.value = true;
   error.value = "";
   try {
     const data = await $fetch<{
       records: RecordRow[];
-      catalog: RecipeCatalog;
       photosConfigured: boolean;
-      catalogEnabled: boolean;
     }>("/api/admin/recipes", { retry: 0 });
     photosConfigured.value = data.photosConfigured;
-    catalogEnabled.value = data.catalogEnabled;
     records.value = data.records;
-    catalog.value = data.catalog;
     authStatus.value = 200;
   } catch (e: any) {
     authStatus.value = e.statusCode || e.status;
@@ -89,32 +81,23 @@ function select(recipe?: Recipe) {
   checkIndex.value = -1;
   results.value = [];
   const stored = recipe && records.value.find((r) => r.slug === recipe.slug);
-  const document =
-    stored?.document ||
-    (recipe
-      ? {
-          recipe,
-          ingredients: catalog.value!.ingredients.filter((i) =>
-            recipe.ingredients.some((row) => row.ingredientId === i.id),
-          ),
-        }
-      : {
-          recipe: {
-            id: "",
-            slug: "",
-            title: "",
-            categoryId: "mains",
-            tags: [],
-            servings: 2,
-            ingredients: [],
-            instructions: [],
-            source: "Nabo",
-            sourceId: "",
-            isActive: true,
-            shopabilityScore: 100,
-          },
-          ingredients: [],
-        });
+  const document = stored?.document || {
+    recipe: {
+      id: "",
+      slug: "",
+      title: "",
+      categoryId: "mains",
+      tags: [],
+      servings: 2,
+      ingredients: [],
+      instructions: [],
+      source: "Nabo",
+      sourceId: "",
+      isActive: true,
+      shopabilityScore: 100,
+    },
+    ingredients: [],
+  };
   draft.value = JSON.parse(JSON.stringify(document));
   revision.value = stored?.revision || 0;
   lockedSlug.value = recipe?.slug || "";
@@ -247,11 +230,9 @@ async function save(publish: boolean) {
     draft.value = doc;
     dirty.value = false;
     message.value = publish
-      ? !catalogEnabled.value
-        ? "Версия сохранена. Для отображения правок на сайте включите каталог из базы."
-        : doc.recipe.isActive
-          ? "Рецепт опубликован."
-          : "Рецепт снят с публикации."
+      ? doc.recipe.isActive
+        ? "Рецепт опубликован."
+        : "Рецепт снят с публикации."
       : "Черновик сохранён. Каталог не изменён.";
   } catch (e: any) {
     error.value =

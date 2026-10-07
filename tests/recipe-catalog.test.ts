@@ -11,7 +11,7 @@ import {
   type Recipe,
 } from "../shared/recipe/model";
 import { listRecipes } from "../shared/recipe/search";
-import catalog from "../data/recipe-catalog.json";
+import catalog from "./fixtures/recipes.json";
 import {
   packagesFor,
   packageMeasure,
@@ -100,6 +100,13 @@ describe("normalized recipe catalogue", () => {
       id: "chicken-fixture",
       slug: "chicken-fixture",
       title: "Курица с рисом",
+      ingredients: [],
+    });
+    c.recipes.push({
+      ...recipe,
+      id: "meat-fixture",
+      slug: "meat-fixture",
+      title: "Говядина с овощами",
       ingredients: [],
     });
     for (const category of ["chicken", "meat", "fish"]) {

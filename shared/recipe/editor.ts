@@ -3,12 +3,11 @@ export interface RecipeDocument {
   recipe: Recipe;
   ingredients: Ingredient[];
 }
-export function mergeRecipeDocuments(
-  base: RecipeCatalog,
+export function recipeCatalogFromDocuments(
   documents: RecipeDocument[],
 ): RecipeCatalog {
-  const recipes = new Map(base.recipes.map((r) => [r.slug, r]));
-  const ingredients = new Map(base.ingredients.map((i) => [i.id, i]));
+  const recipes = new Map<string, Recipe>();
+  const ingredients = new Map<string, Ingredient>();
   for (const doc of documents) {
     // Scope edited dictionaries to one recipe so another recipe cannot change silently.
     const prefix = `managed:${doc.recipe.slug}:`;

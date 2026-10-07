@@ -15,6 +15,7 @@
     "recipes:import:familiar": "vite-node scripts/import-familiar-recipes.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1147.0",
     "leaflet": "^1.9.4",
     "lucide-vue-next": "^0.468.0",
     "nuxt": "^3.17.5",

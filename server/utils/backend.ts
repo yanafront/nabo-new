@@ -14,8 +14,17 @@ export async function backendResponse(
   path: string,
   method = "GET",
   body?: unknown,
+  service: "retail" | "recipes" = "retail",
 ) {
-  const base = useRuntimeConfig(event).retailApiBase.replace(/\/+$/, "");
+  const config = useRuntimeConfig(event);
+  const base = (
+    service === "recipes" ? config.recipesApiBase : config.retailApiBase
+  ).replace(/\/+$/, "");
+  if (!base)
+    throw createError({
+      statusCode: 503,
+      message: "API редактора ещё не подключён. Укажите NUXT_RECIPES_API_BASE.",
+    });
   const headers = new Headers({ accept: "application/json" });
   if (body !== undefined) headers.set("content-type", "application/json");
   const token = getCookie(event, "nabo-session");

@@ -1,5 +1,6 @@
-import { recipeCatalog } from "../../utils/recipe-catalog";
-export default defineEventHandler((event) => {
+import { publishedRecipes } from "../../utils/published-recipes";
+export default defineEventHandler(async (event) => {
+  const recipeCatalog = await publishedRecipes(event);
   const slug = getRouterParam(event, "slug");
   const recipe = recipeCatalog.recipes.find(
     (r) => r.slug === slug && r.isActive,

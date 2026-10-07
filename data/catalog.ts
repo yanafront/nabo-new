@@ -1,4 +1,5 @@
 export interface Product {
+  exactName?: string;
   refreshError?: string | null;
   refreshStatus?: "ok" | "not_found" | "error";
   id: string;

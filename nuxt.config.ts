@@ -3,6 +3,15 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   css: ["leaflet/dist/leaflet.css", "~/assets/css/design-system.css"],
   runtimeConfig: {
+    managedRecipesEnabled: false,
+    recipesApiBase: "",
+    recipePhotos: {
+      accountId: "",
+      accessKeyId: "",
+      secretAccessKey: "",
+      bucket: "",
+      publicBase: "",
+    },
     retailApiBase: "https://naboback-production.up.railway.app",
     geocoderBase: "https://photon.komoot.io",
     yandexGeocoderApiKey: "",

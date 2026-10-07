@@ -10,6 +10,8 @@ import {
 export interface IngredientDemand {
   ingredientId: string;
   query: string;
+  exactName?: string;
+  exactUnit?: string;
   amount: number;
   dimension: "mass" | "volume" | "count";
   productCategoryId?: string;
@@ -51,7 +53,9 @@ export function demandFor(
   } else return;
   return {
     ingredientId: d.id,
-    query: d.searchTerms[0]!,
+    query: i.searchQuery?.trim() || d.searchTerms[0]!,
+    exactName: i.exactName?.trim() || undefined,
+    exactUnit: i.exactUnit?.trim() || undefined,
     amount,
     dimension,
     productCategoryId: d.productCategoryId,
@@ -80,8 +84,10 @@ export function recipePurchaseRequest(
         required: true,
         product: {
           id: `recipe:${recipe.slug}:portion:${index}`,
-          name: d?.searchTerms[0] || original.name,
-          unit: "",
+          name:
+            original.searchQuery?.trim() || d?.searchTerms[0] || original.name,
+          exactName: original.exactName?.trim() || undefined,
+          unit: original.exactUnit?.trim() || "",
           price: null,
           brand: "",
           emoji: "🛒",
@@ -90,20 +96,21 @@ export function recipePurchaseRequest(
       });
       continue;
     }
-    const key = `${demand.ingredientId}:${demand.dimension}`;
+    const key = `${demand.ingredientId}:${demand.dimension}:${demand.query}:${demand.exactName || ""}:${demand.exactUnit || ""}`;
     const previous = demands.get(key);
     if (previous) previous.amount += demand.amount;
     else demands.set(key, demand);
   }
-  const items: Item[] = [...demands].map(([key, demand]) => ({
-    productId: `recipe:${recipe.slug}:${key}`,
+  const items: Item[] = [...demands].map(([_key, demand], index) => ({
+    productId: `recipe:${recipe.slug}:request:${index}`,
     quantity: 1,
     requirement: demand,
     required: true,
     product: {
-      id: `recipe:${recipe.slug}:${key}`,
+      id: `recipe:${recipe.slug}:request:${index}`,
       name: demand.query,
-      unit: "",
+      exactName: demand.exactName,
+      unit: demand.exactUnit || "",
       price: null,
       brand: "",
       emoji: "🛒",

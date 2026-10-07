@@ -1,7 +1,8 @@
-import { recipeCatalog } from "../utils/recipe-catalog";
+import { publishedRecipes } from "../utils/published-recipes";
 import { listRecipes } from "../../shared/recipe/search";
 import { recipeCategories, recipeCollections } from "../../shared/recipe/model";
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
+  const recipeCatalog = await publishedRecipes(event);
   const q = getQuery(event);
   const number = (v: unknown, fallback: number) =>
     typeof v === "string" && Number.isFinite(Number(v)) ? Number(v) : fallback;

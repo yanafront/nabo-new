@@ -148,3 +148,44 @@ it("restores the missing recipe demand after a browser reload", async () => {
   (plugin.default as unknown as () => void)();
   expect(useBasket().pendingIngredients.value).toEqual([pending]);
 });
+it("passes editorial query, exact name and package unit to the backend without local demand fields", async () => {
+  const sourceRecipe = structuredClone(
+    validateCatalog(catalog).recipes.find((r) => r.slug === "syrniki")!,
+  );
+  sourceRecipe.ingredients = [sourceRecipe.ingredients[0]];
+  sourceRecipe.ingredients[0].searchQuery = "Творог 5%";
+  sourceRecipe.ingredients[0].exactName = "Творог Савушкин 5% 200 г";
+  sourceRecipe.ingredients[0].exactUnit = "200 г";
+  const request = recipePurchaseRequest(
+    sourceRecipe,
+    validateCatalog(catalog).ingredients,
+    sourceRecipe.servings,
+    [],
+  );
+  const fetch = vi.fn(async (_url, options) => ({
+    offers: [
+      {
+        storeId: "green",
+        lines: options.body.items.map((item: any) => ({
+          itemId: item.id,
+          query: item.query,
+          quantity: 1,
+          selected: source(item.exactName, "123"),
+          alternatives: [],
+        })),
+      },
+    ],
+  }));
+  vi.stubGlobal("$fetch", fetch);
+  expect(await useRecipeBasket().resolve(request)).toBe(true);
+  expect(fetch.mock.calls[0][0]).toBe("/api/yandex/compare");
+  expect(fetch.mock.calls[0][1].body.items[0]).toMatchObject({
+    query: "Творог 5%",
+    exactName: "Творог Савушкин 5% 200 г",
+    unit: "200 г",
+    quantity: 1,
+  });
+  expect(fetch.mock.calls[0][1].body.items[0]).not.toHaveProperty(
+    "requirement",
+  );
+});

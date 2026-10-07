@@ -35,6 +35,9 @@ export interface Ingredient {
   density?: number;
 }
 export interface RecipeIngredient {
+  searchQuery?: string;
+  exactName?: string;
+  exactUnit?: string;
   ingredientId: string;
   name: string;
   quantity: number;

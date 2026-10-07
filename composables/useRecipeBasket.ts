@@ -23,6 +23,7 @@ export function useRecipeBasket() {
         return {
           id: i.productId,
           query: p.name,
+          ...(p.exactName ? { exactName: p.exactName } : {}),
           unit: p.unit,
           quantity: i.quantity,
         };

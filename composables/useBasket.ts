@@ -27,7 +27,11 @@ export function useBasket() {
   const compareItems = computed<CompareItem[]>(() =>
     rows.value.map((i) => ({
       id: i.productId,
-      query: i.product.name.slice(0, 160),
+      query: (
+        i.product.searchQuery ||
+        i.requirement?.query ||
+        i.product.name
+      ).slice(0, 160),
       quantity: i.quantity,
       unit: i.product.unit,
       ...(i.product.sourceId
@@ -110,6 +114,8 @@ export function useBasket() {
   function change(id: string, delta: number) {
     const i = items.value.find((i) => i.productId === id);
     if (i) {
+      if (i.product && i.requirement?.query)
+        i.product.searchQuery ||= i.requirement.query;
       delete i.requirement; // A manual pack count replaces the recipe demand.
       if (i.quantity + delta <= 0) {
         remove(id);

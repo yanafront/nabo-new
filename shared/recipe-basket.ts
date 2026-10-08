@@ -36,15 +36,20 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
         missingIds.push(line.itemId);
         continue;
       }
+      const requested = requests.find((i) => i.productId === line.itemId);
       const product = retailProduct(source);
+      // Retail names describe the chosen SKU; searches keep the recipe's original intent.
+      product.searchQuery =
+        requested?.product?.searchQuery ||
+        requested?.requirement?.query ||
+        requested?.product?.name ||
+        line.query;
       const existing = items.find((i) => i.productId === product.id);
       const quantity = (existing?.quantity || 0) + line.quantity;
       resolvedQueries.push(line.query);
       if (existing) {
         existing.quantity = quantity;
-        const demand = requests.find(
-          (i) => i.productId === line.itemId,
-        )?.requirement;
+        const demand = requested?.requirement;
         if (
           existing.requirement &&
           demand &&
@@ -61,8 +66,7 @@ export function recipeBasket(offers: StoreComparison[], requests: Item[] = []) {
           productId: product.id,
           product,
           quantity,
-          requirement: requests.find((i) => i.productId === line.itemId)
-            ?.requirement,
+          requirement: requested?.requirement,
           required: true,
         });
     }

@@ -41,6 +41,7 @@ export function refreshedItem(item: Item, result?: ProductResult): Item {
       ...item,
       product: {
         ...retailProduct(result.product),
+        searchQuery: item.product.searchQuery || item.requirement?.query,
         refreshStatus: result.product.available ? "ok" : "not_found",
         price: result.product.available ? result.product.price : null,
       },

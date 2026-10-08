@@ -22,7 +22,7 @@ export function useRecipeBasket() {
         if (!p) throw new Error();
         return {
           id: i.productId,
-          query: p.name,
+          query: p.searchQuery || i.requirement?.query || p.name,
           ...(p.exactName ? { exactName: p.exactName } : {}),
           unit: p.unit,
           quantity: i.quantity,
@@ -57,6 +57,9 @@ export function useRecipeBasket() {
         if (existing) {
           if (existing.quantity + row.quantity > 99) throw new Error();
           existing.quantity += row.quantity;
+          if (existing.product)
+            existing.product.searchQuery ||=
+              existing.requirement?.query || row.product?.searchQuery;
           delete existing.requirement; // Preserve the explicit combined package count.
         } else next.push(row);
       }

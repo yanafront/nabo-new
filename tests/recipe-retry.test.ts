@@ -189,3 +189,105 @@ it("passes editorial query, exact name and package unit to the backend without l
     "requirement",
   );
 });
+it("keeps the editorial query after choosing a SKU, changing quantity and refreshing its price", async () => {
+  const { refreshedItem } = await import("../shared/account-cart");
+  const recipe = structuredClone(
+    validateCatalog(catalog).recipes.find((r) => r.slug === "syrniki")!,
+  );
+  recipe.ingredients = [recipe.ingredients[0]];
+  recipe.ingredients[0].searchQuery = "Творог 5%";
+  const request = recipePurchaseRequest(
+    recipe,
+    validateCatalog(catalog).ingredients,
+    recipe.servings,
+    [],
+  );
+  const selected = source("Творог Савушкин 5% 200 г", "123");
+  vi.stubGlobal("$fetch", async (_url: string, options: any) => ({
+    offers: [
+      {
+        storeId: "green",
+        lines: options.body.items.map((item: any) => ({
+          itemId: item.id,
+          query: item.query,
+          quantity: 1,
+          selected,
+          alternatives: [],
+        })),
+      },
+    ],
+  }));
+  expect(await useRecipeBasket().resolve(request)).toBe(true);
+  const basket = useBasket();
+  expect(basket.rows.value[0].product.name).toBe(selected.name);
+  expect(basket.compareItems.value[0]).toMatchObject({
+    query: "Творог 5%",
+    exactName: selected.name,
+  });
+  basket.change("green:123", 1);
+  expect(basket.items.value[0].requirement).toBeUndefined();
+  expect(basket.compareItems.value[0]).toMatchObject({
+    query: "Творог 5%",
+    quantity: 2,
+  });
+  basket.items.value[0] = refreshedItem(basket.items.value[0], {
+    id: "123",
+    storeId: "green",
+    status: "ok",
+    product: { ...selected, price: 3 },
+    fetchedAt: selected.fetchedAt,
+  });
+  expect(basket.compareItems.value[0].query).toBe("Творог 5%");
+  basket.addProduct(source("Творог другой 200 г", "456"), "green:123");
+  expect(basket.compareItems.value[0].query).toBe("Творог другой 200 г");
+});
+it("uses the recipe query for spoon and to-taste ingredients without measurable demand", async () => {
+  const recipe = structuredClone(
+    validateCatalog(catalog).recipes.find((r) => r.slug === "syrniki")!,
+  );
+  recipe.ingredients = [
+    {
+      ...recipe.ingredients[0],
+      quantity: 0,
+      unit: "toTaste",
+      unquantified: true,
+      searchQuery: "Сахар ванильный",
+    },
+  ];
+  const request = recipePurchaseRequest(
+    recipe,
+    validateCatalog(catalog).ingredients,
+    recipe.servings,
+    [],
+  );
+  expect(request.items[0].requirement).toBeUndefined();
+  vi.stubGlobal("$fetch", async (_url: string, options: any) => ({
+    offers: [
+      {
+        storeId: "green",
+        lines: options.body.items.map((item: any) => ({
+          itemId: item.id,
+          query: item.query,
+          quantity: 1,
+          selected: source("Сахар ванильный 10 г", "vanilla"),
+          alternatives: [],
+        })),
+      },
+    ],
+  }));
+  expect(await useRecipeBasket().resolve(request)).toBe(true);
+  expect(useBasket().compareItems.value[0].query).toBe("Сахар ванильный");
+});
+it("preserves queries on older baskets when their quantity changes", () => {
+  const basket = useBasket();
+  basket.addProduct(source("Творог Савушкин 5% 200 г", "123"));
+  basket.items.value[0].requirement = {
+    ingredientId: "curd",
+    query: "Творог 5%",
+    amount: 500,
+    dimension: "mass",
+  };
+  expect(basket.compareItems.value[0].query).toBe("Творог 5%");
+  basket.change("green:123", 1);
+  expect(basket.compareItems.value[0].query).toBe("Творог 5%");
+});

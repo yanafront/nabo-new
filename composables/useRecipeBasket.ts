@@ -3,7 +3,8 @@ import type { SearchAllResult } from "~/shared/yandex";
 import { recipeSearchBasket } from "~/shared/recipe-search-basket";
 import { normalized } from "~/shared/recipe/model";
 export function useRecipeBasket() {
-  const { items, title, unresolved, pendingIngredients, notice } = useBasket();
+  const { items, title, unresolved, pendingIngredients, notice, addProducts } =
+    useBasket();
   const { location } = useRetail();
   const cartSync = useCartSync();
   const resolving = useState("recipe-resolving", () => false);
@@ -70,26 +71,11 @@ export function useRecipeBasket() {
           "Не удалось подобрать товары в магазинах. Попробуйте снова или добавьте их через поиск.";
         return false;
       }
-      const next = keepCurrent
-        ? (JSON.parse(JSON.stringify(items.value)) as Item[])
-        : [];
-      for (const row of basket.items) {
-        const existing = next.find((i) => i.productId === row.productId);
-        if (existing) {
-          if (existing.quantity + row.quantity > 99) throw new Error();
-          existing.quantity += row.quantity;
-          if (existing.product)
-            existing.product.searchQuery ||=
-              existing.requirement?.query || row.product?.searchQuery;
-          delete existing.requirement; // Preserve the explicit combined package count.
-        } else next.push(row);
-      }
-      if (next.length > 20) {
+      if (!(await addProducts(basket.items))) {
         resolveError.value =
-          "В корзине может быть до 20 позиций. Удалите лишнее и повторите.";
+          cartSync.error.value || "Не удалось сохранить товары в корзине.";
         return false;
       }
-      items.value = next;
       title.value = keepCurrent ? "Корзина из нескольких блюд" : request.title;
       unresolved.value = [
         ...new Set([
@@ -128,7 +114,6 @@ export function useRecipeBasket() {
         : basket.adjusted
           ? "Товары подобраны. Проверьте размеры упаковок."
           : "Реальные товары добавлены в корзину";
-      await cartSync.refresh();
       if (cartSync.state.value === "error") {
         resolveError.value = cartSync.error.value;
         return false;

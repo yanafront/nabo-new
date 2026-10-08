@@ -105,13 +105,25 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
   await expect
     .poll(() => page.evaluate(() => document.readyState))
     .toBe("complete");
+  // The backend may already contain products although this screen started with an empty cart.
+  items = [
+    {
+      id: "eggs",
+      storeId: "green",
+      name: "Яйца куриные",
+      count: 1,
+      unit: "10 шт",
+      image: null,
+    },
+  ];
   await page
     .getByRole("button", { name: /Добавить ингредиенты в корзину/ })
     .click();
   await expect(page).toHaveURL(/\/basket$/);
   await expect.poll(() => writes.length).toBeGreaterThan(0);
   expect(searches).toEqual(["Творог 5%"]);
-  expect(writes[0][0]).toMatchObject({
+  expect(writes[0]).toHaveLength(2);
+  expect(writes[0].find((item) => item.id === product.id)).toMatchObject({
     id: product.id,
     storeId: "green",
     count: 1,
@@ -119,11 +131,20 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
   await page
     .getByRole("button", { name: `Увеличить количество: ${product.name}` })
     .click();
-  await expect.poll(() => writes.at(-1)?.[0]?.count).toBe(2);
+  await expect
+    .poll(() => writes.at(-1)?.find((item) => item.id === product.id)?.count)
+    .toBe(2);
   expect(compareCalls).toBe(0);
   await page.getByRole("link", { name: /Сравнить в магазинах/ }).click();
   await expect.poll(() => compareCalls).toBeGreaterThan(0);
   expect(compareInputs[0].items).toEqual([
+    {
+      id: "green:eggs",
+      query: "Яйца куриные",
+      exactName: "Яйца куриные",
+      quantity: 1,
+      unit: "10 шт",
+    },
     {
       id: "green:curd-123",
       query: product.name,
@@ -150,7 +171,16 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
 test("catalog selection stays manual and the selected SKU survives a reload", async ({
   page,
 }) => {
-  let items: any[] = [];
+  let items: any[] = [
+    {
+      id: "milk",
+      storeId: "green",
+      name: "Молоко",
+      count: 2,
+      unit: "1 л",
+      image: null,
+    },
+  ];
   const writes: any[][] = [];
   let compareCalls = 0;
   await page.route("**/api/auth/me", (route) =>
@@ -170,7 +200,10 @@ test("catalog selection stays manual and the selected SKU survives a reload", as
             id: item.id,
             storeId: item.storeId,
             status: "ok",
-            product,
+            product:
+              item.id === product.id
+                ? product
+                : { ...product, id: item.id, name: item.name },
             fetchedAt: product.fetchedAt,
           },
         })),
@@ -188,6 +221,30 @@ test("catalog selection stays manual and the selected SKU survives a reload", as
     compareCalls++;
     return route.fulfill({ json: { offers: [] } });
   });
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "nabo-v2",
+      JSON.stringify({
+        items: [
+          {
+            productId: "green:stale",
+            quantity: 9,
+            product: {
+              id: "green:stale",
+              sourceId: "stale",
+              storeId: "green",
+              name: "Устаревший товар",
+              unit: "1 л",
+              price: 99,
+              brand: "",
+              emoji: "",
+              keywords: [],
+            },
+          },
+        ],
+      }),
+    ),
+  );
   await page.goto("/products");
   await page
     .getByRole("textbox", { name: "Поиск товаров", exact: true })
@@ -200,12 +257,17 @@ test("catalog selection stays manual and the selected SKU survives a reload", as
     .getByRole("button", { name: `Добавить в корзину: ${product.name}` })
     .click();
   await expect.poll(() => writes.length).toBe(1);
-  expect(items[0]).toMatchObject({
+  expect(items.find((item) => item.id === product.id)).toMatchObject({
     id: product.id,
     storeId: "green",
     count: 1,
   });
+  expect(items).toHaveLength(2);
+  expect(items.find((item) => item.id === "milk").count).toBe(2);
   await page.goto("/basket");
-  await expect(page.locator(".product-row h3")).toHaveText(product.name);
+  await expect(page.locator(".product-row h3")).toHaveText([
+    "Молоко",
+    product.name,
+  ]);
   expect(compareCalls).toBe(0);
 });

@@ -8,6 +8,23 @@ beforeEach(() => {
     return states.get(key);
   });
   vi.stubGlobal("computed", computed);
+  vi.stubGlobal("useCartSync", () => ({
+    state: ref("saved"),
+    error: ref(""),
+    refresh: async () => true,
+    mutate: async (change: (rows: any[]) => any[]) => {
+      const basket = useBasket();
+      basket.items.value = change(
+        JSON.parse(JSON.stringify(basket.items.value)),
+      );
+      return true;
+    },
+    clear: async () => {
+      useBasket().items.value = [];
+      return true;
+    },
+  }));
+
   vi.stubGlobal("$fetch", vi.fn().mockResolvedValue({ id: "user-1" }));
   vi.stubGlobal("navigateTo", vi.fn().mockResolvedValue(undefined));
 });
@@ -62,7 +79,7 @@ it("clears the current basket and missing ingredients without deleting saved lis
   basket.pendingIngredients.value = [
     { productId: "recipe:smetana", quantity: 1 },
   ];
-  basket.clear();
+  await basket.clear();
   expect(basket.items.value).toEqual([]);
   expect(basket.unresolved.value).toEqual([]);
   expect(basket.pendingIngredients.value).toEqual([]);

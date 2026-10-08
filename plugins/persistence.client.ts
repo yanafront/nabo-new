@@ -1,6 +1,5 @@
 import { createCartSync } from "~/shared/cart-sync";
 import { accountCartItems } from "~/shared/account-cart";
-import { separateLegacyIngredientNames } from "~/shared/recipe/ingredient-names";
 import { products, type Item } from "~/data/catalog";
 import { retailStores } from "~/shared/yandex";
 export default defineNuxtPlugin(() => {
@@ -51,57 +50,7 @@ export default defineNuxtPlugin(() => {
                     Number.isFinite(i.product.price) &&
                     i.product.price > 0)))),
         );
-      const validPending = (rows: unknown): rows is Item[] =>
-        Array.isArray(rows) &&
-        rows.length <= 20 &&
-        rows.every(
-          (row) =>
-            row &&
-            typeof row.productId === "string" &&
-            Number.isInteger(row.quantity) &&
-            row.quantity > 0 &&
-            row.quantity <= 99 &&
-            (products.some((product) => product.id === row.productId) ||
-              (row.product &&
-                !row.product.sourceId &&
-                typeof row.product.name === "string" &&
-                row.product.name.trim().length > 0 &&
-                row.product.name.length <= 160 &&
-                typeof row.product.unit === "string")) &&
-            (!row.requirement ||
-              (typeof row.requirement.query === "string" &&
-                row.requirement.query.length > 0 &&
-                row.requirement.query.length <= 160 &&
-                typeof row.requirement.ingredientId === "string" &&
-                row.requirement.ingredientId.length <= 150 &&
-                Number.isFinite(row.requirement.amount) &&
-                row.requirement.amount > 0 &&
-                row.requirement.amount <= 100000 &&
-                ["mass", "volume", "count"].includes(
-                  row.requirement.dimension,
-                ))),
-        );
       if (data) {
-        if (valid(data.items)) {
-          items.value = data.items.filter((i: Item) => i.product?.sourceId);
-          pendingIngredients.value = data.items.filter(
-            (i: Item) => !i.product?.sourceId,
-          );
-        }
-        if (validPending(data.pendingIngredients))
-          pendingIngredients.value.push(
-            ...data.pendingIngredients.filter(
-              (i: Item) =>
-                !pendingIngredients.value.some(
-                  (p) => p.productId === i.productId,
-                ),
-            ),
-          );
-        if (Array.isArray(data.unresolved))
-          unresolved.value = separateLegacyIngredientNames(
-            data.unresolved.filter((s: unknown) => typeof s === "string"),
-          ).slice(0, 20);
-        if (typeof data.title === "string") title.value = data.title;
         if (Array.isArray(data.saved))
           saved.value = data.saved.filter(
             (s: any) =>
@@ -126,11 +75,6 @@ export default defineNuxtPlugin(() => {
     } catch {
       notice.value = "Не удалось восстановить сохранённые корзины";
     }
-    watch(
-      () => JSON.stringify(accountCartItems(items.value)),
-      () => cartSync.changed(),
-      { flush: "sync" },
-    );
     void cartSync.initialize();
     watch(
       () =>
@@ -143,7 +87,7 @@ export default defineNuxtPlugin(() => {
       { flush: "sync" },
     );
     let saveTimer: ReturnType<typeof setTimeout> | undefined;
-    let dirty = false;
+    let dirty = true;
     const persist = () => {
       clearTimeout(saveTimer);
       if (!dirty) return;
@@ -151,12 +95,8 @@ export default defineNuxtPlugin(() => {
         localStorage.setItem(
           "nabo-v2",
           JSON.stringify({
-            items: items.value,
-            title: title.value,
             saved: saved.value,
             location: location.value,
-            unresolved: unresolved.value,
-            pendingIngredients: pendingIngredients.value,
           }),
         );
         dirty = false;
@@ -165,6 +105,7 @@ export default defineNuxtPlugin(() => {
           "Хранилище недоступно. Изменения сохранятся до закрытия страницы";
       }
     };
+    persist(); // Drop legacy active-cart fields; only preferences and named lists stay local.
     const stop = watch(
       [items, title, saved, location, unresolved, pendingIngredients],
       () => {

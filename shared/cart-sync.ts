@@ -5,8 +5,9 @@ import {
   restoredCartItems,
   savedCartCompareItems,
 } from "./account-cart";
+import { CartChangeError } from "./cart-actions";
 
-/** Serializes writes: an older request must never overwrite a later edit. */
+/** Every edit uses a fresh server cart. Only getCart responses update the screen. */
 export function createCartSync(options: {
   read: () => Item[];
   write: (items: Item[]) => void;
@@ -18,215 +19,116 @@ export function createCartSync(options: {
   ) => void;
 }) {
   let authenticated = false;
-  let initialized = false;
-  let muted = false;
-  let dirty = false;
   let generation = 0;
-  let running: Promise<void> | undefined;
-  let initializing: Promise<void> | undefined;
+  let pending = 0;
+  let queue: Promise<unknown> = Promise.resolve();
   let confirmed:
     | { items: AccountCartItem[]; signature: string; point: DeliveryLocation }
     | undefined;
   const fingerprint = () => JSON.stringify(accountCartItems(options.read()));
-  const apply = (items: Item[]) => {
-    muted = true;
-    try {
-      options.write(items);
-    } finally {
-      muted = false;
+  async function authenticate() {
+    if (!authenticated) {
+      await options.request("/api/auth/me", { retry: 0, timeout: 15000 });
+      authenticated = true;
     }
-  };
-  const restore = (rows: AccountCartItem[]): Item[] =>
-    restoredCartItems(rows).map((row) => {
-      const previous = options
-        .read()
-        .find((item) => item.productId === row.productId);
-      return {
-        ...row,
-        requirement: previous?.requirement,
-        product: {
-          ...row.product!,
-          searchQuery:
-            previous?.product?.searchQuery || previous?.requirement?.query,
-        },
-      };
-    });
-  async function load() {
+  }
+  async function load(withPrices: boolean) {
     const point = { ...options.location() };
     const result = await options.request("/api/cart", {
-      query: { lat: point.lat, lon: point.lon },
+      ...(withPrices ? { query: { lat: point.lat, lon: point.lon } } : {}),
       retry: 0,
       timeout: 120000,
     });
-    if (!Array.isArray(result.items)) throw new Error("Invalid cart");
+    if (!Array.isArray(result.items)) throw new Error("Invalid cart response");
     if (
-      point.lat !== options.location().lat ||
-      point.lon !== options.location().lon
+      withPrices &&
+      (point.lat !== options.location().lat ||
+        point.lon !== options.location().lon)
     )
       throw new Error("Location changed");
     return {
-      rows: restore(result.items),
       source: result.items as AccountCartItem[],
+      rows: restoredCartItems(result.items),
       point,
     };
   }
   function failure(error: any) {
+    confirmed = undefined;
     if ((error?.statusCode || error?.status) === 401) {
       authenticated = false;
-      initialized = false;
-      options.status("guest");
+      options.write([]);
+      options.status(
+        "guest",
+        "Войдите в аккаунт, чтобы добавлять товары и сохранять корзину.",
+      );
     } else
       options.status(
         "error",
-        "Не удалось синхронизировать корзину. Изменения остаются на устройстве. Повторите попытку.",
+        error instanceof CartChangeError
+          ? error.message
+          : "Не удалось обновить сохранённую корзину. Повторите попытку.",
       );
   }
-  function changed() {
-    if (muted) return;
-    dirty = true;
-    confirmed = undefined;
-    if (initialized && authenticated) void flush();
-  }
-  async function flush(): Promise<void> {
-    if (running) return running;
-    if (!authenticated || !initialized) return;
+  function enqueue(
+    change?: (rows: Item[]) => Item[],
+    clear = false,
+  ): Promise<boolean> {
     const session = generation;
-    running = (async () => {
-      try {
-        do {
-          while (dirty && session === generation) {
-            dirty = false;
-            options.status("saving");
+    pending++;
+    confirmed = undefined;
+    const task = queue
+      .then(async () => {
+        if (session !== generation) return false;
+        options.status(change || clear ? "saving" : "loading");
+        try {
+          await authenticate();
+          if (session !== generation) return false;
+          if (change || clear) {
+            const next = clear ? [] : change!((await load(false)).rows);
+            if (session !== generation) return false;
             await options.request("/api/cart", {
               method: "POST",
-              body: { items: accountCartItems(options.read()) },
+              body: { items: accountCartItems(next) },
               retry: 0,
               timeout: 70000,
             });
           }
-          if (session !== generation) return;
-          const before = fingerprint();
-          const result = await load();
-          if (session !== generation) return;
-          if (!dirty && before === fingerprint()) {
-            apply(result.rows);
-            confirmed = {
-              items: result.source,
-              point: result.point,
-              signature: fingerprint(),
-            };
-          }
-        } while (dirty);
-        options.status("saved");
-      } catch (error) {
-        if (session === generation) {
-          dirty = true;
-          confirmed = undefined;
-          failure(error);
-        }
-      }
-    })();
-    try {
-      await running;
-    } finally {
-      running = undefined;
-    }
-  }
-  async function initialize(mergeGuest = false): Promise<void> {
-    if (initializing) return initializing;
-    const session = generation;
-    const before = JSON.parse(JSON.stringify(options.read())) as Item[];
-    options.status("loading");
-    initialized = false;
-    initializing = (async () => {
-      try {
-        await options.request("/api/auth/me", { retry: 0, timeout: 15000 });
-        if (session !== generation) return;
-        authenticated = true;
-        const loaded = await load();
-        const remote = loaded.rows;
-        if (session !== generation) return;
-        const current = options.read();
-        const changedDuringLoad =
-          JSON.stringify(accountCartItems(before)) !== fingerprint();
-        const remoteSignature = JSON.stringify(accountCartItems(remote));
-        let next = remote;
-        if (changedDuringLoad) {
-          // Replay edits made while loading against the remote cart.
-          next = remote.map((row) => ({ ...row }));
-          if (!current.length) next = [];
-          else
-            for (const id of new Set(
-              [...before, ...current].map((row) => row.productId),
-            )) {
-              const old = before.find((row) => row.productId === id);
-              const edited = current.find((row) => row.productId === id);
-              const delta = (edited?.quantity || 0) - (old?.quantity || 0);
-              if (!delta) continue;
-              const existing = next.find((row) => row.productId === id);
-              const quantity = (existing?.quantity || 0) + delta;
-              next = next.filter((row) => row.productId !== id);
-              if (quantity > 0 && (edited || existing))
-                next.push({
-                  ...(edited || existing)!,
-                  quantity: Math.min(99, quantity),
-                });
-            }
-        } else if (mergeGuest) {
-          for (const row of current) {
-            const existing = next.find(
-              (item) => item.productId === row.productId,
-            );
-            if (existing)
-              existing.quantity = Math.max(existing.quantity, row.quantity);
-            else next.push(row);
-          }
-        }
-        if (next.length > 200) throw new Error("Cart too large");
-        dirty =
-          changedDuringLoad ||
-          (mergeGuest &&
-            JSON.stringify(accountCartItems(next)) !== remoteSignature);
-        apply(next);
-        initialized = true;
-        if (dirty) await flush();
-        else {
+          if (session !== generation) return false;
+          const loaded = await load(true);
+          if (session !== generation) return false;
+          options.write(loaded.rows);
           confirmed = {
             items: loaded.source,
-            point: loaded.point,
             signature: fingerprint(),
+            point: loaded.point,
           };
           options.status("saved");
+          return true;
+        } catch (error) {
+          if (session === generation) failure(error);
+          return false;
         }
-      } catch (error) {
-        if (session === generation) failure(error);
-      }
-    })();
-    try {
-      await initializing;
-    } finally {
-      initializing = undefined;
-    }
+      })
+      .finally(() => {
+        pending--;
+      });
+    queue = task;
+    return task;
   }
-  async function refresh() {
-    if (initializing) await initializing;
-    if (!initialized) return initialize();
-    return flush();
-  }
+  const refresh = () => enqueue();
+  const mutate = (change: (rows: Item[]) => Item[]) => enqueue(change);
+  const clear = () => enqueue(undefined, true);
   function logout() {
     generation++;
     authenticated = false;
-    initialized = false;
-    dirty = false;
     confirmed = undefined;
-    apply([]);
+    options.write([]);
     options.status("guest");
   }
   function comparisonItems() {
     if (
       !authenticated ||
-      !initialized ||
-      dirty ||
+      pending ||
       !confirmed ||
       confirmed.signature !== fingerprint() ||
       confirmed.point.lat !== options.location().lat ||
@@ -235,5 +137,12 @@ export function createCartSync(options: {
       return null;
     return savedCartCompareItems(confirmed.items);
   }
-  return { changed, initialize, refresh, logout, comparisonItems };
+  return {
+    initialize: refresh,
+    refresh,
+    mutate,
+    clear,
+    logout,
+    comparisonItems,
+  };
 }

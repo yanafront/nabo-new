@@ -11,7 +11,13 @@ export function useCartSync() {
     error,
     refresh: () => controller()?.refresh(),
     comparisonItems: () => controller()?.comparisonItems() || null,
-    login: () => controller()?.initialize(true),
+    login: () => controller()?.initialize(),
+    mutate: (
+      change: (
+        rows: import("~/data/catalog").Item[],
+      ) => import("~/data/catalog").Item[],
+    ) => controller().mutate(change),
+    clear: () => controller().clear(),
     logout: () => controller()?.logout(),
   };
 }

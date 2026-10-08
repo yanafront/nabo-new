@@ -25,12 +25,24 @@ beforeEach(() => {
     return states.get(key);
   });
   vi.stubGlobal("computed", computed);
-  vi.stubGlobal("useBasket", useBasket);
   vi.stubGlobal("useCartSync", () => ({
-    state: ref("guest"),
+    state: ref("saved"),
     error: ref(""),
-    refresh: async () => {},
+    refresh: async () => true,
+    mutate: async (change: (rows: any[]) => any[]) => {
+      const basket = useBasket();
+      basket.items.value = change(
+        JSON.parse(JSON.stringify(basket.items.value)),
+      );
+      return true;
+    },
+    clear: async () => {
+      useBasket().items.value = [];
+      return true;
+    },
   }));
+
+  vi.stubGlobal("useBasket", useBasket);
   vi.stubGlobal("useRetail", () => ({
     location: ref({ lat: 53.9, lon: 27.5667, label: "Минск" }),
   }));
@@ -38,7 +50,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 it("retries old missing names separately and leaves existing products unchanged", async () => {
   const basket = useBasket();
-  basket.addProduct(source("Творог", "curd"));
+  await basket.addProduct(source("Творог", "curd"));
   basket.unresolved.value = ["Сметана", "Варенье"];
   basket.title.value = "Сырники";
   const fetch = vi.fn(async (_url: string, options: any) => ({
@@ -84,12 +96,12 @@ it("keeps unsuccessful ingredient requests for another retry", async () => {
     basket.pendingIngredients.value.map((item) => item.product?.name),
   ).toEqual(["Варенье"]);
 });
-it("clears missing entries when the user selects the actual product manually", () => {
+it("clears missing entries when the user selects the actual product manually", async () => {
   const basket = useBasket();
   basket.unresolved.value = ["Сметана", "Варенье"];
-  basket.addProduct(source("Сметана Савушкин 20%"));
+  await basket.addProduct(source("Сметана Савушкин 20%"));
   expect(basket.unresolved.value).toEqual(["Варенье"]);
-  basket.addProduct(source("Варенье клубничное"));
+  await basket.addProduct(source("Варенье клубничное"));
   expect(basket.unresolved.value).toEqual([]);
 });
 it("requests unquantified syrniki toppings separately, one pack each", () => {
@@ -105,7 +117,7 @@ it("requests unquantified syrniki toppings separately, one pack each", () => {
   ).toBe(true);
   expect(toppings[0].productId).not.toBe(toppings[1].productId);
 });
-it("restores the missing recipe demand after a browser reload", async () => {
+it("does not restore the active cart or missing ingredients from browser storage", async () => {
   const pending = {
     productId: "recipe:syrniki:curd:mass",
     quantity: 1,
@@ -126,6 +138,7 @@ it("restores the missing recipe demand after a browser reload", async () => {
     },
   };
   vi.stubGlobal("localStorage", {
+    setItem: vi.fn(),
     getItem: (key: string) =>
       key === "nabo-v2"
         ? JSON.stringify({ pendingIngredients: [pending] })
@@ -145,7 +158,8 @@ it("restores the missing recipe demand after a browser reload", async () => {
   vi.stubGlobal("$fetch", vi.fn().mockRejectedValue({ statusCode: 401 }));
   const plugin = await import("../plugins/persistence.client");
   (plugin.default as unknown as () => void)();
-  expect(useBasket().pendingIngredients.value).toEqual([pending]);
+  expect(useBasket().pendingIngredients.value).toEqual([]);
+  expect(useBasket().items.value).toEqual([]);
 });
 it("searches the editorial query and selects the configured exact SKU without compare", async () => {
   const sourceRecipe = structuredClone(
@@ -201,7 +215,7 @@ it("keeps the editorial query after choosing a SKU, changing quantity and refres
     query: selected.name,
     exactName: selected.name,
   });
-  basket.change("green:123", 1);
+  await basket.change("green:123", 1);
   expect(basket.items.value[0].requirement).toBeUndefined();
   expect(basket.compareItems.value[0]).toMatchObject({
     query: selected.name,
@@ -215,7 +229,7 @@ it("keeps the editorial query after choosing a SKU, changing quantity and refres
     fetchedAt: selected.fetchedAt,
   });
   expect(basket.compareItems.value[0].query).toBe("Творог Савушкин 5% 200 г");
-  basket.addProduct(source("Творог другой 200 г", "456"), "green:123");
+  await basket.addProduct(source("Творог другой 200 г", "456"), "green:123");
   expect(basket.compareItems.value[0].query).toBe("Творог другой 200 г");
 });
 it("uses the recipe query for spoon and to-taste ingredients without measurable demand", async () => {
@@ -251,9 +265,9 @@ it("uses the recipe query for spoon and to-taste ingredients without measurable 
   expect(await useRecipeBasket().resolve(request)).toBe(true);
   expect(useBasket().compareItems.value[0].query).toBe("Сахар ванильный 10 г");
 });
-it("preserves queries on older baskets when their quantity changes", () => {
+it("preserves queries on older baskets when their quantity changes", async () => {
   const basket = useBasket();
-  basket.addProduct(source("Творог Савушкин 5% 200 г", "123"));
+  await basket.addProduct(source("Творог Савушкин 5% 200 г", "123"));
   basket.items.value[0].requirement = {
     ingredientId: "curd",
     query: "Творог 5%",
@@ -261,6 +275,6 @@ it("preserves queries on older baskets when their quantity changes", () => {
     dimension: "mass",
   };
   expect(basket.compareItems.value[0].query).toBe("Творог Савушкин 5% 200 г");
-  basket.change("green:123", 1);
+  await basket.change("green:123", 1);
   expect(basket.compareItems.value[0].query).toBe("Творог Савушкин 5% 200 г");
 });

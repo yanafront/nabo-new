@@ -2,14 +2,16 @@
 const route = useRoute();
 const showProducts = computed(() => route.query.tab !== "baskets");
 import { products } from "~/data/catalog";
-const { saved, items, title, pendingIngredients, unresolved } = useBasket();
-function restore(id: string) {
+const { saved, items, title, pendingIngredients, unresolved, addProducts } =
+  useBasket();
+async function restore(id: string) {
   const basket = saved.value.find((s) => s.id === id);
   if (basket) {
     const restored = JSON.parse(
       JSON.stringify(basket.items),
     ) as typeof items.value;
-    items.value = restored.filter((i) => i.product?.sourceId);
+    if (!(await addProducts(restored.filter((i) => i.product?.sourceId))))
+      return;
     pendingIngredients.value = restored.filter((i) => !i.product?.sourceId);
     unresolved.value = [];
     title.value = basket.title;

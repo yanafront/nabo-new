@@ -196,8 +196,12 @@ const inCart = computed(
     items.value.find((item) => item.productId === `${storeId}:${productId}`)
       ?.quantity || 0,
 );
-function add() {
-  if (product.value && addProduct(product.value, replaceId) && replaceId)
+async function add() {
+  if (
+    product.value &&
+    (await addProduct(product.value, replaceId)) &&
+    replaceId
+  )
     navigateTo("/basket");
 }
 

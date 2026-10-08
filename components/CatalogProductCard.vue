@@ -12,8 +12,8 @@ const inCart = computed(
     )?.quantity || 0,
 );
 
-function add() {
-  added.value = addProduct(props.product, props.replaceId);
+async function add() {
+  added.value = await addProduct(props.product, props.replaceId);
   if (added.value && props.replaceId) navigateTo("/basket");
 }
 </script>

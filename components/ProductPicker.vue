@@ -101,8 +101,8 @@ function quantityInCart(p: RetailProduct) {
     0
   );
 }
-function select(product: RetailProduct) {
-  const success = addProduct(product, props.replaceId);
+async function select(product: RetailProduct) {
+  const success = await addProduct(product, props.replaceId);
   feedbackError.value = !success;
   feedback.value = success
     ? `${product.name} — ${props.replaceId ? "заменён" : `в корзине ${quantityInCart(product)} шт.`}`

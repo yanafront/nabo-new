@@ -1,6 +1,10 @@
+import {
+  appendCartItems,
+  selectCartProduct,
+  CartChangeError,
+} from "~/shared/cart-actions";
 import { normalized } from "~/shared/recipe/model";
 import { packagesFor } from "~/shared/recipe/purchasing";
-import { retailProduct } from "~/shared/recipe-basket";
 import { products, type Item, type Product } from "~/data/catalog";
 import type { CompareItem, RetailProduct } from "~/shared/yandex";
 interface Saved {
@@ -16,6 +20,7 @@ export function useBasket() {
   const unresolved = useState<string[]>("unresolved-ingredients", () => []);
   const pendingIngredients = useState<Item[]>("pending-ingredients", () => []);
   const notice = useState("notice", () => "");
+  const cartSync = useCartSync();
   const rows = computed(() =>
     items.value
       .map((i) => ({
@@ -35,45 +40,24 @@ export function useBasket() {
         : {}),
     })),
   );
-  function addProduct(source: RetailProduct, replaceId?: string) {
-    if (!source.available) {
-      notice.value = "Товар сейчас недоступен";
-      return false;
+  async function commit(change: (rows: Item[]) => Item[]) {
+    const success = await cartSync.mutate(change);
+    if (!success) {
+      notice.value = cartSync.error.value;
+      if (cartSync.state.value === "guest")
+        await navigateTo({ path: "/account", query: { returnTo: "/basket" } });
     }
-    const product = retailProduct(source);
-    const id = product.id;
-    const old = replaceId
-      ? items.value.find((i) => i.productId === replaceId)
-      : undefined;
-    const existing = items.value.find((i) => i.productId === id);
-    if (old === existing && old) return true;
-    if (replaceId && !old) {
-      notice.value = "Товар для замены уже удалён";
-      return false;
-    }
-    const quantity = (existing?.quantity || 0) + (old?.quantity || 1);
-    if (quantity > 99 || (source.stock !== null && quantity > source.stock)) {
-      notice.value = "Больше нет в наличии";
-      return false;
-    }
-    if (!old && !existing && items.value.length >= 20) {
-      notice.value = "В корзине может быть до 20 позиций";
-      return false;
-    }
-    if (existing) {
-      if (old) {
-        existing.required = existing.required || old.required;
-        if (old.allowReplacement === false) existing.allowReplacement = false;
-      }
-      delete existing.requirement;
-      existing.quantity = quantity;
-      existing.product = product;
-      if (old) remove(old.productId);
-    } else if (old) {
-      delete old.requirement;
-      old.productId = id;
-      old.product = product;
-    } else items.value.push({ productId: id, quantity: 1, product });
+    return success;
+  }
+  async function addProducts(additions: Item[]) {
+    return commit((current) => appendCartItems(current, additions));
+  }
+  async function addProduct(source: RetailProduct, replaceId?: string) {
+    const success = await commit((current) =>
+      selectCartProduct(current, source, replaceId),
+    );
+    if (!success) return false;
+    const id = `${source.storeId}:${source.id}`;
     const matches = (name: string) => {
       const query = normalized(name),
         chosen = normalized(source.name);
@@ -104,20 +88,22 @@ export function useBasket() {
     notice.value = replaceId ? "Товар заменён" : "Товар добавлен в корзину";
     return true;
   }
-  function remove(id: string) {
-    items.value = items.value.filter((i) => i.productId !== id);
+  async function remove(id: string) {
+    return commit((current) => current.filter((row) => row.productId !== id));
   }
-  function change(id: string, delta: number) {
-    const i = items.value.find((i) => i.productId === id);
-    if (i) {
-      if (i.product && i.requirement?.query)
-        i.product.searchQuery ||= i.requirement.query;
-      delete i.requirement; // A manual pack count replaces the recipe demand.
-      if (i.quantity + delta <= 0) {
-        remove(id);
-        notice.value = "Товар удалён из корзины";
-      } else i.quantity = Math.min(99, i.quantity + delta);
-    }
+  async function change(id: string, delta: number) {
+    return commit((current) =>
+      current.flatMap((row) => {
+        if (row.productId !== id) return [row];
+        const quantity = row.quantity + delta;
+        if (quantity > 99)
+          throw new CartChangeError(
+            "Можно выбрать не более 99 упаковок одного товара.",
+          );
+        const { requirement, ...selected } = row;
+        return quantity > 0 ? [{ ...selected, quantity }] : [];
+      }),
+    );
   }
   const saving = useState("basket-saving", () => false);
   async function save() {
@@ -158,12 +144,16 @@ export function useBasket() {
     });
     notice.value = "Список сохранён в разделе «Сохранённое»";
   }
-  function clear() {
-    items.value = [];
+  async function clear() {
+    if (!(await cartSync.clear())) {
+      notice.value = cartSync.error.value;
+      return false;
+    }
     unresolved.value = [];
     pendingIngredients.value = [];
     title.value = "Моя корзина";
     notice.value = "Корзина очищена";
+    return true;
   }
   return {
     items,
@@ -175,6 +165,7 @@ export function useBasket() {
     unresolved,
     pendingIngredients,
     addProduct,
+    addProducts,
     remove,
     change,
     save,

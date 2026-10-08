@@ -30,9 +30,9 @@ const hasContent = computed(
     unresolved.value.length > 0 ||
     pendingIngredients.value.length > 0,
 );
-function clearBasket() {
+async function clearBasket() {
   if (resolving.value || pricesPending.value) return;
-  clear();
+  if (!(await clear())) return;
   resolveError.value = "";
   pricesError.value = "";
   confirmClear.value = false;
@@ -71,7 +71,9 @@ function replaceProduct(id: string, name: string) {
         >
         <button
           class="basket-clear-button"
-          :disabled="resolving || pricesPending"
+          :disabled="
+            resolving || pricesPending || cartSync.state.value === 'saving'
+          "
           @click="confirmClear = true"
         >
           <AppIcon name="Trash2" :size="16" />
@@ -219,6 +221,9 @@ function replaceProduct(id: string, name: string) {
       @close="confirmClear = false"
     >
       <p>Удалим все товары и недостающие ингредиенты из текущей корзины.</p>
+      <p v-if="cartSync.error.value" role="alert" class="error">
+        {{ cartSync.error.value }}
+      </p>
       <p class="muted">
         Сохранённые списки останутся. После входа корзина очистится и в
         аккаунте.
@@ -230,7 +235,9 @@ function replaceProduct(id: string, name: string) {
           </button>
           <button
             class="primary"
-            :disabled="resolving || pricesPending"
+            :disabled="
+              resolving || pricesPending || cartSync.state.value === 'saving'
+            "
             @click="clearBasket"
           >
             Очистить корзину

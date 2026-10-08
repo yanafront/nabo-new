@@ -2,6 +2,7 @@
 import { authReturnPath } from "~/shared/auth-return";
 const route = useRoute();
 const returnTo = computed(() => authReturnPath(route.query.returnTo));
+const cartSync = useCartSync();
 const { reset: resetFavorites } = useFavorites();
 const phoneNumber = ref("");
 const password = ref("");
@@ -33,6 +34,7 @@ async function submit() {
       await $fetch("/api/auth/login", { method: "POST", body, retry: 0 });
       password.value = "";
       resetFavorites();
+      await cartSync.login();
       await refresh();
       if (user.value && returnTo.value) await navigateTo(returnTo.value);
     }
@@ -57,6 +59,7 @@ async function logout() {
   error.value = "";
   try {
     await $fetch("/api/auth/logout", { method: "POST", retry: 0 });
+    cartSync.logout();
     user.value = null;
     resetFavorites();
   } catch {

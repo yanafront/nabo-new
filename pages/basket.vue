@@ -14,6 +14,7 @@ const {
 } = useBasket();
 const { retryMissing, resolving, resolveError } = useRecipeBasket();
 const { refreshPrices, pricesPending, pricesError } = useCartPrices();
+const cartSync = useCartSync();
 const confirmClear = ref(false);
 const stores = computed(() =>
   [
@@ -91,6 +92,10 @@ function replaceProduct(id: string, name: string) {
         </details>
       </div>
     </div>
+    <p v-if="cartSync.error.value" class="error" role="alert">
+      {{ cartSync.error.value }}
+      <button class="text-button" @click="cartSync.refresh">Повторить</button>
+    </p>
     <div v-if="items.length" class="basket-layout">
       <section class="basket-list panel">
         <div class="panel-heading">
@@ -211,7 +216,10 @@ function replaceProduct(id: string, name: string) {
       @close="confirmClear = false"
     >
       <p>Удалим все товары и недостающие ингредиенты из текущей корзины.</p>
-      <p class="muted">Сохранённые списки и корзина в аккаунте останутся.</p>
+      <p class="muted">
+        Сохранённые списки останутся. После входа корзина очистится и в
+        аккаунте.
+      </p>
       <template #footer>
         <div class="account-cart-actions">
           <button class="secondary" autofocus @click="confirmClear = false">

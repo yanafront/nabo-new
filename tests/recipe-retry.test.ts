@@ -36,25 +36,21 @@ it("retries old missing names separately and leaves existing products unchanged"
   basket.addProduct(source("Творог", "curd"));
   basket.unresolved.value = ["Сметана", "Варенье"];
   basket.title.value = "Сырники";
-  const fetch = vi.fn(async (_url, options) => ({
-    offers: [
+  const fetch = vi.fn(async (_url: string, options: any) => ({
+    stores: [
       {
         storeId: "green",
-        lines: options.body.items.map((item: any) => ({
-          itemId: item.id,
-          query: item.query,
-          quantity: 1,
-          selected: source(item.query),
-          alternatives: [],
-        })),
+        status: "ok",
+        products: [source(options.body.query)],
       },
     ],
   }));
   vi.stubGlobal("$fetch", fetch);
   expect(await useRecipeBasket().retryMissing()).toBe(true);
-  expect(
-    fetch.mock.calls[0][1].body.items.map((item: any) => item.query),
-  ).toEqual(["Сметана", "Варенье"]);
+  expect(fetch.mock.calls.map((call) => call[1].body.query)).toEqual([
+    "Сметана",
+    "Варенье",
+  ]);
   expect(basket.unresolved.value).toEqual([]);
   expect(basket.items.value).toHaveLength(3);
   expect(
@@ -66,20 +62,17 @@ it("retries old missing names separately and leaves existing products unchanged"
 it("keeps unsuccessful ingredient requests for another retry", async () => {
   const basket = useBasket();
   basket.unresolved.value = ["Сметана", "Варенье"];
-  vi.stubGlobal("$fetch", async (_url: string, options: any) => ({
-    offers: [
+  const fetch = vi.fn(async (_url: string, options: any) => ({
+    stores: [
       {
         storeId: "green",
-        lines: options.body.items.map((item: any) => ({
-          itemId: item.id,
-          query: item.query,
-          quantity: 1,
-          selected: item.query === "Варенье" ? null : source(item.query),
-          alternatives: [],
-        })),
+        status: "ok",
+        products:
+          options.body.query === "Варенье" ? [] : [source(options.body.query)],
       },
     ],
   }));
+  vi.stubGlobal("$fetch", fetch);
   expect(await useRecipeBasket().retryMissing()).toBe(true);
   expect(basket.unresolved.value).toEqual(["Варенье"]);
   expect(
@@ -144,11 +137,12 @@ it("restores the missing recipe demand after a browser reload", async () => {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
   });
+  vi.stubGlobal("$fetch", vi.fn().mockRejectedValue({ statusCode: 401 }));
   const plugin = await import("../plugins/persistence.client");
   (plugin.default as unknown as () => void)();
   expect(useBasket().pendingIngredients.value).toEqual([pending]);
 });
-it("passes editorial query, exact name and package unit to the backend without local demand fields", async () => {
+it("searches the editorial query and selects the configured exact SKU without compare", async () => {
   const sourceRecipe = structuredClone(
     validateCatalog(catalog).recipes.find((r) => r.slug === "syrniki")!,
   );
@@ -162,32 +156,20 @@ it("passes editorial query, exact name and package unit to the backend without l
     sourceRecipe.servings,
     [],
   );
-  const fetch = vi.fn(async (_url, options) => ({
-    offers: [
+  const fetch = vi.fn(async (_url: string, options: any) => ({
+    stores: [
       {
         storeId: "green",
-        lines: options.body.items.map((item: any) => ({
-          itemId: item.id,
-          query: item.query,
-          quantity: 1,
-          selected: source(item.exactName, "123"),
-          alternatives: [],
-        })),
+        status: "ok",
+        products: [source("Творог Савушкин 5% 200 г", "123")],
       },
     ],
   }));
   vi.stubGlobal("$fetch", fetch);
   expect(await useRecipeBasket().resolve(request)).toBe(true);
-  expect(fetch.mock.calls[0][0]).toBe("/api/yandex/compare");
-  expect(fetch.mock.calls[0][1].body.items[0]).toMatchObject({
-    query: "Творог 5%",
-    exactName: "Творог Савушкин 5% 200 г",
-    unit: "200 г",
-    quantity: 1,
-  });
-  expect(fetch.mock.calls[0][1].body.items[0]).not.toHaveProperty(
-    "requirement",
-  );
+  expect(fetch.mock.calls[0][0]).toBe("/api/search");
+  expect(fetch.mock.calls[0][1].body).toMatchObject({ query: "Творог 5%" });
+  expect(fetch.mock.calls[0][1].body).not.toHaveProperty("items");
 });
 it("keeps the editorial query after choosing a SKU, changing quantity and refreshing its price", async () => {
   const { refreshedItem } = await import("../shared/account-cart");
@@ -203,20 +185,10 @@ it("keeps the editorial query after choosing a SKU, changing quantity and refres
     [],
   );
   const selected = source("Творог Савушкин 5% 200 г", "123");
-  vi.stubGlobal("$fetch", async (_url: string, options: any) => ({
-    offers: [
-      {
-        storeId: "green",
-        lines: options.body.items.map((item: any) => ({
-          itemId: item.id,
-          query: item.query,
-          quantity: 1,
-          selected,
-          alternatives: [],
-        })),
-      },
-    ],
+  const fetch = vi.fn(async (_url: string, options: any) => ({
+    stores: [{ storeId: "green", status: "ok", products: [selected] }],
   }));
+  vi.stubGlobal("$fetch", fetch);
   expect(await useRecipeBasket().resolve(request)).toBe(true);
   const basket = useBasket();
   expect(basket.rows.value[0].product.name).toBe(selected.name);
@@ -261,20 +233,16 @@ it("uses the recipe query for spoon and to-taste ingredients without measurable 
     [],
   );
   expect(request.items[0].requirement).toBeUndefined();
-  vi.stubGlobal("$fetch", async (_url: string, options: any) => ({
-    offers: [
+  const fetch = vi.fn(async (_url: string, options: any) => ({
+    stores: [
       {
         storeId: "green",
-        lines: options.body.items.map((item: any) => ({
-          itemId: item.id,
-          query: item.query,
-          quantity: 1,
-          selected: source("Сахар ванильный 10 г", "vanilla"),
-          alternatives: [],
-        })),
+        status: "ok",
+        products: [source("Сахар ванильный 10 г", "vanilla")],
       },
     ],
   }));
+  vi.stubGlobal("$fetch", fetch);
   expect(await useRecipeBasket().resolve(request)).toBe(true);
   expect(useBasket().compareItems.value[0].query).toBe("Сахар ванильный");
 });

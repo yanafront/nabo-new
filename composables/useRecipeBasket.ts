@@ -1,6 +1,6 @@
 import { products, type Item } from "~/data/catalog";
-import type { StoreComparison } from "~/shared/yandex";
-import { recipeBasket } from "~/shared/recipe-basket";
+import type { SearchAllResult } from "~/shared/yandex";
+import { recipeSearchBasket } from "~/shared/recipe-search-basket";
 import { normalized } from "~/shared/recipe/model";
 export function useRecipeBasket() {
   const { items, title, unresolved, pendingIngredients, notice } = useBasket();
@@ -28,22 +28,42 @@ export function useRecipeBasket() {
           quantity: i.quantity,
         };
       });
-      const response = await $fetch<{ offers: StoreComparison[] }>(
-        "/api/yandex/compare",
-        {
-          method: "POST",
-          body: { items: queries, location: location.value },
-          signal,
-          timeout: 120000,
-          retry: 0,
-        },
+      // Limit parallel retail searches; a single failed ingredient does not discard others.
+      const results: Array<SearchAllResult | null> = queries.map(() => null);
+      let cursor = 0;
+      await Promise.all(
+        Array.from({ length: Math.min(3, queries.length) }, async () => {
+          while (cursor < queries.length && !signal?.aborted) {
+            const index = cursor++;
+            try {
+              results[index] = await $fetch<SearchAllResult>("/api/search", {
+                method: "POST",
+                body: {
+                  query: queries[index]!.query,
+                  location: JSON.parse(point),
+                },
+                signal,
+                timeout: 70000,
+                retry: 0,
+              });
+            } catch {
+              /* Keep this ingredient available for a retry. */
+            }
+          }
+        }),
       );
       if (signal?.aborted) return false;
       if (point !== JSON.stringify(location.value)) {
         resolveError.value = "Точка доставки изменилась. Повторите подбор.";
         return false;
       }
-      const basket = recipeBasket(response.offers, request.items);
+      const basket = recipeSearchBasket(
+        request.items.map((row) => ({
+          ...row,
+          product: row.product || products.find((p) => p.id === row.productId)!,
+        })),
+        results,
+      );
       if (!basket?.items.length) {
         resolveError.value =
           "Не удалось подобрать товары в магазинах. Попробуйте снова или добавьте их через поиск.";

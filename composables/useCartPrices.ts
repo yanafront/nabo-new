@@ -3,11 +3,23 @@ export function useCartPrices() {
   const { items, notice } = useBasket();
   const { location } = useRetail();
   const { resolveProducts } = useApi();
+  const cartSync = useCartSync();
   const pending = ref(false);
   const error = ref("");
   let controller: AbortController | undefined;
   async function refreshPrices() {
     if (pending.value || !items.value.length) return;
+    if (cartSync.state.value !== "guest") {
+      pending.value = true;
+      error.value = "";
+      try {
+        await cartSync.refresh();
+        error.value = cartSync.error.value;
+      } finally {
+        pending.value = false;
+      }
+      return;
+    }
     const point = { ...location.value };
     const references = items.value.flatMap((item) =>
       item.product?.storeId && item.product.sourceId

@@ -1,3 +1,5 @@
+import { createCartSync } from "~/shared/cart-sync";
+import { accountCartItems } from "~/shared/account-cart";
 import { separateLegacyIngredientNames } from "~/shared/recipe/ingredient-names";
 import { products, type Item } from "~/data/catalog";
 import { retailStores } from "~/shared/yandex";
@@ -5,6 +7,22 @@ export default defineNuxtPlugin(() => {
   const { items, title, saved, notice, unresolved, pendingIngredients } =
     useBasket();
   const { location, invalidate } = useRetail();
+  const syncState = useState<
+    "guest" | "loading" | "saving" | "saved" | "error"
+  >("cart-sync-state", () => "loading");
+  const syncError = useState("cart-sync-error", () => "");
+  const cartSync = createCartSync({
+    read: () => items.value,
+    write: (rows) => {
+      items.value = rows;
+    },
+    location: () => location.value,
+    request: (url, options) => $fetch(url, options),
+    status: (state, error = "") => {
+      syncState.value = state;
+      syncError.value = error;
+    },
+  });
   onNuxtReady(() => {
     try {
       const data = JSON.parse(
@@ -108,6 +126,12 @@ export default defineNuxtPlugin(() => {
     } catch {
       notice.value = "Не удалось восстановить сохранённые корзины";
     }
+    watch(
+      () => JSON.stringify(accountCartItems(items.value)),
+      () => cartSync.changed(),
+      { flush: "sync" },
+    );
+    void cartSync.initialize();
     watch([items, location], invalidate, { deep: true, flush: "sync" });
     let saveTimer: ReturnType<typeof setTimeout> | undefined;
     let dirty = false;
@@ -154,4 +178,5 @@ export default defineNuxtPlugin(() => {
         document.removeEventListener("visibilitychange", hidden);
       });
   });
+  return { provide: { cartSync } };
 });

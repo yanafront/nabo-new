@@ -26,6 +26,11 @@ beforeEach(() => {
   });
   vi.stubGlobal("computed", computed);
   vi.stubGlobal("useBasket", useBasket);
+  vi.stubGlobal("useCartSync", () => ({
+    state: ref("guest"),
+    error: ref(""),
+    refresh: async () => {},
+  }));
   vi.stubGlobal("useRetail", () => ({
     location: ref({ lat: 53.9, lon: 27.5667, label: "Минск" }),
   }));
@@ -193,13 +198,13 @@ it("keeps the editorial query after choosing a SKU, changing quantity and refres
   const basket = useBasket();
   expect(basket.rows.value[0].product.name).toBe(selected.name);
   expect(basket.compareItems.value[0]).toMatchObject({
-    query: "Творог 5%",
+    query: selected.name,
     exactName: selected.name,
   });
   basket.change("green:123", 1);
   expect(basket.items.value[0].requirement).toBeUndefined();
   expect(basket.compareItems.value[0]).toMatchObject({
-    query: "Творог 5%",
+    query: selected.name,
     quantity: 2,
   });
   basket.items.value[0] = refreshedItem(basket.items.value[0], {
@@ -209,7 +214,7 @@ it("keeps the editorial query after choosing a SKU, changing quantity and refres
     product: { ...selected, price: 3 },
     fetchedAt: selected.fetchedAt,
   });
-  expect(basket.compareItems.value[0].query).toBe("Творог 5%");
+  expect(basket.compareItems.value[0].query).toBe("Творог Савушкин 5% 200 г");
   basket.addProduct(source("Творог другой 200 г", "456"), "green:123");
   expect(basket.compareItems.value[0].query).toBe("Творог другой 200 г");
 });
@@ -244,7 +249,7 @@ it("uses the recipe query for spoon and to-taste ingredients without measurable 
   }));
   vi.stubGlobal("$fetch", fetch);
   expect(await useRecipeBasket().resolve(request)).toBe(true);
-  expect(useBasket().compareItems.value[0].query).toBe("Сахар ванильный");
+  expect(useBasket().compareItems.value[0].query).toBe("Сахар ванильный 10 г");
 });
 it("preserves queries on older baskets when their quantity changes", () => {
   const basket = useBasket();
@@ -255,7 +260,7 @@ it("preserves queries on older baskets when their quantity changes", () => {
     amount: 500,
     dimension: "mass",
   };
-  expect(basket.compareItems.value[0].query).toBe("Творог 5%");
+  expect(basket.compareItems.value[0].query).toBe("Творог Савушкин 5% 200 г");
   basket.change("green:123", 1);
-  expect(basket.compareItems.value[0].query).toBe("Творог 5%");
+  expect(basket.compareItems.value[0].query).toBe("Творог Савушкин 5% 200 г");
 });

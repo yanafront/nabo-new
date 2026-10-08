@@ -147,3 +147,56 @@ it("does not overwrite a remote cart when adding during its initial load", async
     "new",
   ]);
 });
+
+it("allows compare only from getCart after a successful save, using saved names rather than editorial queries", async () => {
+  const c = setup();
+  await c.sync.initialize();
+  c.set([row("SKU", 2)]);
+  expect(c.sync.comparisonItems()).toBeNull();
+  await c.sync.refresh();
+  expect(c.sync.comparisonItems()).toEqual([
+    {
+      id: "green:SKU",
+      query: "SKU",
+      exactName: "SKU",
+      quantity: 2,
+      unit: "1 л",
+    },
+  ]);
+  expect(c.request.mock.calls.at(-1)?.[1]?.query).toEqual({
+    lat: 53.9,
+    lon: 27.5667,
+  });
+  c.request.mockRejectedValueOnce({ statusCode: 502 });
+  c.set([row("SKU", 3)]);
+  await c.sync.refresh();
+  expect(c.sync.comparisonItems()).toBeNull();
+});
+
+it("compares the names and counts returned by getCart, even when they differ from the local selection", async () => {
+  const c = setup();
+  await c.sync.initialize();
+  c.set([row("SKU", 2)]);
+  await c.sync.refresh();
+  c.request.mockResolvedValueOnce({
+    items: [
+      {
+        id: "SKU",
+        storeId: "green",
+        name: "Название из сохранённой корзины",
+        count: 5,
+        unit: "500 г",
+      },
+    ],
+  });
+  await c.sync.refresh();
+  expect(c.sync.comparisonItems()).toEqual([
+    {
+      id: "green:SKU",
+      query: "Название из сохранённой корзины",
+      exactName: "Название из сохранённой корзины",
+      quantity: 5,
+      unit: "500 г",
+    },
+  ]);
+});

@@ -46,7 +46,7 @@ const requestKey = computed(() => keyFor(compareItems.value));
 let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 function refresh() {
   clearTimeout(refreshTimer);
-  if (items.value.length) compare(compareItems.value);
+  if (items.value.length) compare();
 }
 onMounted(() => {
   if (

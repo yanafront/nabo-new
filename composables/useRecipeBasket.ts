@@ -5,6 +5,7 @@ import { normalized } from "~/shared/recipe/model";
 export function useRecipeBasket() {
   const { items, title, unresolved, pendingIngredients, notice } = useBasket();
   const { location } = useRetail();
+  const cartSync = useCartSync();
   const resolving = useState("recipe-resolving", () => false);
   const resolveError = useState("recipe-error", () => "");
   async function resolve(
@@ -127,6 +128,11 @@ export function useRecipeBasket() {
         : basket.adjusted
           ? "Товары подобраны. Проверьте размеры упаковок."
           : "Реальные товары добавлены в корзину";
+      await cartSync.refresh();
+      if (cartSync.state.value === "error") {
+        resolveError.value = cartSync.error.value;
+        return false;
+      }
       return true;
     } catch {
       if (!signal?.aborted)

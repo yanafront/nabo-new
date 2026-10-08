@@ -14,22 +14,26 @@ const product = {
   placeSlug: "green",
   fetchedAt: new Date().toISOString(),
 };
-test("recipe → search → saveCart/getCart; quantity and clear synchronize without compare", async ({
+test("recipe → saveCart/getCart → comparison from saved cart → clear", async ({
   page,
 }) => {
   let items: any[] = [];
   const writes: any[][] = [];
   let compareCalls = 0;
   const searches: string[] = [];
+  const compareInputs: any[] = [];
+  const events: string[] = [];
   await page.route("**/api/auth/me", (route) =>
     route.fulfill({ json: { id: "user", phoneNumber: "+375291234567" } }),
   );
   await page.route("**/api/cart**", (route) => {
     if (route.request().method() === "POST") {
+      events.push("save");
       items = route.request().postDataJSON().items;
       writes.push(items);
       return route.fulfill({ json: true });
     }
+    events.push("get");
     return route.fulfill({
       json: {
         phone: "+375291234567",
@@ -55,6 +59,8 @@ test("recipe → search → saveCart/getCart; quantity and clear synchronize wit
     });
   });
   await page.route("**/api/yandex/compare", (route) => {
+    events.push("compare");
+    compareInputs.push(route.request().postDataJSON());
     compareCalls++;
     return route.fulfill({ json: { offers: [] } });
   });
@@ -114,6 +120,23 @@ test("recipe → search → saveCart/getCart; quantity and clear synchronize wit
     .getByRole("button", { name: `Увеличить количество: ${product.name}` })
     .click();
   await expect.poll(() => writes.at(-1)?.[0]?.count).toBe(2);
+  expect(compareCalls).toBe(0);
+  await page.getByRole("link", { name: /Сравнить в магазинах/ }).click();
+  await expect.poll(() => compareCalls).toBeGreaterThan(0);
+  expect(compareInputs[0].items).toEqual([
+    {
+      id: "green:curd-123",
+      query: product.name,
+      exactName: product.name,
+      quantity: 2,
+      unit: product.unit,
+    },
+  ]);
+  const comparedAt = events.indexOf("compare");
+  expect(events[comparedAt - 1]).toBe("get");
+  expect(events.indexOf("save")).toBeLessThan(comparedAt);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/basket$/);
   await page
     .getByRole("button", { name: "Очистить корзину", exact: true })
     .click();
@@ -122,7 +145,6 @@ test("recipe → search → saveCart/getCart; quantity and clear synchronize wit
     .getByRole("button", { name: "Очистить корзину", exact: true })
     .click();
   await expect.poll(() => writes.at(-1)?.length).toBe(0);
-  expect(compareCalls).toBe(0);
 });
 
 test("catalog selection stays manual and the selected SKU survives a reload", async ({

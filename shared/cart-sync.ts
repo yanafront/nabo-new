@@ -1,6 +1,10 @@
 import type { Item } from "../data/catalog";
 import type { AccountCartItem, DeliveryLocation } from "./yandex";
-import { accountCartItems, restoredCartItems } from "./account-cart";
+import {
+  accountCartItems,
+  restoredCartItems,
+  savedCartCompareItems,
+} from "./account-cart";
 
 /** Serializes writes: an older request must never overwrite a later edit. */
 export function createCartSync(options: {
@@ -20,6 +24,9 @@ export function createCartSync(options: {
   let generation = 0;
   let running: Promise<void> | undefined;
   let initializing: Promise<void> | undefined;
+  let confirmed:
+    | { items: AccountCartItem[]; signature: string; point: DeliveryLocation }
+    | undefined;
   const fingerprint = () => JSON.stringify(accountCartItems(options.read()));
   const apply = (items: Item[]) => {
     muted = true;
@@ -57,7 +64,11 @@ export function createCartSync(options: {
       point.lon !== options.location().lon
     )
       throw new Error("Location changed");
-    return restore(result.items);
+    return {
+      rows: restore(result.items),
+      source: result.items as AccountCartItem[],
+      point,
+    };
   }
   function failure(error: any) {
     if ((error?.statusCode || error?.status) === 401) {
@@ -73,6 +84,7 @@ export function createCartSync(options: {
   function changed() {
     if (muted) return;
     dirty = true;
+    confirmed = undefined;
     if (initialized && authenticated) void flush();
   }
   async function flush(): Promise<void> {
@@ -94,14 +106,22 @@ export function createCartSync(options: {
           }
           if (session !== generation) return;
           const before = fingerprint();
-          const rows = await load();
+          const result = await load();
           if (session !== generation) return;
-          if (!dirty && before === fingerprint()) apply(rows);
+          if (!dirty && before === fingerprint()) {
+            apply(result.rows);
+            confirmed = {
+              items: result.source,
+              point: result.point,
+              signature: fingerprint(),
+            };
+          }
         } while (dirty);
         options.status("saved");
       } catch (error) {
         if (session === generation) {
           dirty = true;
+          confirmed = undefined;
           failure(error);
         }
       }
@@ -123,7 +143,8 @@ export function createCartSync(options: {
         await options.request("/api/auth/me", { retry: 0, timeout: 15000 });
         if (session !== generation) return;
         authenticated = true;
-        const remote = await load();
+        const loaded = await load();
+        const remote = loaded.rows;
         if (session !== generation) return;
         const current = options.read();
         const changedDuringLoad =
@@ -169,7 +190,14 @@ export function createCartSync(options: {
         apply(next);
         initialized = true;
         if (dirty) await flush();
-        else options.status("saved");
+        else {
+          confirmed = {
+            items: loaded.source,
+            point: loaded.point,
+            signature: fingerprint(),
+          };
+          options.status("saved");
+        }
       } catch (error) {
         if (session === generation) failure(error);
       }
@@ -181,6 +209,7 @@ export function createCartSync(options: {
     }
   }
   async function refresh() {
+    if (initializing) await initializing;
     if (!initialized) return initialize();
     return flush();
   }
@@ -189,8 +218,22 @@ export function createCartSync(options: {
     authenticated = false;
     initialized = false;
     dirty = false;
+    confirmed = undefined;
     apply([]);
     options.status("guest");
   }
-  return { changed, initialize, refresh, logout };
+  function comparisonItems() {
+    if (
+      !authenticated ||
+      !initialized ||
+      dirty ||
+      !confirmed ||
+      confirmed.signature !== fingerprint() ||
+      confirmed.point.lat !== options.location().lat ||
+      confirmed.point.lon !== options.location().lon
+    )
+      return null;
+    return savedCartCompareItems(confirmed.items);
+  }
+  return { changed, initialize, refresh, logout, comparisonItems };
 }

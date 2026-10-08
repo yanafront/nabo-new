@@ -29,12 +29,11 @@ export function useRetail() {
       return { ...offer, ...store, ...summarizeComparison(offer) };
     }),
   );
-  async function compare(items: CompareItem[]) {
-    if (!items.length) return;
+  async function compare() {
     requests.get(app)?.abort();
     const controller = new AbortController();
     requests.set(app, controller);
-    const key = keyFor(items);
+
     const requestId = crypto.randomUUID();
     currentKey.value = requestId;
     pending.value = true;
@@ -42,6 +41,16 @@ export function useRetail() {
     comparisons.value = [];
     fingerprint.value = "";
     try {
+      await app.$cartSync.refresh();
+      if (controller.signal.aborted) return;
+      const items = app.$cartSync.comparisonItems();
+      if (!items) {
+        error.value =
+          "Для сравнения нужна сохранённая корзина. Войдите в аккаунт или повторите сохранение корзины.";
+        return;
+      }
+      if (!items.length) return;
+      const key = keyFor(items);
       const result = await $fetch<{ offers: StoreComparison[] }>(
         "/api/yandex/compare",
         {

@@ -15,6 +15,9 @@ const {
 const { retryMissing, resolving, resolveError } = useRecipeBasket();
 const { refreshPrices, pricesPending, pricesError } = useCartPrices();
 const cartSync = useCartSync();
+onNuxtReady(() => {
+  void cartSync.refresh();
+});
 const confirmClear = ref(false);
 const stores = computed(() =>
   [

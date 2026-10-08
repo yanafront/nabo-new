@@ -132,7 +132,16 @@ export default defineNuxtPlugin(() => {
       { flush: "sync" },
     );
     void cartSync.initialize();
-    watch([items, location], invalidate, { deep: true, flush: "sync" });
+    watch(
+      () =>
+        JSON.stringify([
+          accountCartItems(items.value),
+          location.value.lat,
+          location.value.lon,
+        ]),
+      invalidate,
+      { flush: "sync" },
+    );
     let saveTimer: ReturnType<typeof setTimeout> | undefined;
     let dirty = false;
     const persist = () => {

@@ -1,5 +1,5 @@
 import type { Item } from "../data/catalog";
-import type { AccountCartItem, ProductResult } from "./yandex";
+import type { AccountCartItem, ProductResult, CompareItem } from "./yandex";
 import { retailProduct } from "./recipe-basket";
 export function accountCartItems(items: Item[]): AccountCartItem[] {
   return items
@@ -79,4 +79,15 @@ export function restoredCartItems(items: AccountCartItem[]): Item[] {
       item.current,
     ),
   );
+}
+
+/** Comparison inputs come exclusively from a successfully loaded account cart. */
+export function savedCartCompareItems(items: AccountCartItem[]): CompareItem[] {
+  return items.map((item) => ({
+    id: `${item.storeId}:${item.id}`,
+    query: item.name.slice(0, 160),
+    exactName: item.name,
+    quantity: item.count,
+    ...(item.unit ? { unit: item.unit } : {}),
+  }));
 }

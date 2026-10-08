@@ -27,11 +27,7 @@ export function useBasket() {
   const compareItems = computed<CompareItem[]>(() =>
     rows.value.map((i) => ({
       id: i.productId,
-      query: (
-        i.product.searchQuery ||
-        i.requirement?.query ||
-        i.product.name
-      ).slice(0, 160),
+      query: i.product.name.slice(0, 160),
       quantity: i.quantity,
       unit: i.product.unit,
       ...(i.product.sourceId

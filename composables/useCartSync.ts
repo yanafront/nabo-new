@@ -10,6 +10,7 @@ export function useCartSync() {
     state,
     error,
     refresh: () => controller()?.refresh(),
+    comparisonItems: () => controller()?.comparisonItems() || null,
     login: () => controller()?.initialize(true),
     logout: () => controller()?.logout(),
   };

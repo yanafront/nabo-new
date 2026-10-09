@@ -76,6 +76,7 @@ const shownLines = computed(() =>
 );
 let timer: ReturnType<typeof setTimeout> | undefined;
 let disposed = false;
+let attemptedKey = "";
 function schedule() {
   clearTimeout(timer);
   timer = setTimeout(() => {
@@ -87,14 +88,12 @@ function schedule() {
     )
       return;
     const input = cart.comparisonItems();
-    if (
-      input &&
-      (fingerprint.value !== keyFor(input) ||
-        comparisons.value.some(
-          (offer) => Date.now() - Date.parse(offer.fetchedAt) > 120000,
-        ))
-    )
-      void compare();
+    if (!input) return;
+    const key = keyFor(input);
+    // One automatic attempt per cart/address; old timestamps and failures must not poll.
+    if (fingerprint.value === key || attemptedKey === key) return;
+    attemptedKey = key;
+    void compare(false);
   }, 250);
 }
 watch(
@@ -250,7 +249,7 @@ onBeforeUnmount(() => {
             <h2>{{ identity.name }}</h2>
             <NearbyStoresLink :store-id="active" />
           </div>
-          <button class="text-button" :disabled="refreshing" @click="compare">
+          <button class="text-button" :disabled="refreshing" @click="compare()">
             <AppIcon name="RefreshCw" :size="14" />Обновить
           </button>
         </div>
@@ -263,7 +262,7 @@ onBeforeUnmount(() => {
         </p>
         <div v-else-if="error" class="store-basket-status error" role="alert">
           {{ error
-          }}<button class="text-button" @click="compare">Повторить</button>
+          }}<button class="text-button" @click="compare()">Повторить</button>
         </div>
         <p v-else-if="!selected" class="store-basket-status">
           Магазин не вернул данные. Попробуйте обновить сравнение.

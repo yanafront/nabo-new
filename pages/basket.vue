@@ -4,7 +4,7 @@ const { items, title, save, saving, clear, unresolved, pendingIngredients } =
 const { retryMissing, resolving, resolveError } = useRecipeBasket();
 const cartSync = useCartSync();
 onNuxtReady(() => {
-  void cartSync.refresh();
+  if (cartSync.state.value !== "loading") void cartSync.refresh();
 });
 const confirmClear = ref(false);
 const hasContent = computed(

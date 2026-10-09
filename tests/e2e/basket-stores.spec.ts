@@ -15,7 +15,7 @@ const source = (storeId: StoreId, id: string, name: string, price: number) => ({
   placeSlug: storeId,
   fetchedAt: new Date().toISOString(),
 });
-async function mockCart(page: import("@playwright/test").Page) {
+async function mockCart(page: import("@playwright/test").Page, stale = false) {
   let cart = [
     { storeId: "green", id: "milk", name: longName, count: 1, unit: "1 л" },
     {
@@ -58,7 +58,9 @@ async function mockCart(page: import("@playwright/test").Page) {
         offers: retailStores.map((store) => ({
           storeId: store.id,
           placeSlug: store.slug,
-          fetchedAt: new Date().toISOString(),
+          fetchedAt: stale
+            ? "2020-01-01T00:00:00.000Z"
+            : new Date().toISOString(),
           lines: input.map((item: any, index: number) => ({
             itemId: item.id,
             query: item.query,
@@ -150,4 +152,51 @@ test("old compare URL redirects into the basket", async ({ page }) => {
   await page.goto("/compare");
   await expect(page).toHaveURL(/\/basket$/);
   await expect(page.getByRole("tab")).toHaveCount(6);
+});
+
+test("unchanged basket does not poll when backend comparison timestamps are old", async ({
+  page,
+}) => {
+  await mockCart(page, true);
+  let reads = 0,
+    comparisons = 0;
+  page.on("request", (request) => {
+    if (
+      new URL(request.url()).pathname === "/api/cart" &&
+      request.method() === "GET"
+    )
+      reads++;
+    if (new URL(request.url()).pathname === "/api/yandex/compare")
+      comparisons++;
+  });
+  await page.goto("/basket");
+  await expect(page.locator(".basket-benefit")).toContainText(
+    "Соседи · 7,00 BYN",
+  );
+  const count = reads;
+  await page.waitForTimeout(1800);
+  expect(reads).toBe(count);
+  expect(comparisons).toBe(1);
+  await page.getByRole("button", { name: "Обновить", exact: true }).click();
+  await expect.poll(() => comparisons).toBe(2);
+  expect(reads).toBe(count + 1);
+});
+
+test("failed automatic comparison waits for explicit retry instead of polling", async ({
+  page,
+}) => {
+  await mockCart(page);
+  let attempts = 0;
+  await page.route("**/api/yandex/compare", (route) => {
+    attempts++;
+    return route.fulfill({ status: 502, json: { message: "Unavailable" } });
+  });
+  await page.goto("/basket");
+  await expect(
+    page.getByRole("button", { name: "Повторить", exact: true }),
+  ).toBeVisible();
+  await page.waitForTimeout(1800);
+  expect(attempts).toBe(1);
+  await page.getByRole("button", { name: "Повторить", exact: true }).click();
+  await expect.poll(() => attempts).toBe(2);
 });

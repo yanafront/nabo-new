@@ -29,7 +29,7 @@ export function useRetail() {
       return { ...offer, ...store, ...summarizeComparison(offer) };
     }),
   );
-  async function compare() {
+  async function compare(refreshCart = true) {
     requests.get(app)?.abort();
     const controller = new AbortController();
     requests.set(app, controller);
@@ -41,7 +41,7 @@ export function useRetail() {
     comparisons.value = [];
     fingerprint.value = "";
     try {
-      await app.$cartSync.refresh();
+      if (refreshCart) await app.$cartSync.refresh();
       if (controller.signal.aborted) return;
       const items = app.$cartSync.comparisonItems();
       if (!items) {

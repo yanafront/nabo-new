@@ -82,7 +82,7 @@ const { items } = useBasket();
         </p>
         <ul class="one-basket-stores" aria-label="Магазины для сравнения">
           <li v-for="store in retailStores" :key="store.id">
-            {{ store.name }}
+            <StoreBrand :store-id="store.id" size="compact" />
           </li>
         </ul>
       </div>

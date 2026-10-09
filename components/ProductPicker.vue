@@ -31,7 +31,7 @@ const query = ref(
 );
 const storeId = ref<StoreId>(
   rows.value.find((r) => r.productId === props.replaceId)?.product.storeId ||
-    "sosedi",
+    retailStores[0].id,
 );
 const cheapest = ref(false);
 const visibleProducts = computed(() => {
@@ -137,7 +137,7 @@ async function openBasket() {
         :class="{ active: storeId === store.id }"
         @click="storeId = store.id"
       >
-        {{ store.name }}
+        <StoreBrand :store-id="store.id" size="compact" />
       </button>
     </div>
     <form class="search-field" @submit.prevent="search">

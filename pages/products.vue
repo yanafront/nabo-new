@@ -244,7 +244,7 @@ onBeforeUnmount(() => {
           @click="selectStore(entry.id)"
           @keydown="tabKey($event, index)"
         >
-          {{ entry.name }}
+          <StoreBrand :store-id="entry.id" size="compact" />
           <span>{{
             groups.find((group) => group.storeId === entry.id)?.products
               .length ??

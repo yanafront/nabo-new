@@ -23,7 +23,7 @@ const {
   keyFor,
   invalidate,
 } = useRetail();
-const active = ref<StoreId>("sosedi");
+const active = ref<StoreId>(retailStores[0].id);
 const userSelected = ref(false);
 const autoSelected = ref(false);
 const expanded = ref<string | null>(null);
@@ -212,10 +212,8 @@ onBeforeUnmount(() => {
         @keydown="tabKey($event, index)"
       >
         <span class="tab-store-name"
-          ><span class="store-dot" :style="{ background: store.color }" />{{
-            store.name
-          }}</span
-        >
+          ><StoreBrand :store-id="store.id" size="compact"
+        /></span>
         <strong>{{
           !refreshing && status(store.id)?.hasPrice
             ? `${money(status(store.id)!.subtotal)} BYN`
@@ -245,7 +243,7 @@ onBeforeUnmount(() => {
       >
         <div class="store-basket-heading">
           <div>
-            <h2>{{ identity.name }}</h2>
+            <h2><StoreBrand :store-id="active" /></h2>
             <NearbyStoresLink :store-id="active" />
           </div>
           <button class="text-button" :disabled="refreshing" @click="compare()">
@@ -466,9 +464,16 @@ onBeforeUnmount(() => {
   text-align: left;
   cursor: pointer;
 }
+@media (hover: hover) {
+  .basket-store-tabs > button:hover {
+    border-color: var(--blue, #2f6bff);
+    box-shadow: 0 3px 12px rgb(15 15 16 / 8%);
+  }
+}
 .basket-store-tabs > button.active {
-  border-color: var(--blue);
-  background: #f0f4ff;
+  border-color: var(--blue, #2f6bff);
+  background: white;
+  box-shadow: inset 0 0 0 1px var(--blue, #2f6bff);
 }
 .tab-store-name {
   display: flex;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { providerName, type ProductResult } from "~/shared/yandex";
+import { retailStores, type ProductResult } from "~/shared/yandex";
 const { favorites, status, error, load, key } = useFavorites();
 const { location } = useRetail();
 const { resolveProducts } = useApi();
@@ -7,7 +7,15 @@ const limit = ref(24);
 const results = ref<Record<string, ProductResult>>({});
 const resolving = ref(false);
 const resolveError = ref("");
-const visible = computed(() => favorites.value.slice(0, limit.value));
+const visible = computed(() =>
+  [...favorites.value]
+    .sort(
+      (a, b) =>
+        retailStores.findIndex((store) => store.id === a.storeId) -
+        retailStores.findIndex((store) => store.id === b.storeId),
+    )
+    .slice(0, limit.value),
+);
 let controller: AbortController | undefined;
 let revision = 0;
 async function refreshProducts() {
@@ -119,14 +127,16 @@ onBeforeUnmount(() => {
       <div class="favorite-grid">
         <template v-for="reference in visible" :key="key(reference)">
           <div v-if="productFor(reference)" class="favorite-result">
-            <span class="favorite-store">{{
-              providerName(reference.storeId)
-            }}</span
+            <span class="favorite-store"
+              ><StoreBrand :store-id="reference.storeId" size="compact" /></span
             ><CatalogProductCard :product="productFor(reference)!" />
           </div>
           <article v-else class="panel favorite-unavailable">
             <div class="favorite-unavailable-head">
-              <strong>{{ providerName(reference.storeId) }}</strong
+              <strong
+                ><StoreBrand
+                  :store-id="reference.storeId"
+                  size="compact" /></strong
               ><FavoriteButton
                 :store-id="reference.storeId"
                 :id="reference.id"

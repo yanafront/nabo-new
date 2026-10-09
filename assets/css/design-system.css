@@ -4635,3 +4635,38 @@ input[type="checkbox"] {
     font-size: 18px;
   }
 }
+
+/* Brand assets retain their original colours on a neutral selected tab. */
+.product-store-tabs button.active,
+.retail-tabs button.active {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--blue, #2f6bff);
+  box-shadow: inset 0 0 0 1px var(--blue, #2f6bff);
+}
+.product-store-tabs button .store-brand {
+  opacity: 1;
+}
+.product-store-tabs button > span:not(.store-brand) {
+  flex-shrink: 0;
+}
+.retail-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.product-name .store-brand {
+  margin-left: 2px;
+}
+
+@media (hover: hover) {
+  .product-store-tabs button:hover,
+  .retail-tabs button:hover {
+    background: #fff;
+    border-color: var(--blue, #2f6bff);
+    box-shadow: 0 3px 12px rgb(15 15 16 / 8%);
+  }
+}

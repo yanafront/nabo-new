@@ -28,7 +28,10 @@ async function search(value = query.value) {
   pending.value = true;
   error.value = "";
   try {
-    const response = await searchProducts({ query: value, storeId: store.value!.id, location: location.value }, current.signal);
+    const response = await searchProducts(
+      { query: value, storeId: store.value!.id, location: location.value },
+      current.signal,
+    );
     if (controller !== current || current.signal.aborted) return;
     result.value = response;
     if (result.value.status === "error")
@@ -56,11 +59,8 @@ onBeforeUnmount(() => controller?.abort());
       ><AppIcon name="ArrowLeft" :size="16" /> Все магазины</NuxtLink
     >
     <div class="catalog-store-head">
-      <span class="store-logo large" :style="{ background: store!.color }">{{
-        store!.letter
-      }}</span>
       <div>
-        <h1>{{ store!.name }}</h1>
+        <h1><StoreBrand :store-id="store!.id" size="large" /></h1>
         <p>Каталог · {{ location.label }}</p>
       </div>
     </div>

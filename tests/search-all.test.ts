@@ -63,8 +63,11 @@ it("does not reuse products or results for another delivery point", async () => 
 });
 it("keeps successful stores in a partial response and retries failed stores on the next search", async () => {
   const partial = response();
-  partial.stores[0] = {
-    ...partial.stores[0]!,
+  const failedIndex = partial.stores.findIndex(
+    (store) => store.storeId === "sosedi",
+  );
+  partial.stores[failedIndex] = {
+    ...partial.stores[failedIndex]!,
     status: "error",
     products: [],
     error: "timeout",

@@ -1,13 +1,5 @@
 export const retailStores = [
   {
-    id: "sosedi",
-    name: "Соседи",
-    slug: "sosedi",
-    color: "#f58220",
-    letter: "с",
-    provider: "sosedi",
-  },
-  {
     id: "evroopt",
     name: "Евроопт",
     slug: "evroopt",
@@ -30,6 +22,14 @@ export const retailStores = [
     color: "#eb7b27",
     letter: "г",
     provider: "yandex",
+  },
+  {
+    id: "sosedi",
+    name: "Соседи",
+    slug: "sosedi",
+    color: "#f58220",
+    letter: "с",
+    provider: "sosedi",
   },
   {
     id: "belmarket",

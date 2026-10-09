@@ -20,11 +20,8 @@ import { retailStores } from "~/shared/yandex";
         :to="`/stores/${store.id}`"
         class="store-catalog-card"
       >
-        <span class="store-logo large" :style="{ background: store.color }">{{
-          store.letter
-        }}</span>
         <div>
-          <h2>{{ store.name }}</h2>
+          <h2><StoreBrand :store-id="store.id" size="large" /></h2>
           <p>Открыть каталог</p>
         </div>
         <AppIcon name="ArrowRight" :size="20" />

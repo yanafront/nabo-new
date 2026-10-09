@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { providerName } from "~/shared/yandex";
 import type { Product } from "~/data/catalog";
 defineProps<{
   product: Product;
@@ -19,8 +18,8 @@ defineEmits<{
       <p>
         {{ product.unit
         }}<template v-if="product.storeId">
-          · {{ providerName(product.storeId) }}</template
-        >
+          · <StoreBrand :store-id="product.storeId" size="inline"
+        /></template>
       </p>
       <p v-if="product.refreshStatus === 'not_found'" class="error">
         Нет в наличии

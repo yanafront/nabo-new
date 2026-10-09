@@ -237,10 +237,7 @@ onBeforeUnmount(() => controller?.abort());
         </div>
         <div class="product-detail-copy">
           <div class="product-store-line">
-            <span class="store-logo" :style="{ background: store!.color }">{{
-              store!.letter
-            }}</span
-            >{{ store!.name }} · {{ providerName(storeId) }}
+            <StoreBrand :store-id="storeId" />
           </div>
           <h1>{{ product.name }}</h1>
           <p
@@ -319,12 +316,7 @@ onBeforeUnmount(() => controller?.abort());
             class="similar-store-group"
           >
             <div class="similar-store-title">
-              <span
-                class="store-logo"
-                :style="{ background: group.store.color }"
-                >{{ group.store.letter }}</span
-              >
-              <h3>{{ group.store.name }}</h3>
+              <h3><StoreBrand :store-id="group.store.id" /></h3>
               <NuxtLink
                 :to="{
                   path: `/stores/${group.store.id}`,
@@ -363,12 +355,7 @@ onBeforeUnmount(() => controller?.abort());
             class="similar-store-group"
           >
             <div class="similar-store-title">
-              <span
-                class="store-logo"
-                :style="{ background: group.store.color }"
-                >{{ group.store.letter }}</span
-              >
-              <h3>{{ group.store.name }}</h3>
+              <h3><StoreBrand :store-id="group.store.id" /></h3>
               <NuxtLink
                 :to="{
                   path: `/stores/${group.store.id}`,

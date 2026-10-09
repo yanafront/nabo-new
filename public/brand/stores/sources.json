@@ -1,0 +1,27 @@
+{
+  "evroopt": {
+    "page": "https://t.me/evroopt_shop",
+    "note": "Официальный канал сети: логотип из аватара. Основной сайт evroopt.by блокировал загрузку. SVG задаёт поле вокруг логотипа без обрезания букв."
+  },
+  "green": {
+    "page": "https://www.green-market.by/",
+    "asset": "https://www.green-market.by/files/mainpage/header-header-green_logo_multicolor.svg"
+  },
+  "gippo": {
+    "page": "https://gippo.by/",
+    "asset": "https://gippo.by/upload/uf/ed8/7jt6o9pmhh9j092fofhhm7lrf4zp4xlu/logo_mobile.png"
+  },
+  "sosedi": {
+    "page": "https://sosedi-dostavka.by/",
+    "asset": "https://sosedi-dostavka.by/static/js/main.724c4081.js",
+    "note": "Оригинальный встроенный PNG из шапки официального сервиса доставки."
+  },
+  "belmarket": {
+    "page": "https://bel-market.by/",
+    "asset": "https://bel-market.by/bitrix/templates/info_light_blue/img/svg/logo.svg",
+    "note": "Белый оригинальный SVG на зелёном фоне #27ae60, как в шапке официального сайта; цвет из styles.css."
+  },
+  "santa": {
+    "note": "Логотип сети магазинов «Санта», предоставленный пользователем. Исходный PNG сохранён без обрезки и изменения цветов."
+  }
+}

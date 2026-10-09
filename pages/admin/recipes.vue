@@ -572,11 +572,15 @@ useHead({
                 Выдача поиска, не гарантия автоматического выбора. Точка:
                 {{ location.label }}
               </p>
-              <div v-for="store in results" :key="store.storeId">
-                <strong>{{
-                  retailStores.find((s) => s.id === store.storeId)?.name ||
-                  store.storeId
-                }}</strong>
+              <div
+                v-for="store in [...results].sort(
+                  (a, b) =>
+                    retailStores.findIndex((s) => s.id === a.storeId) -
+                    retailStores.findIndex((s) => s.id === b.storeId),
+                )"
+                :key="store.storeId"
+              >
+                <StoreBrand :store-id="store.storeId" size="compact" />
                 <p v-if="store.status !== 'ok'">Магазин не ответил</p>
                 <p v-else-if="!store.products.length">Ничего не найдено</p>
                 <button

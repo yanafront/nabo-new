@@ -1,13 +1,13 @@
 import { createCartSync } from "~/shared/cart-sync";
-import { accountCartItems } from "~/shared/account-cart";
+import { accountCartItems, savedCartCompareItems } from "~/shared/account-cart";
 import { products, type Item } from "~/data/catalog";
 import { retailStores } from "~/shared/yandex";
 export default defineNuxtPlugin(() => {
   const { items, title, saved, notice, unresolved, pendingIngredients } =
     useBasket();
-  const { location, invalidate } = useRetail();
+  const { location, invalidate, updateQuantities } = useRetail();
   const syncState = useState<
-    "guest" | "loading" | "saving" | "saved" | "error"
+    "guest" | "loading" | "saving" | "updating" | "saved" | "error"
   >("cart-sync-state", () => "loading");
   const syncError = useState("cart-sync-error", () => "");
   const cartSync = createCartSync({
@@ -83,7 +83,21 @@ export default defineNuxtPlugin(() => {
           location.value.lat,
           location.value.lon,
         ]),
-      invalidate,
+      (next, previous) => {
+        const shape = (value: string) => {
+          const [rows, lat, lon] = JSON.parse(value);
+          return JSON.stringify([
+            rows.map(({ count, ...item }: any) => item),
+            lat,
+            lon,
+          ]);
+        };
+        if (previous && shape(next) === shape(previous))
+          updateQuantities(
+            savedCartCompareItems(accountCartItems(items.value)),
+          );
+        else invalidate();
+      },
       { flush: "sync" },
     );
     let saveTimer: ReturnType<typeof setTimeout> | undefined;

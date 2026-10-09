@@ -72,6 +72,22 @@ export function useRetail() {
       if (currentKey.value === requestId) pending.value = false;
     }
   }
+  function updateQuantities(items: CompareItem[]) {
+    if (!comparisons.value.length || pending.value) {
+      invalidate();
+      return;
+    }
+    comparisons.value = comparisons.value.map((offer) => ({
+      ...offer,
+      lines: offer.lines.map((line) => ({
+        ...line,
+        quantity:
+          items.find((item) => item.id === line.itemId)?.quantity ||
+          line.quantity,
+      })),
+    }));
+    fingerprint.value = keyFor(items);
+  }
   function invalidate() {
     requests.get(app)?.abort();
     requests.delete(app);
@@ -88,6 +104,7 @@ export function useRetail() {
     error,
     compare,
     invalidate,
+    updateQuantities,
     keyFor,
     fingerprint,
   };

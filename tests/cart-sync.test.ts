@@ -166,3 +166,27 @@ it("comparison uses only the latest saved server name and count", async () => {
     },
   ]);
 });
+
+it("quantity changes save without GET and retain the confirmed comparison input", async () => {
+  const c = setup([], [row("milk", 1), row("eggs", 2)]);
+  await c.sync.initialize();
+  c.request.mockClear();
+  await Promise.all([
+    c.sync.quantity("green:milk", 1),
+    c.sync.quantity("green:milk", 1),
+  ]);
+  expect(c.request.mock.calls.every((call) => call[1]?.method === "POST")).toBe(
+    true,
+  );
+  expect(c.items().map((item) => item.quantity)).toEqual([3, 2]);
+  expect(c.sync.comparisonItems()![0].quantity).toBe(3);
+});
+it("rolls back a rejected quantity save and requires refresh before further edits", async () => {
+  const c = setup([], [row("milk", 1)]);
+  await c.sync.initialize();
+  c.request.mockRejectedValueOnce({ statusCode: 502 });
+  expect(await c.sync.quantity("green:milk", 1)).toBe(false);
+  expect(c.items()[0].quantity).toBe(1);
+  expect(c.sync.comparisonItems()).toBeNull();
+  expect(await c.sync.quantity("green:milk", 1)).toBe(false);
+});

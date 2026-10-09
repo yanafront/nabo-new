@@ -36,6 +36,15 @@ beforeEach(() => {
       );
       return true;
     },
+    quantity: async (id: string, delta: number) => {
+      const items = useBasket().items;
+      items.value = items.value.map((row) => {
+        if (row.productId !== id) return row;
+        const { requirement, ...selected } = row;
+        return { ...selected, quantity: row.quantity + delta };
+      });
+      return true;
+    },
     clear: async () => {
       useBasket().items.value = [];
       return true;

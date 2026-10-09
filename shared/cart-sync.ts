@@ -7,14 +7,14 @@ import {
 } from "./account-cart";
 import { CartChangeError } from "./cart-actions";
 
-/** Every edit uses a fresh server cart. Only getCart responses update the screen. */
+/** Structural edits reload the server cart; quantity edits reuse its confirmed snapshot. */
 export function createCartSync(options: {
   read: () => Item[];
   write: (items: Item[]) => void;
   location: () => DeliveryLocation;
   request: (url: string, options?: any) => Promise<any>;
   status: (
-    state: "guest" | "loading" | "saving" | "saved" | "error",
+    state: "guest" | "loading" | "saving" | "updating" | "saved" | "error",
     error?: string,
   ) => void;
 }) {
@@ -118,6 +118,68 @@ export function createCartSync(options: {
   const refresh = () => enqueue();
   const mutate = (change: (rows: Item[]) => Item[]) => enqueue(change);
   const clear = () => enqueue(undefined, true);
+  function quantity(id: string, delta: number): Promise<boolean> {
+    const session = generation;
+    pending++;
+    const task = queue
+      .then(async () => {
+        if (session !== generation) return false;
+        const previous = options.read();
+        const snapshot = confirmed;
+        try {
+          if (
+            !authenticated ||
+            !snapshot ||
+            snapshot.signature !== fingerprint()
+          )
+            throw new CartChangeError(
+              "Обновите корзину перед изменением количества.",
+            );
+          const next = previous.map((row) => {
+            if (row.productId !== id) return row;
+            const count = row.quantity + delta;
+            if (!Number.isInteger(count) || count < 1 || count > 99)
+              throw new CartChangeError(
+                "Количество должно быть от 1 до 99 упаковок.",
+              );
+            const { requirement, ...selected } = row;
+            return { ...selected, quantity: count };
+          });
+          options.status("updating");
+          options.write(next);
+          await options.request("/api/cart", {
+            method: "POST",
+            body: { items: accountCartItems(next) },
+            retry: 0,
+            timeout: 70000,
+          });
+          if (session !== generation) return false;
+          confirmed = {
+            ...snapshot,
+            items: snapshot.items.map((item) => ({
+              ...item,
+              count: next.find(
+                (row) => row.productId === item.storeId + ":" + item.id,
+              )!.quantity,
+            })),
+            signature: fingerprint(),
+          };
+          options.status("saved");
+          return true;
+        } catch (error) {
+          if (session === generation) {
+            options.write(previous);
+            failure(error);
+          }
+          return false;
+        }
+      })
+      .finally(() => {
+        pending--;
+      });
+    queue = task;
+    return task;
+  }
   function logout() {
     generation++;
     authenticated = false;
@@ -141,6 +203,7 @@ export function createCartSync(options: {
     initialize: refresh,
     refresh,
     mutate,
+    quantity,
     clear,
     logout,
     comparisonItems,

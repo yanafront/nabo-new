@@ -1,8 +1,7 @@
 export function useCartSync() {
-  const state = useState<"guest" | "loading" | "saving" | "saved" | "error">(
-    "cart-sync-state",
-    () => "loading",
-  );
+  const state = useState<
+    "guest" | "loading" | "saving" | "updating" | "saved" | "error"
+  >("cart-sync-state", () => "loading");
   const error = useState("cart-sync-error", () => "");
   const app = useNuxtApp();
   const controller = () => app.$cartSync;
@@ -17,6 +16,7 @@ export function useCartSync() {
         rows: import("~/data/catalog").Item[],
       ) => import("~/data/catalog").Item[],
     ) => controller().mutate(change),
+    quantity: (id: string, delta: number) => controller().quantity(id, delta),
     clear: () => controller().clear(),
     logout: () => controller()?.logout(),
   };

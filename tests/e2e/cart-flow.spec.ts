@@ -152,20 +152,24 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
     storeId: "green",
     count: 1,
   });
+  await expect(
+    page.getByRole("button", { name: `Увеличить количество: ${product.name}` }),
+  ).toBeVisible();
+  await page.waitForTimeout(350);
+  const requestsBeforeQuantity = events.length;
+  const comparisonsBeforeQuantity = compareInputs.length;
   await page
     .getByRole("button", { name: `Увеличить количество: ${product.name}` })
     .click();
   await expect
     .poll(() => writes.at(-1)?.find((item) => item.id === product.id)?.count)
     .toBe(2);
-  await expect
-    .poll(
-      () =>
-        compareInputs
-          .at(-1)
-          ?.items.find((item: any) => item.id === "green:curd-123")?.quantity,
-    )
-    .toBe(2);
+  await expect(page.getByRole("tab", { name: /Green/ })).toContainText(
+    "9,00 BYN",
+  );
+  await page.waitForTimeout(600);
+  expect(events.slice(requestsBeforeQuantity)).toEqual(["save"]);
+  expect(compareInputs.length).toBe(comparisonsBeforeQuantity);
   await expect(page.getByRole("tab", { name: /Green/ })).toHaveAttribute(
     "aria-selected",
     "true",
@@ -184,7 +188,7 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
       id: "green:curd-123",
       query: product.name,
       exactName: product.name,
-      quantity: 2,
+      quantity: 1,
       unit: product.unit,
     },
   ]);

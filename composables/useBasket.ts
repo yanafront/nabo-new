@@ -1,8 +1,4 @@
-import {
-  appendCartItems,
-  selectCartProduct,
-  CartChangeError,
-} from "~/shared/cart-actions";
+import { appendCartItems, selectCartProduct } from "~/shared/cart-actions";
 import { normalized } from "~/shared/recipe/model";
 import { packagesFor } from "~/shared/recipe/purchasing";
 import { products, type Item, type Product } from "~/data/catalog";
@@ -92,19 +88,17 @@ export function useBasket() {
     return commit((current) => current.filter((row) => row.productId !== id));
   }
   async function change(id: string, delta: number) {
-    return commit((current) =>
-      current.flatMap((row) => {
-        if (row.productId !== id) return [row];
-        const quantity = row.quantity + delta;
-        if (quantity > 99)
-          throw new CartChangeError(
-            "Можно выбрать не более 99 упаковок одного товара.",
-          );
-        const { requirement, ...selected } = row;
-        return quantity > 0 ? [{ ...selected, quantity }] : [];
-      }),
-    );
+    if (
+      (items.value.find((row) => row.productId === id)?.quantity || 0) +
+        delta <=
+      0
+    )
+      return remove(id);
+    const success = await cartSync.quantity(id, delta);
+    if (!success) notice.value = cartSync.error.value;
+    return success;
   }
+
   const saving = useState("basket-saving", () => false);
   async function save() {
     if (!items.value.length || saving.value) return;

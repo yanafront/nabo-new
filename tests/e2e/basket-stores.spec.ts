@@ -1,0 +1,153 @@
+import { test, expect } from "@playwright/test";
+import { retailStores, type StoreId } from "../../shared/yandex";
+const longName =
+  "Молоко питьевое стерилизованное с добавлением витаминов, натуральное цельное, для всей семьи в удобной упаковке 1 л";
+const source = (storeId: StoreId, id: string, name: string, price: number) => ({
+  storeId,
+  id,
+  name,
+  price,
+  unit: "1 л",
+  available: true,
+  stock: null,
+  oldPrice: null,
+  image: null,
+  placeSlug: storeId,
+  fetchedAt: new Date().toISOString(),
+});
+async function mockCart(page: import("@playwright/test").Page) {
+  let cart = [
+    { storeId: "green", id: "milk", name: longName, count: 1, unit: "1 л" },
+    {
+      storeId: "green",
+      id: "avocado",
+      name: "Авокадо",
+      count: 1,
+      unit: "1 уп.",
+    },
+  ];
+  const writes: any[] = [];
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({ json: { id: "user" } }),
+  );
+  await page.route("**/api/cart**", (route) => {
+    if (route.request().method() === "POST") {
+      cart = route.request().postDataJSON().items;
+      writes.push(cart);
+      return route.fulfill({ json: true });
+    }
+    return route.fulfill({
+      json: {
+        items: cart.map((item) => ({
+          ...item,
+          current: {
+            id: item.id,
+            storeId: item.storeId,
+            status: "ok",
+            product: source(item.storeId as StoreId, item.id, item.name, 5),
+            fetchedAt: new Date().toISOString(),
+          },
+        })),
+      },
+    });
+  });
+  await page.route("**/api/yandex/compare", (route) => {
+    const input = route.request().postDataJSON().items;
+    return route.fulfill({
+      json: {
+        offers: retailStores.map((store) => ({
+          storeId: store.id,
+          placeSlug: store.slug,
+          fetchedAt: new Date().toISOString(),
+          lines: input.map((item: any, index: number) => ({
+            itemId: item.id,
+            query: item.query,
+            quantity: item.quantity,
+            selected:
+              store.id === "evroopt" && index === 1
+                ? null
+                : source(
+                    store.id,
+                    `${store.id}-${item.id}`,
+                    item.query,
+                    store.id === "evroopt"
+                      ? 1
+                      : store.id === "sosedi"
+                        ? 3 + index
+                        : 5 + index,
+                  ),
+            alternatives: [
+              source(
+                store.id,
+                "alternative",
+                longName + " · другой производитель",
+                6,
+              ),
+            ],
+          })),
+        })),
+      },
+    });
+  });
+  return writes;
+}
+test("six store tabs show store totals, best full basket and inline replacements without a modal", async ({
+  page,
+}, testInfo) => {
+  const writes = await mockCart(page);
+  await page.goto("/basket");
+  await expect(page.getByRole("tab")).toHaveCount(6);
+  await expect(page.locator(".basket-benefit")).toContainText(
+    "Соседи · 7,00 BYN",
+  );
+  await expect(page.getByRole("tab", { name: /Соседи/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.locator(".basket-summary")).toContainText("7,00");
+  await page.getByRole("tab", { name: /Евроопт/ }).click();
+  await expect(page.locator(".basket-summary")).toContainText(
+    "За найденные товары",
+  );
+  await expect(page.locator(".store-missing-row")).toContainText("Авокадо");
+  await expect(page.locator(".basket-benefit")).toContainText(
+    "Соседи · 7,00 BYN",
+  );
+  await page.getByRole("tab", { name: /Green/ }).click();
+  await page
+    .getByRole("button", { name: `Заменить: ${longName}`, exact: true })
+    .click();
+  await expect(page.locator(".store-replacements")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: `/tmp/nabo-basket-stores-${testInfo.project.name}.png`,
+  });
+  await page.locator(".store-replacement").first().click();
+  await expect.poll(() => writes.length).toBe(1);
+  expect(writes[0]).toHaveLength(2);
+  expect(
+    writes[0].find((item: any) => item.id === "alternative"),
+  ).toMatchObject({ storeId: "green", count: 1 });
+  await expect(page.locator(".basket-summary a")).toHaveAttribute(
+    "href",
+    "https://green-dostavka.by/",
+  );
+  await expect(page.locator("dialog[open]")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/basket$/);
+  await page.getByRole("tab", { name: /Green/ }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: /Гиппо/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+});
+test("old compare URL redirects into the basket", async ({ page }) => {
+  await mockCart(page);
+  await page.goto("/compare");
+  await expect(page).toHaveURL(/\/basket$/);
+  await expect(page.getByRole("tab")).toHaveCount(6);
+});

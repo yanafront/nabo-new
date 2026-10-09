@@ -1,6 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: false },
+  routeRules: { "/compare": { redirect: { to: "/basket", statusCode: 301 } } },
   css: ["leaflet/dist/leaflet.css", "~/assets/css/design-system.css"],
   runtimeConfig: {
     recipesApiBase: "",

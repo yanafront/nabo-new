@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import type { Recipe } from "../../shared/recipe/model";
+import { retailStores } from "../../shared/yandex";
 import catalog from "../fixtures/recipes.json" with { type: "json" };
 const product = {
   id: "curd-123",
@@ -14,6 +15,27 @@ const product = {
   placeSlug: "green",
   fetchedAt: new Date().toISOString(),
 };
+function comparedOffers(items: any[]) {
+  return retailStores.map((store) => ({
+    storeId: store.id,
+    placeSlug: store.slug,
+    fetchedAt: new Date().toISOString(),
+    lines: items.map((item) => ({
+      itemId: item.id,
+      query: item.query,
+      quantity: item.quantity,
+      selected: {
+        ...product,
+        id: `${store.id}-${item.id}`,
+        storeId: store.id,
+        name: item.query,
+        unit: item.unit || "1 уп.",
+        price: store.id === "green" ? 3 : 5,
+      },
+      alternatives: [],
+    })),
+  }));
+}
 test("recipe → saveCart/getCart → comparison from saved cart → clear", async ({
   page,
 }) => {
@@ -62,7 +84,9 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
     events.push("compare");
     compareInputs.push(route.request().postDataJSON());
     compareCalls++;
-    return route.fulfill({ json: { offers: [] } });
+    return route.fulfill({
+      json: { offers: comparedOffers(route.request().postDataJSON().items) },
+    });
   });
   await page.route("**/api/recipes?**", (route) =>
     route.fulfill({
@@ -134,10 +158,21 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
   await expect
     .poll(() => writes.at(-1)?.find((item) => item.id === product.id)?.count)
     .toBe(2);
-  expect(compareCalls).toBe(0);
-  await page.getByRole("link", { name: /Сравнить в магазинах/ }).click();
-  await expect.poll(() => compareCalls).toBeGreaterThan(0);
-  expect(compareInputs[0].items).toEqual([
+  await expect
+    .poll(
+      () =>
+        compareInputs
+          .at(-1)
+          ?.items.find((item: any) => item.id === "green:curd-123")?.quantity,
+    )
+    .toBe(2);
+  await expect(page.getByRole("tab", { name: /Green/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByRole("tab")).toHaveCount(6);
+  await expect(page).toHaveURL(/\/basket$/);
+  expect(compareInputs.at(-1).items).toEqual([
     {
       id: "green:eggs",
       query: "Яйца куриные",
@@ -156,7 +191,6 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
   const comparedAt = events.indexOf("compare");
   expect(events[comparedAt - 1]).toBe("get");
   expect(events.indexOf("save")).toBeLessThan(comparedAt);
-  await page.goBack();
   await expect(page).toHaveURL(/\/basket$/);
   await page
     .getByRole("button", { name: "Очистить корзину", exact: true })
@@ -219,7 +253,9 @@ test("catalog selection stays manual and the selected SKU survives a reload", as
   );
   await page.route("**/api/yandex/compare", (route) => {
     compareCalls++;
-    return route.fulfill({ json: { offers: [] } });
+    return route.fulfill({
+      json: { offers: comparedOffers(route.request().postDataJSON().items) },
+    });
   });
   await page.addInitScript(() =>
     localStorage.setItem(
@@ -269,5 +305,5 @@ test("catalog selection stays manual and the selected SKU survives a reload", as
     "Молоко",
     product.name,
   ]);
-  expect(compareCalls).toBe(0);
+  await expect.poll(() => compareCalls).toBeGreaterThan(0);
 });

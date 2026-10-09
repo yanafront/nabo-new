@@ -87,7 +87,7 @@ const { items } = useBasket();
         </ul>
       </div>
       <NuxtLink
-        :to="items.length ? '/compare' : '/products'"
+        :to="items.length ? '/basket' : '/products'"
         class="secondary one-basket-link"
       >
         {{ items.length ? "Сравнить корзину" : "Собрать корзину"

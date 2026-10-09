@@ -38,7 +38,6 @@ export function useRetail() {
     currentKey.value = requestId;
     pending.value = true;
     error.value = "";
-    comparisons.value = [];
     fingerprint.value = "";
     try {
       if (refreshCart) await app.$cartSync.refresh();
@@ -71,6 +70,58 @@ export function useRetail() {
     } finally {
       if (currentKey.value === requestId) pending.value = false;
     }
+  }
+  function updateDraft(rows: import("~/data/catalog").Item[]) {
+    if (!comparisons.value.length) return;
+    comparisons.value = comparisons.value.map((offer) => {
+      const lines = offer.lines.map((line) => ({
+        ...line,
+        quantity:
+          rows.find((row) => row.productId === line.itemId)?.quantity ||
+          line.quantity,
+      }));
+      for (const row of rows) {
+        if (lines.some((line) => line.itemId === row.productId)) continue;
+        const product = row.product;
+        const cached = offer.lines
+          .flatMap((line) => [line.selected, ...line.alternatives])
+          .find(
+            (candidate) =>
+              candidate &&
+              candidate.id === product?.sourceId &&
+              candidate.storeId === offer.storeId,
+          );
+        const selected =
+          cached ||
+          (product?.storeId === offer.storeId &&
+          product.sourceId &&
+          product.price !== null &&
+          product.refreshStatus !== "not_found"
+            ? {
+                id: product.sourceId,
+                storeId: offer.storeId,
+                name: product.name,
+                price: product.price,
+                unit: product.unit,
+                image: product.image || null,
+                available: true,
+                stock: null,
+                oldPrice: null,
+                placeSlug: offer.placeSlug,
+                fetchedAt: product.fetchedAt || offer.fetchedAt,
+              }
+            : null);
+        lines.push({
+          itemId: row.productId,
+          query: product?.name || "",
+          quantity: row.quantity,
+          selected,
+          alternatives: [],
+        });
+      }
+      return { ...offer, lines };
+    });
+    fingerprint.value = "";
   }
   function updateQuantities(items: CompareItem[]) {
     if (!comparisons.value.length || pending.value) {
@@ -105,6 +156,7 @@ export function useRetail() {
     compare,
     invalidate,
     updateQuantities,
+    updateDraft,
     keyFor,
     fingerprint,
   };

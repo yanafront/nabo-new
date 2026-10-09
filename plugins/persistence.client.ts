@@ -5,7 +5,7 @@ import { retailStores } from "~/shared/yandex";
 export default defineNuxtPlugin(() => {
   const { items, title, saved, notice, unresolved, pendingIngredients } =
     useBasket();
-  const { location, invalidate, updateQuantities } = useRetail();
+  const { location, invalidate, updateQuantities, updateDraft } = useRetail();
   const syncState = useState<
     "guest" | "loading" | "saving" | "updating" | "saved" | "error"
   >("cart-sync-state", () => "loading");
@@ -92,7 +92,8 @@ export default defineNuxtPlugin(() => {
             lon,
           ]);
         };
-        if (previous && shape(next) === shape(previous))
+        if (syncState.value === "saving") updateDraft(items.value);
+        else if (previous && shape(next) === shape(previous))
           updateQuantities(
             savedCartCompareItems(accountCartItems(items.value)),
           );

@@ -79,8 +79,12 @@ export function createCartSync(options: {
     const task = queue
       .then(async () => {
         if (session !== generation) return false;
+        const previous = options.read();
+        let posted = false;
         options.status(change || clear ? "saving" : "loading");
         try {
+          if ((change || clear) && authenticated)
+            options.write(clear ? [] : change!(previous));
           await authenticate();
           if (session !== generation) return false;
           if (change || clear) {
@@ -92,6 +96,7 @@ export function createCartSync(options: {
               retry: 0,
               timeout: 70000,
             });
+            posted = true;
           }
           if (session !== generation) return false;
           const loaded = await load(true);
@@ -105,7 +110,10 @@ export function createCartSync(options: {
           options.status("saved");
           return true;
         } catch (error) {
-          if (session === generation) failure(error);
+          if (session === generation) {
+            if ((change || clear) && !posted) options.write(previous);
+            failure(error);
+          }
           return false;
         }
       })

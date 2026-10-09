@@ -200,3 +200,32 @@ test("failed automatic comparison waits for explicit retry instead of polling", 
   await page.getByRole("button", { name: "Повторить", exact: true }).click();
   await expect.poll(() => attempts).toBe(2);
 });
+
+test("editing stays visible while saving and refreshing comparison in the background", async ({
+  page,
+}) => {
+  await mockCart(page);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/cart**", async (route) => {
+    if (route.request().method() === "POST") await gate;
+    await route.fallback();
+  });
+  await page.goto("/basket");
+  await expect(page.locator(".basket-summary")).toContainText("7,00");
+  await page
+    .getByRole("button", { name: "Удалить: Авокадо", exact: true })
+    .click();
+  await expect(page.locator(".product-row")).toHaveCount(1);
+  await expect(page.locator(".basket-summary")).toContainText("3,00");
+  await expect(page.locator(".spinner")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: `Увеличить количество: ${longName}` }),
+  ).toBeVisible();
+  release();
+  await expect(page.locator(".basket-benefit")).toContainText(
+    "Евроопт · 1,00 BYN",
+  );
+});

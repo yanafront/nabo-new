@@ -25,6 +25,7 @@ const {
 } = useRetail();
 const active = ref<StoreId>("sosedi");
 const userSelected = ref(false);
+const autoSelected = ref(false);
 const expanded = ref<string | null>(null);
 const copied = ref(false);
 const copyError = ref("");
@@ -47,7 +48,9 @@ const identity = computed(() =>
 const busy = computed(
   () => cart.state.value === "saving" || cart.state.value === "loading",
 );
-const refreshing = computed(() => pending.value || busy.value);
+const refreshing = computed(
+  () => (pending.value || busy.value) && !comparisons.value.length,
+);
 const status = (id: StoreId) =>
   offers.value.find((offer) => offer.storeId === id);
 const available = (line: CompareLine) =>
@@ -107,18 +110,14 @@ watch(
   schedule,
   { immediate: true },
 );
-watch(
-  () => cart.state.value,
-  (state) => {
-    if (state === "saving") invalidate();
-  },
-);
 watch(comparisons, () => {
-  if (!userSelected.value && offers.value.length)
+  if (!userSelected.value && !autoSelected.value && offers.value.length) {
     active.value =
       best.value?.storeId ||
       offers.value.find((offer) => offer.found > 0)?.storeId ||
       active.value;
+    autoSelected.value = true;
+  }
   expanded.value = null;
 });
 function select(id: StoreId) {
@@ -253,6 +252,15 @@ onBeforeUnmount(() => {
             <AppIcon name="RefreshCw" :size="14" />Обновить
           </button>
         </div>
+        <p
+          v-if="
+            cart.state.value === 'saving' || cart.state.value === 'updating'
+          "
+          class="muted"
+          role="status"
+        >
+          Сохраняем изменения…
+        </p>
         <p v-if="refreshing" class="store-basket-status" role="status">
           <span class="spinner" />{{
             cart.state.value === "saving"

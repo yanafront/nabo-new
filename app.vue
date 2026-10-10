@@ -69,8 +69,9 @@ onUnmounted(() => {
     <main id="main"><NuxtPage :key="$route.path" /></main>
     <footer class="footer">
       <span>Цены в BYN · Покупка у магазина</span
-      ><button @click="info = true">Как работает Nabo</button>
+      >
       <nav class="footer-documents" aria-label="Правовая информация">
+        <button @click="info = true">Как работает Nabo</button>
         <NuxtLink to="/legal/terms">Пользовательское соглашение</NuxtLink>
         <NuxtLink to="/legal/privacy">Политика персональных данных</NuxtLink>
         <NuxtLink to="/legal/cookies">Cookies</NuxtLink>
@@ -136,15 +137,22 @@ onUnmounted(() => {
 
 <style scoped>
 .footer {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
+.footer > span { white-space: nowrap; }
 .footer-documents {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 20px;
-  flex-basis: 100%;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px 16px;
   font-size: 12px;
   color: var(--muted);
+}
+.footer-documents a, .footer-documents button { white-space: nowrap; }
+@media (max-width: 1000px) {
+  .footer { flex-wrap: wrap; }
+  .footer-documents { flex-wrap: wrap; justify-content: flex-start; }
 }
 .footer-documents a:hover,
 .footer-documents button:hover {

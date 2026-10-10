@@ -22,7 +22,6 @@ import { retailStores } from "~/shared/yandex";
       >
         <div>
           <h2><StoreBrand :store-id="store.id" size="large" /></h2>
-          <p>Открыть каталог</p>
         </div>
         <AppIcon name="ArrowRight" :size="20" />
       </NuxtLink>

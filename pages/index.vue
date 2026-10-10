@@ -82,7 +82,7 @@ const { items } = useBasket();
         </p>
         <ul class="one-basket-stores" aria-label="Магазины для сравнения">
           <li v-for="store in retailStores" :key="store.id">
-            <StoreBrand :store-id="store.id" size="compact" />
+            <StoreBrand :store-id="store.id" size="home" />
           </li>
         </ul>
       </div>
@@ -112,3 +112,29 @@ const { items } = useBasket();
     </section>
   </div>
 </template>
+
+<style scoped>
+.one-basket-stores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 360px;
+}
+.one-basket-stores li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 48px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+@media (max-width: 700px) {
+  .one-basket-icon { display: none; }
+  .one-basket-copy { flex-basis: 100%; }
+  .one-basket-stores { max-width: none; }
+  .one-basket-stores li { padding: 4px; }
+}
+</style>

@@ -69,3 +69,18 @@ test("official local logos keep the requested order and fit store/catalog screen
     fullPage: true,
   });
 });
+
+test("home brands share aligned cells without overflowing on mobile", async ({ page }, info) => {
+  await page.route("**/api/recipes?**", route => route.fulfill({ json: { recipes: [] } }));
+  await page.goto("/");
+  const cells = page.locator(".one-basket-stores li");
+  await expect(cells).toHaveCount(6);
+  const boxes = await cells.evaluateAll(nodes => nodes.map(node => {
+    const box = node.getBoundingClientRect();
+    return { width: box.width, height: box.height };
+  }));
+  expect(new Set(boxes.map(box => Math.round(box.width))).size).toBe(1);
+  expect(boxes.every(box => box.height === 48)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.locator(".home-one-basket").screenshot({ path: `/tmp/nabo-home-brands-${info.project.name}.png` });
+});

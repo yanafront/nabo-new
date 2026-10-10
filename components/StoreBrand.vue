@@ -3,7 +3,7 @@ import { retailStores, type StoreId } from "~/shared/yandex";
 const props = withDefaults(
   defineProps<{
     storeId: StoreId;
-    size?: "inline" | "compact" | "regular" | "large";
+    size?: "inline" | "compact" | "regular" | "large" | "home";
   }>(),
   { size: "regular" },
 );
@@ -78,5 +78,28 @@ const failed = ref(false);
 }
 .store-brand--belmarket img {
   max-width: 100%;
+}
+</style>
+
+<style scoped>
+.store-brand--home {
+  width: 96px;
+  height: 38px;
+  max-width: 100%;
+}
+.store-brand--home img {
+  max-width: 82px;
+  max-height: 28px;
+}
+.store-brand--home.store-brand--green img { max-width: 78px; }
+.store-brand--home.store-brand--santa img {
+  width: 96px;
+  max-width: 100%;
+  max-height: 38px;
+}
+.store-brand--home.store-brand--belmarket {
+  width: 82px;
+  height: 26px;
+  padding: 3px 5px;
 }
 </style>

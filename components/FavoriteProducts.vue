@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { retailStores, type ProductResult } from "~/shared/yandex";
+const { open: preview } = useProductPreview();
 const { favorites, status, error, load, key } = useFavorites();
 const { location } = useRetail();
 const { resolveProducts } = useApi();
@@ -152,10 +153,13 @@ onBeforeUnmount(() => {
                     : "Не удалось получить актуальные данные товара."
               }}
             </p>
-            <NuxtLink
-              :to="`/product/${reference.storeId}/${encodeURIComponent(reference.id)}`"
+            <a
+              :href="`/product/${reference.storeId}/${encodeURIComponent(reference.id)}`"
               class="text-button"
-              >Открыть товар</NuxtLink
+              @click.prevent="
+                preview({ storeId: reference.storeId, id: reference.id })
+              "
+              >Открыть товар</a
             >
           </article>
         </template>

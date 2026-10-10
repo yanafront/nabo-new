@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import type { RetailProduct } from "~/shared/yandex";
 import type { Product } from "~/data/catalog";
-defineProps<{
+const props = defineProps<{
   product: Product;
   quantity: number;
+  previewProduct?: RetailProduct;
 }>();
+const { open: preview } = useProductPreview();
 defineEmits<{
   change: [delta: number];
   remove: [];
@@ -14,7 +17,22 @@ defineEmits<{
   <article class="product-row">
     <ProductImage :src="product.image" :fallback="product.emoji" />
     <div class="product-name">
-      <h3>{{ product.name }}</h3>
+      <h3>
+        <button
+          v-if="product.storeId && product.sourceId"
+          class="row-preview-link"
+          @click="
+            preview({
+              storeId: product.storeId,
+              id: product.sourceId,
+              name: product.name,
+              product: previewProduct,
+            })
+          "
+        >
+          {{ product.name }}</button
+        ><template v-else>{{ product.name }}</template>
+      </h3>
       <p>
         {{ product.unit
         }}<template v-if="product.storeId">
@@ -73,3 +91,15 @@ defineEmits<{
     </div>
   </article>
 </template>
+
+<style scoped>
+.row-preview-link {
+  padding: 0;
+  text-align: left;
+  font: inherit;
+}
+.row-preview-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+</style>

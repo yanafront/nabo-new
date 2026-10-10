@@ -292,6 +292,7 @@ onBeforeUnmount(() => {
             <ProductRow
               v-if="available(line)"
               :product="retailProduct(line.selected!)"
+              :preview-product="line.selected!"
               :quantity="line.quantity"
               @change="change(line.itemId, $event)"
               @remove="remove(line.itemId)"

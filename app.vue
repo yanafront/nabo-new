@@ -5,6 +5,7 @@ const route = useRoute();
 const recipesActive = computed(
   () => route.path === "/recipes" || route.path.startsWith("/recipes/"),
 );
+const { selected: previewProduct } = useProductPreview();
 const info = ref(false);
 const cookieSettings = useState("cookie-settings-open", () => false);
 const showLocation = ref(false);
@@ -68,8 +69,7 @@ onUnmounted(() => {
     </div>
     <main id="main"><NuxtPage :key="$route.path" /></main>
     <footer class="footer">
-      <span>Цены в BYN · Покупка у магазина</span
-      >
+      <span>Цены в BYN · Покупка у магазина</span>
       <nav class="footer-documents" aria-label="Правовая информация">
         <button @click="info = true">Как работает Nabo</button>
         <NuxtLink to="/legal/terms">Пользовательское соглашение</NuxtLink>
@@ -104,6 +104,7 @@ onUnmounted(() => {
         <AppIcon name="X" :size="16" />
       </button>
     </div>
+    <LazyProductPreviewModal v-if="previewProduct" />
     <CookieConsent />
     <LazyLocationPicker v-if="showLocation" @close="showLocation = false" />
     <AppModal v-if="info" title="От списка до покупки" @close="info = false">
@@ -139,7 +140,9 @@ onUnmounted(() => {
 .footer {
   flex-wrap: nowrap;
 }
-.footer > span { white-space: nowrap; }
+.footer > span {
+  white-space: nowrap;
+}
 .footer-documents {
   display: flex;
   flex-wrap: nowrap;
@@ -149,10 +152,18 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--muted);
 }
-.footer-documents a, .footer-documents button { white-space: nowrap; }
+.footer-documents a,
+.footer-documents button {
+  white-space: nowrap;
+}
 @media (max-width: 1000px) {
-  .footer { flex-wrap: wrap; }
-  .footer-documents { flex-wrap: wrap; justify-content: flex-start; }
+  .footer {
+    flex-wrap: wrap;
+  }
+  .footer-documents {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 .footer-documents a:hover,
 .footer-documents button:hover {

@@ -4,6 +4,30 @@ import type { RetailProduct } from "~/shared/yandex";
 const props = defineProps<{ product: RetailProduct; replaceId?: string }>();
 const { addProduct, items } = useBasket();
 const added = ref(false);
+const { open } = useProductPreview();
+const productUrl = computed(() => {
+  const query = new URLSearchParams({ name: props.product.name });
+  if (props.replaceId) query.set("replace", props.replaceId);
+  return `/product/${props.product.storeId}/${encodeURIComponent(props.product.id)}?${query}`;
+});
+function preview(event: MouseEvent) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
+  event.preventDefault();
+  open({
+    storeId: props.product.storeId,
+    id: props.product.id,
+    name: props.product.name,
+    replaceId: props.replaceId,
+    product: props.product,
+  });
+}
 const inCart = computed(
   () =>
     items.value.find(
@@ -26,16 +50,7 @@ async function add() {
       :id="product.id"
       :name="product.name"
     />
-    <NuxtLink
-      :to="{
-        path: `/product/${product.storeId}/${product.id}`,
-        query: {
-          name: product.name,
-          ...(replaceId ? { replace: replaceId } : {}),
-        },
-      }"
-      class="catalog-product-link"
-    >
+    <a :href="productUrl" class="catalog-product-link" @click="preview">
       <ProductImage :src="product.image" />
       <div class="catalog-product-copy">
         <h3>{{ product.name }}</h3>
@@ -46,7 +61,7 @@ async function add() {
         <strong>{{ money(product.price) }} BYN</strong>
         <del v-if="product.oldPrice">{{ money(product.oldPrice) }} BYN</del>
       </div>
-    </NuxtLink>
+    </a>
     <button
       class="catalog-add"
       :class="{ added: added || inCart }"

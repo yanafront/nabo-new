@@ -229,3 +229,49 @@ test("editing stays visible while saving and refreshing comparison in the backgr
     "Евроопт · 1,00 BYN",
   );
 });
+
+test("opening a basket product and closing it keeps the store and does not reload cart or comparison", async ({
+  page,
+}) => {
+  await mockCart(page);
+  let cartReads = 0;
+  let compares = 0;
+  page.on("request", (request) => {
+    if (request.url().includes("/api/cart") && request.method() === "GET")
+      cartReads++;
+    if (request.url().endsWith("/api/yandex/compare")) compares++;
+  });
+  await page.route("**/api/product", (route) => {
+    const body = route.request().postDataJSON();
+    return route.fulfill({
+      json: {
+        storeId: body.storeId,
+        id: body.id,
+        status: "ok",
+        product: source(body.storeId, body.id, longName, 5),
+      },
+    });
+  });
+  await page.route("**/api/yandex/search", (route) =>
+    route.fulfill({ json: { status: "ok", products: [] } }),
+  );
+  await page.goto("/basket");
+  await page.getByRole("button", { name: "Только необходимые" }).click();
+  await page.getByRole("tab", { name: /Green/ }).click();
+  const product = page.locator(".row-preview-link").first();
+  await expect(product).toBeVisible();
+  const reads = cartReads;
+  const comparisons = compares;
+  await product.click();
+  const dialog = page.getByRole("dialog", { name: "Карточка товара" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Закрыть", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/basket$/);
+  await expect(page.getByRole("tab", { name: /Green/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(cartReads).toBe(reads);
+  expect(compares).toBe(comparisons);
+});

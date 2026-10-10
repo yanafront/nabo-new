@@ -88,10 +88,10 @@ const failed = ref(false);
   max-width: 100%;
 }
 .store-brand--home img {
-  max-width: 82px;
+  max-width: min(82px, 100%);
   max-height: 28px;
 }
-.store-brand--home.store-brand--green img { max-width: 78px; }
+.store-brand--home.store-brand--green img { max-width: min(78px, 100%); }
 .store-brand--home.store-brand--santa img {
   width: 96px;
   max-width: 100%;

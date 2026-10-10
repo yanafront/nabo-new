@@ -77,10 +77,11 @@ test("home brands share aligned cells without overflowing on mobile", async ({ p
   await expect(cells).toHaveCount(6);
   const boxes = await cells.evaluateAll(nodes => nodes.map(node => {
     const box = node.getBoundingClientRect();
-    return { width: box.width, height: box.height };
+    return { width: box.width, height: box.height, top: Math.round(box.top) };
   }));
   expect(new Set(boxes.map(box => Math.round(box.width))).size).toBe(1);
   expect(boxes.every(box => box.height === 48)).toBe(true);
+  expect(new Set(boxes.map(box => box.top)).size).toBe(info.project.name === "desktop" ? 1 : 2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.locator(".home-one-basket").screenshot({ path: `/tmp/nabo-home-brands-${info.project.name}.png` });
 });

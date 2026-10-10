@@ -116,9 +116,9 @@ const { items } = useBasket();
 <style scoped>
 .one-basket-stores {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
-  max-width: 360px;
+  max-width: 672px;
 }
 .one-basket-stores li {
   display: flex;
@@ -134,7 +134,7 @@ const { items } = useBasket();
 @media (max-width: 700px) {
   .one-basket-icon { display: none; }
   .one-basket-copy { flex-basis: 100%; }
-  .one-basket-stores { max-width: none; }
+  .one-basket-stores { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
   .one-basket-stores li { padding: 4px; }
 }
 </style>

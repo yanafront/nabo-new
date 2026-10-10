@@ -8,6 +8,7 @@ const phoneNumber = ref("");
 const password = ref("");
 const register = ref(false);
 const pending = ref(false);
+const signingIn = ref(false);
 const error = ref("");
 const message = ref("");
 const {
@@ -20,6 +21,8 @@ const {
   timeout: 15000,
 });
 async function submit() {
+  if (pending.value) return;
+  signingIn.value = true;
   pending.value = true;
   error.value = "";
   message.value = "";
@@ -32,10 +35,11 @@ async function submit() {
       password.value = "";
     } else {
       await $fetch("/api/auth/login", { method: "POST", body, retry: 0 });
-      password.value = "";
       resetFavorites();
       await cartSync.login();
       await refresh();
+      if (!user.value) throw new Error("Session unavailable");
+      password.value = "";
       if (user.value && returnTo.value) await navigateTo(returnTo.value);
     }
   } catch (e: any) {
@@ -51,6 +55,7 @@ async function submit() {
               ? "Проверьте номер +375 и пароль от 8 до 128 символов."
               : "Сервер временно недоступен. Попробуйте ещё раз.";
   } finally {
+    signingIn.value = false;
     pending.value = false;
   }
 }
@@ -71,7 +76,7 @@ async function logout() {
 </script>
 <template>
   <section class="account-panel">
-    <template v-if="user">
+    <template v-if="user && !signingIn">
       <p class="account-eyebrow">ВАШ АККАУНТ</p>
       <h1>Вы вошли в Nabo</h1>
       <p>{{ user.phoneNumber }}</p>
@@ -87,6 +92,14 @@ async function logout() {
         Выйти
       </button>
     </template>
+    <div
+      v-else-if="status === 'pending' && !signingIn"
+      class="account-session-loading"
+      role="status"
+    >
+      <span class="spinner" aria-hidden="true" />
+      <p>Проверяем вход в аккаунт…</p>
+    </div>
     <template v-else>
       <p class="account-eyebrow">ДОБРО ПОЖАЛОВАТЬ В NABO</p>
       <h1>{{ register ? "Создать аккаунт" : "Войти в аккаунт" }}</h1>
@@ -97,10 +110,11 @@ async function logout() {
             : "Войдите, чтобы собирать корзину и сравнивать цены."
         }}
       </p>
-      <form @submit.prevent="submit" class="account-form">
+      <form @submit.prevent="submit" class="account-form" :aria-busy="pending">
         <label for="phone">Номер телефона</label>
         <input
           id="phone"
+          :disabled="pending"
           v-model="phoneNumber"
           type="tel"
           autocomplete="tel"
@@ -111,6 +125,7 @@ async function logout() {
         <label for="password">Пароль</label>
         <input
           id="password"
+          :disabled="pending"
           v-model="password"
           type="password"
           :autocomplete="register ? 'new-password' : 'current-password'"
@@ -124,12 +139,27 @@ async function logout() {
         >
         <button
           class="account-submit"
+          :class="{ 'is-loading': pending }"
           :disabled="pending || status === 'pending'"
         >
+          <span v-if="pending" class="spinner" aria-hidden="true" />
           {{
-            pending ? "Подождите…" : register ? "Зарегистрироваться" : "Войти"
+            pending
+              ? register
+                ? "Создаём аккаунт…"
+                : "Входим в аккаунт…"
+              : register
+                ? "Зарегистрироваться"
+                : "Войти"
           }}
         </button>
+        <p v-if="pending" class="account-progress" role="status">
+          {{
+            register
+              ? "Сохраняем данные аккаунта"
+              : "Подключаем аккаунт и вашу корзину"
+          }}
+        </p>
       </form>
       <button
         class="account-switch"
@@ -151,3 +181,33 @@ async function logout() {
     <p v-if="message" role="status">{{ message }}</p>
   </section>
 </template>
+
+<style scoped>
+.account-submit.is-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  opacity: 1;
+}
+.account-submit .spinner {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-width: 2px;
+  border-color: rgb(15 15 16 / 15%);
+  border-top-color: var(--ink);
+}
+.account-progress {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.account-session-loading {
+  display: grid;
+  justify-items: center;
+  padding: 32px 0;
+  color: var(--muted);
+}
+</style>

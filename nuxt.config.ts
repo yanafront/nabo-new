@@ -15,7 +15,10 @@ export default defineNuxtConfig({
     retailApiBase: "https://naboback-production.up.railway.app",
     geocoderBase: "https://photon.komoot.io",
     yandexGeocoderApiKey: "",
-    public: { yandexMapsApiKey: "" },
+    public: {
+      yandexMapsApiKey: "",
+      legal: { operator: "", address: "", email: "", unp: "" },
+    },
   },
   app: {
     head: {
@@ -34,14 +37,6 @@ export default defineNuxtConfig({
           rel: "apple-touch-icon",
           sizes: "180x180",
           href: "/apple-touch-icon.png",
-        },
-      ],
-      noscript: [
-        {
-          key: "yandex-metrika",
-          tagPosition: "bodyClose",
-          innerHTML:
-            '<div><img src="https://mc.yandex.ru/watch/113355204" style="position:absolute; left:-9999px;" alt="" /></div>',
         },
       ],
       meta: [

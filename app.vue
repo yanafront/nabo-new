@@ -6,6 +6,7 @@ const recipesActive = computed(
   () => route.path === "/recipes" || route.path.startsWith("/recipes/"),
 );
 const info = ref(false);
+const cookieSettings = useState("cookie-settings-open", () => false);
 const showLocation = ref(false);
 const offline = ref(false);
 let timer: ReturnType<typeof setTimeout>;
@@ -59,12 +60,7 @@ onUnmounted(() => {
         <AppIcon name="MapPin" :size="16" /><span>{{ location.label }}</span
         ><AppIcon name="ChevronDown" :size="14" />
       </button>
-      <NuxtLink
-        to="/account"
-        class="icon-button account-link"
-        aria-label="Аккаунт"
-        ><AppIcon name="Users" :size="20"
-      /></NuxtLink>
+      <AccountMenu />
     </header>
     <div v-if="offline" class="offline-banner" role="status">
       Нет интернета. Корзина сохранена на устройстве. Для обновления цен нужно
@@ -74,6 +70,12 @@ onUnmounted(() => {
     <footer class="footer">
       <span>Цены в BYN · Покупка у магазина</span
       ><button @click="info = true">Как работает Nabo</button>
+      <nav class="footer-documents" aria-label="Правовая информация">
+        <NuxtLink to="/legal/terms">Пользовательское соглашение</NuxtLink>
+        <NuxtLink to="/legal/privacy">Политика персональных данных</NuxtLink>
+        <NuxtLink to="/legal/cookies">Cookies</NuxtLink>
+        <button @click="cookieSettings = true">Настройки cookies</button>
+      </nav>
     </footer>
     <nav class="mobile-nav" aria-label="Мобильная навигация">
       <NuxtLink to="/products"><AppIcon name="Search" />Товары</NuxtLink>
@@ -101,6 +103,7 @@ onUnmounted(() => {
         <AppIcon name="X" :size="16" />
       </button>
     </div>
+    <CookieConsent />
     <LazyLocationPicker v-if="showLocation" @close="showLocation = false" />
     <AppModal v-if="info" title="От списка до покупки" @close="info = false">
       <ol class="how-it-works">
@@ -130,3 +133,22 @@ onUnmounted(() => {
     </AppModal>
   </div>
 </template>
+
+<style scoped>
+.footer {
+  flex-wrap: wrap;
+}
+.footer-documents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--muted);
+}
+.footer-documents a:hover,
+.footer-documents button:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+</style>

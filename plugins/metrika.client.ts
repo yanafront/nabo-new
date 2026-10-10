@@ -1,56 +1,69 @@
 type Metrika = ((...args: unknown[]) => void) & { a?: unknown[][]; l?: number };
-
 export default defineNuxtPlugin((app) => {
-  // Keep development visits out of the site's analytics.
   if (
     import.meta.dev ||
     ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)
   )
     return;
-  const counter = 113355204;
+  const { analytics } = useCookieChoice();
   const browser = window as Window & { ym?: Metrika; dataLayer?: unknown[] };
-  browser.dataLayer ||= [];
-  browser.ym ||= Object.assign(
-    (...args: unknown[]) => {
-      (browser.ym!.a ||= []).push(args);
-    },
-    { l: Date.now() },
-  );
-  const source = `https://mc.yandex.ru/metrika/tag.js?id=${counter}`;
-  if (!Array.from(document.scripts).some((script) => script.src === source)) {
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = source;
-    document.head.appendChild(script);
-  }
-  browser.ym(counter, "init", {
-    ssr: true,
-    defer: true,
-    webvisor: true,
-    clickmap: true,
-    ecommerce: "dataLayer",
-    referrer: document.referrer,
-    url: window.location.href,
-    accurateTrackBounce: true,
-    trackLinks: true,
-  });
-  let mounted = false;
+  const counter = 113355204;
+  let started = false;
   let previous = "";
+  const safeUrl = () => window.location.origin + window.location.pathname;
   function pageView() {
-    const url = window.location.href;
-    if (!mounted || url === previous) return;
-    browser.ym!(counter, "hit", url, {
-      referer: previous || document.referrer,
+    if (
+      !analytics.value ||
+      !started ||
+      window.location.pathname.startsWith("/account") ||
+      window.location.pathname.startsWith("/admin")
+    )
+      return;
+    const url = safeUrl();
+    if (previous === url) return;
+    browser.ym?.(counter, "hit", url, {
+      referer: previous,
       title: document.title,
     });
     previous = url;
   }
-  app.hook("app:mounted", () => {
-    mounted = true;
+  function start() {
+    if (!analytics.value || started) return;
+    started = true;
+    browser.dataLayer ||= [];
+    browser.ym ||= Object.assign(
+      (...args: unknown[]) => {
+        (browser.ym!.a ||= []).push(args);
+      },
+      { l: Date.now() },
+    );
+    const source = `https://mc.yandex.ru/metrika/tag.js?id=${counter}`;
+    if (!Array.from(document.scripts).some((script) => script.src === source)) {
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = source;
+      document.head.appendChild(script);
+    }
+    browser.ym(counter, "init", {
+      ssr: true,
+      defer: true,
+      webvisor: false,
+      clickmap: false,
+      accurateTrackBounce: true,
+      trackLinks: false,
+    });
     pageView();
+  }
+  app.hook("app:mounted", start);
+  watch(analytics, (allow) => {
+    if (allow) start();
+    else if (started) {
+      browser.ym?.(counter, "destruct");
+      started = false;
+      previous = "";
+    }
   });
-  const router = useRouter();
-  router.afterEach((_to, _from, failure) => {
+  useRouter().afterEach((_to, _from, failure) => {
     if (!failure) nextTick(pageView);
   });
 });

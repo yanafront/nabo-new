@@ -11,15 +11,14 @@ const pending = ref(false);
 const signingIn = ref(false);
 const error = ref("");
 const message = ref("");
-const {
-  data: user,
-  refresh,
-  status,
-} = await useFetch<{ id: string; phoneNumber: string }>("/api/auth/me", {
-  retry: 0,
-  lazy: true,
-  timeout: 15000,
-});
+const { data: user, refresh, status } = await useAccount();
+watch(
+  user,
+  (value) => {
+    if (value && !signingIn.value) void navigateTo(returnTo.value || "/");
+  },
+  { immediate: true },
+);
 async function submit() {
   if (pending.value) return;
   signingIn.value = true;
@@ -40,7 +39,7 @@ async function submit() {
       await refresh();
       if (!user.value) throw new Error("Session unavailable");
       password.value = "";
-      if (user.value && returnTo.value) await navigateTo(returnTo.value);
+      if (user.value) await navigateTo(returnTo.value || "/");
     }
   } catch (e: any) {
     const code = e.statusCode || e.status;
@@ -59,41 +58,11 @@ async function submit() {
     pending.value = false;
   }
 }
-async function logout() {
-  pending.value = true;
-  error.value = "";
-  try {
-    await $fetch("/api/auth/logout", { method: "POST", retry: 0 });
-    cartSync.logout();
-    user.value = null;
-    resetFavorites();
-  } catch {
-    error.value = "Не удалось выйти. Попробуйте ещё раз.";
-  } finally {
-    pending.value = false;
-  }
-}
 </script>
 <template>
   <section class="account-panel">
-    <template v-if="user && !signingIn">
-      <p class="account-eyebrow">ВАШ АККАУНТ</p>
-      <h1>Вы вошли в Nabo</h1>
-      <p>{{ user.phoneNumber }}</p>
-      <p>
-        Текущую корзину можно сохранить в аккаунте. Списки для повторных покупок
-        остаются в этом браузере.
-      </p>
-      <NuxtLink v-if="returnTo" :to="returnTo" class="text-button"
-        >Продолжить</NuxtLink
-      >
-      <AccountCart :authenticated="true" />
-      <button class="account-submit" :disabled="pending" @click="logout">
-        Выйти
-      </button>
-    </template>
     <div
-      v-else-if="status === 'pending' && !signingIn"
+      v-if="(status === 'pending' || user) && !signingIn"
       class="account-session-loading"
       role="status"
     >

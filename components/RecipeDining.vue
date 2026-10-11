@@ -57,6 +57,7 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
     </div>
     <div class="cook-content"><slot name="cook-content" /></div>
     <div id="recipe-ready-offers" class="dining-content">
+      <h2 class="dining-list-title">Заказать это блюдо</h2>
       <p class="muted dining-location">
         Предложения Delivio · {{ location.label }}
       </p>
@@ -262,10 +263,13 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 .recipe-dining {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px 40px;
+  gap: 28px 32px;
   margin: 0;
   padding: 24px 0 0;
   border-top: 1px solid var(--line);
+}
+.cook-content {
+  grid-column: 1 / -1;
 }
 .cook-summary,
 .cook-content,
@@ -273,7 +277,11 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   min-width: 0;
 }
 .dining-heading {
-  display: block;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
 }
 .dining-heading h2 a {
   color: inherit;
@@ -284,7 +292,18 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   text-underline-offset: 4px;
 }
 .dining-content {
+  grid-column: 1 / -1;
   scroll-margin-top: 100px;
+  border-top: 1px solid var(--line);
+  padding-top: 28px;
+  margin-top: 8px;
+}
+.dining-list-title {
+  margin: 0 0 10px;
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 .dining-heading h2 {
   margin: 0;
@@ -292,15 +311,17 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 }
 .dining-from {
   display: block;
-  margin: 10px 0 6px;
+  margin: 0;
   padding: 0;
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1.2;
   background: none;
   border-radius: 0;
 }
 .dining-subtitle {
-  font-size: 13px;
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
   line-height: 1.5;
 }
 .dining-location {
@@ -311,7 +332,7 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   display: grid;
   list-style: none;
   padding: 0;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
   gap: 18px 16px;
 }
@@ -357,55 +378,34 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 }
 @media (max-width: 700px) {
   .recipe-dining {
-    gap: 16px;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px 20px;
     padding-top: 20px;
-  }
-  .cook-summary,
-  .dining-heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 4px 12px;
-    align-items: baseline;
   }
   .cook-summary :deep(h2),
   .dining-heading h2 {
-    font-size: 17px;
+    font-size: 16px;
   }
   .dining-heading {
-    border-top: 1px solid var(--line);
-    padding-top: 14px;
-  }
-  .dining-heading h2 {
-    font-size: 17px;
+    display: block;
   }
   .dining-from {
-    font-size: 20px;
-    margin: 0;
+    font-size: 21px;
+    margin: 6px 0 4px;
   }
   .dining-subtitle {
-    grid-column: 1 / -1;
-    font-size: 12px;
+    font-size: 11px;
+  }
+  .dining-offers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 14px;
+  }
+  .dining-content {
     margin-top: 0;
+    padding-top: 24px;
   }
-  .cook-content,
-  .dining-content {
-    grid-column: 1 / -1;
-  }
-  .dining-content {
-    border-top: 1px solid var(--line);
-    padding-top: 20px;
-  }
-  .dining-location::before {
-    content: "Заказать готовое";
-    display: block;
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--ink);
-    margin-bottom: 6px;
-  }
-  .dining-card-body {
-    padding: 10px 0 0;
+  .dining-list-title {
+    font-size: 22px;
   }
   .dining-price {
     font-size: 16px;

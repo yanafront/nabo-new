@@ -120,15 +120,11 @@ test("restaurant offers show portions, prices and external links without changin
     .evaluate(
       (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
     );
-  expect(columns).toBe(2);
+  expect(columns).toBe(test.info().project.name === "mobile" ? 2 : 4);
   const cookSummary = await block.locator(".cook-summary").boundingBox();
   const diningSummary = await block.locator(".dining-heading").boundingBox();
-  if (test.info().project.name === "mobile") {
-    expect(diningSummary!.y).toBeGreaterThan(cookSummary!.y);
-  } else {
-    expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
-  }
-  await expect(block.getByText("Цена — в корзине")).toBeVisible();
+  expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
+  await expect(block.getByText("Цена продуктов — после подбора")).toBeVisible();
   await expect(
     page.getByRole("button", {
       name: "Добавить ингредиенты в корзину",

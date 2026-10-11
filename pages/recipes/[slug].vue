@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
             >
           </div>
         </div>
-        <div>
+        <div class="recipe-intro">
           <h1>{{ recipe.title }}</h1>
           <p class="muted">{{ recipe.description }}</p>
           <div class="recipe-facts">
@@ -116,9 +116,6 @@ onBeforeUnmount(() => {
               { easy: "Легко", medium: "Средняя сложность", hard: "Сложно" }[
                 recipe.difficulty
               ]
-            }}</span
-            ><span>{{
-              quantityLabel(servings, "порция", "порции", "порций")
             }}</span>
           </div>
           <RecipeNutrition v-if="nutrition" :nutrition="nutrition" compact />
@@ -134,7 +131,7 @@ onBeforeUnmount(() => {
       <RecipeDining :title="recipe.title">
         <template #cook-summary>
           <h2>Приготовить дома</h2>
-          <strong class="cook-price">Цена — в корзине</strong>
+          <span class="cook-price">Цена продуктов — после подбора</span>
           <p class="muted">
             Продукты на
             {{ quantityLabel(servings, "порцию", "порции", "порций") }} · целые
@@ -142,145 +139,146 @@ onBeforeUnmount(() => {
           </p>
         </template>
         <template #cook-content>
-          <div class="recipe-purchase">
-            <div>
-              <strong
-                >{{
-                  quantityLabel(
-                    request?.items.length || 0,
-                    "продукт",
-                    "продукта",
-                    "продуктов",
-                  )
-                }}
-                к покупке</strong
-              ><small
-                >{{ rows.length }} ингредиентов в рецепте<span
-                  v-if="excluded.length"
+          <div class="recipe-body">
+            <div class="recipe-shopping">
+              <section class="recipe-ingredients">
+                <div class="section-head">
+                  <h2>Ингредиенты</h2>
+                  <div class="serving-control">
+                    <button
+                      aria-label="Уменьшить порции"
+                      :disabled="servings <= 1 || resolving"
+                      @click="servings--"
+                    >
+                      <AppIcon name="Minus" :size="18" /></button
+                    ><output aria-live="polite">{{ servings }} порц.</output
+                    ><button
+                      aria-label="Увеличить порции"
+                      :disabled="servings >= 30 || resolving"
+                      @click="servings++"
+                    >
+                      <AppIcon name="Plus" :size="18" />
+                    </button>
+                  </div>
+                </div>
+                <p class="muted ingredient-help">
+                  Отметьте продукты, которые уже есть дома.
+                </p>
+                <div
+                  v-for="group in [
+                    { title: 'Основные', rows: main },
+                    { title: 'Проверьте, есть ли дома', rows: pantry },
+                  ]"
+                  :key="group.title"
+                  class="ingredient-group"
                 >
-                  · {{ excluded.length }} отмечено «не покупать»</span
-                ></small
-              >
-            </div>
-            <button
-              class="primary"
-              :disabled="resolving || !request?.items.length"
-              @click="build"
-            >
-              {{
-                resolving
-                  ? "Подбираем товары…"
-                  : items.length
-                    ? "Добавить ингредиенты"
-                    : "Добавить ингредиенты в корзину"
-              }}<AppIcon
-                v-if="!resolving"
-                name="ArrowRight"
-                :size="18"
-              /></button
-            ><button
-              v-if="resolving"
-              class="text-button"
-              @click="controller?.abort()"
-            >
-              Отменить
-            </button>
-          </div>
-          <section class="recipe-ingredients">
-            <div class="section-head">
-              <h2>Ингредиенты</h2>
-              <div class="serving-control">
+                  <h3 v-if="group.rows.length">{{ group.title }}</h3>
+                  <div
+                    v-for="row in group.rows"
+                    :key="row.key"
+                    class="ingredient-line"
+                    :class="{ excluded: excluded.includes(row.key) }"
+                  >
+                    <div>
+                      <strong>{{ row.i.name }}</strong
+                      ><span>{{ ingredientAmount(row.i) }}</span
+                      ><small v-if="row.i.optional">По желанию</small>
+                    </div>
+                    <label class="checkbox"
+                      ><input
+                        v-model="excluded"
+                        type="checkbox"
+                        :value="row.key"
+                        :disabled="resolving"
+                      />{{
+                        row.entry?.pantry ? "У меня уже есть" : "Не покупать"
+                      }}</label
+                    >
+                  </div>
+                </div>
+              </section>
+              <div class="recipe-purchase">
+                <div>
+                  <strong
+                    >{{
+                      quantityLabel(
+                        request?.items.length || 0,
+                        "продукт",
+                        "продукта",
+                        "продуктов",
+                      )
+                    }}
+                    к покупке</strong
+                  ><small
+                    ><span v-if="excluded.length"
+                      >{{ excluded.length }} не покупаем</span
+                    ></small
+                  >
+                </div>
                 <button
-                  aria-label="Уменьшить порции"
-                  :disabled="servings <= 1 || resolving"
-                  @click="servings--"
+                  class="primary"
+                  :disabled="resolving || !request?.items.length"
+                  @click="build"
                 >
-                  <AppIcon name="Minus" :size="18" /></button
-                ><output aria-live="polite">{{ servings }} порц.</output
+                  {{
+                    resolving
+                      ? "Подбираем товары…"
+                      : items.length
+                        ? "Добавить ингредиенты"
+                        : "Добавить ингредиенты в корзину"
+                  }}<AppIcon
+                    v-if="!resolving"
+                    name="ArrowRight"
+                    :size="18"
+                  /></button
                 ><button
-                  aria-label="Увеличить порции"
-                  :disabled="servings >= 30 || resolving"
-                  @click="servings++"
+                  v-if="resolving"
+                  class="text-button"
+                  @click="controller?.abort()"
                 >
-                  <AppIcon name="Plus" :size="18" />
+                  Отменить
                 </button>
               </div>
-            </div>
-            <p class="muted ingredient-help">
-              Отметьте продукты, которые уже есть дома.
-            </p>
-            <div
-              v-for="group in [
-                { title: 'Основные', rows: main },
-                { title: 'Проверьте, есть ли дома', rows: pantry },
-              ]"
-              :key="group.title"
-              class="ingredient-group"
-            >
-              <h3 v-if="group.rows.length">{{ group.title }}</h3>
-              <div
-                v-for="row in group.rows"
-                :key="row.key"
-                class="ingredient-line"
-                :class="{ excluded: excluded.includes(row.key) }"
-              >
-                <div>
-                  <strong>{{ row.i.name }}</strong
-                  ><span>{{ ingredientAmount(row.i) }}</span
-                  ><small v-if="row.i.optional">По желанию</small>
-                </div>
-                <label class="checkbox"
-                  ><input
-                    v-model="excluded"
-                    type="checkbox"
-                    :value="row.key"
-                    :disabled="resolving"
-                  />{{
-                    row.entry?.pantry ? "У меня уже есть" : "Не покупать"
-                  }}</label
-                >
-              </div>
-            </div>
-          </section>
-          <section
-            class="recipe-instructions"
-            aria-labelledby="recipe-steps-title"
-          >
-            <h2 id="recipe-steps-title">Как приготовить</h2>
-            <ol v-if="recipe.instructions?.length">
-              <li v-for="(step, n) in recipe.instructions" :key="n">
-                {{ step.text }}
-              </li>
-            </ol>
-            <p v-else>Шаги приготовления не переданы источником.</p>
-            <details class="recipe-source">
-              <summary>Источник и фото</summary>
-              <p class="muted">
-                Источник данных:
-                <a
-                  v-if="recipe.sourceUrl"
-                  :href="recipe.sourceUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  >{{ recipe.source }}</a
-                ><span v-else>{{ recipe.source }}</span>
-                <template v-if="recipe.license">
-                  · {{ recipe.license }}</template
-                >
+              <p v-if="items.length" class="muted basket-context">
+                В корзине уже есть товары. Добавим продукты этого блюда к ним.
               </p>
-              <small v-if="recipe.imageAttribution"
-                >Фото: {{ recipe.imageAttribution }}</small
-              >
-            </details>
-          </section>
-          <p v-if="items.length" class="muted basket-context">
-            В корзине уже есть товары. Добавим продукты этого блюда к ним.
-          </p>
-          <p class="muted purchase-help">
-            Подберём товары и покажем цены по магазинам в корзине. Для
-            количества в ложках или «по вкусу» подберём одну упаковку.
-            Количество упаковок можно изменить в корзине.
-          </p>
+              <p class="muted purchase-help">
+                Цены по магазинам покажем в корзине. Покупаем целые упаковки;
+                для ложек и «по вкусу» подберём одну. Количество можно изменить.
+              </p>
+            </div>
+            <section
+              class="recipe-instructions"
+              aria-labelledby="recipe-steps-title"
+            >
+              <h2 id="recipe-steps-title">Как приготовить</h2>
+              <ol v-if="recipe.instructions?.length">
+                <li v-for="(step, n) in recipe.instructions" :key="n">
+                  {{ step.text }}
+                </li>
+              </ol>
+              <p v-else>Шаги приготовления не переданы источником.</p>
+              <details class="recipe-source">
+                <summary>Источник и фото</summary>
+                <p class="muted">
+                  Источник данных:
+                  <a
+                    v-if="recipe.sourceUrl"
+                    :href="recipe.sourceUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >{{ recipe.source }}</a
+                  ><span v-else>{{ recipe.source }}</span>
+                  <template v-if="recipe.license">
+                    · {{ recipe.license }}</template
+                  >
+                </p>
+                <small v-if="recipe.imageAttribution"
+                  >Фото: {{ recipe.imageAttribution }}</small
+                >
+              </details>
+            </section>
+          </div>
         </template>
       </RecipeDining>
       <AppFeedback
@@ -296,14 +294,16 @@ onBeforeUnmount(() => {
   padding-bottom: 24px;
 }
 .recipe-detail-hero {
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  gap: 48px;
   align-items: center;
   margin-bottom: 32px;
 }
 .recipe-cover {
+  grid-column: 2;
+  grid-row: 1;
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   border-radius: 20px;
 }
 .recipe-cover img {
@@ -313,97 +313,118 @@ onBeforeUnmount(() => {
   height: 100%;
   object-fit: cover;
 }
+.recipe-intro {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
 .recipe-detail-hero h1 {
-  font-size: 36px;
-  margin: 0 0 10px;
+  font-size: 42px;
+  line-height: 1.15;
+  margin: 0 0 14px;
 }
 .recipe-detail-hero p {
+  font-size: 15px;
+  line-height: 1.6;
   margin: 0;
-  line-height: 1.55;
 }
 .recipe-facts {
-  margin: 14px 0;
-  gap: 16px;
+  margin: 18px 0;
+  gap: 18px;
+  font-size: 13px;
+}
+.recipe-intro :deep(.recipe-nutrition) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+}
+.recipe-intro :deep(.recipe-energy) {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 3px;
+}
+.recipe-intro :deep(.recipe-macros) {
+  display: flex;
+  gap: 20px;
+  margin: 0;
+}
+.recipe-intro :deep(.recipe-macros dd) {
+  font-size: 14px;
+}
+.recipe-intro :deep(.recipe-energy strong) {
+  font-size: 18px;
 }
 .recipe-detail-hero .nutrition-caption {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 11px;
+  line-height: 1.45;
 }
 h2 {
   margin: 0;
-  font-size: 21px;
+  font-size: 22px;
 }
 .cook-price {
   display: block;
-  margin: 10px 0 6px;
-  font-size: 24px;
-  line-height: 1.2;
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 6px;
 }
 .cook-price + p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.recipe-purchase {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-.recipe-purchase > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.recipe-purchase strong {
-  font-size: 14px;
-}
-.recipe-purchase small {
+  margin: 4px 0 0;
+  font-size: 12px;
   color: var(--muted);
-  font-size: 11px;
 }
-.recipe-purchase .primary {
-  width: 100%;
-  min-height: 48px;
-  justify-content: center;
-  font-size: 14px;
+.recipe-body {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+.recipe-shopping {
+  min-width: 0;
 }
 .recipe-ingredients {
   margin: 0;
 }
 .section-head {
-  margin: 0 0 8px;
   align-items: center;
+  margin: 0 0 10px;
+  gap: 12px;
 }
 .section-head h2 {
-  font-size: 19px;
+  font-size: 22px;
 }
 .serving-control {
-  gap: 6px;
+  gap: 4px;
 }
 .serving-control button {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
 }
 .serving-control output {
   font-size: 13px;
+  white-space: nowrap;
 }
 .ingredient-help {
-  margin: 0 0 16px;
+  margin: 0;
   font-size: 12px;
+  line-height: 1.5;
 }
 .ingredient-group {
-  margin: 18px 0;
+  margin: 20px 0;
 }
 .ingredient-group h3 {
-  font-size: 14px;
-  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  margin: 0 0 4px;
 }
 .ingredient-line {
-  padding: 10px 0;
+  padding: 12px 0;
   flex-wrap: nowrap;
+  gap: 12px;
   align-items: center;
 }
 .ingredient-line > div {
@@ -411,6 +432,7 @@ h2 {
 }
 .ingredient-line strong {
   font-size: 14px;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 .ingredient-line span,
@@ -418,93 +440,160 @@ h2 {
   font-size: 12px;
 }
 .ingredient-line .checkbox {
-  font-size: 12px;
+  font-size: 11px;
   flex-shrink: 0;
+  gap: 6px;
+}
+.recipe-purchase {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+.recipe-purchase > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+.recipe-purchase strong {
+  font-size: 14px;
+}
+.recipe-purchase small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.recipe-purchase .primary {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  font-size: 14px;
 }
 .recipe-instructions {
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-  margin: 22px 0 14px;
-  font-size: 14px;
-  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.7;
 }
 .recipe-instructions h2 {
-  font-size: 21px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+}
+.recipe-instructions ol {
+  padding: 0;
+  list-style: none;
+  counter-reset: steps;
+  margin: 0;
 }
 .recipe-instructions li {
-  margin-bottom: 14px;
-  padding-left: 6px;
+  counter-increment: steps;
+  position: relative;
+  padding-left: 38px;
+  margin: 0 0 24px;
+}
+.recipe-instructions li::before {
+  content: counter(steps, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
 }
 .recipe-source {
-  margin-top: 20px;
+  margin-top: 24px;
   color: var(--muted);
   font-size: 12px;
 }
 .recipe-source summary {
   cursor: pointer;
 }
-.recipe-instructions ol {
-  padding-left: 20px;
-}
 .basket-context,
 .purchase-help {
   font-size: 12px;
   line-height: 1.5;
+  color: var(--muted);
   margin: 12px 0 0;
+}
+@media (max-width: 900px) {
+  .recipe-detail-hero {
+    gap: 28px;
+  }
+  .recipe-body {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
+    gap: 32px;
+  }
 }
 @media (max-width: 700px) {
   .recipe-detail-hero {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    gap: 20px;
     margin-bottom: 24px;
   }
+  .recipe-intro {
+    grid-column: 1;
+    grid-row: 1;
+  }
   .recipe-cover {
-    aspect-ratio: 2 / 1;
-    max-height: 190px;
+    grid-column: 1;
+    grid-row: 2;
+    aspect-ratio: 16 / 9;
+    max-height: 220px;
     border-radius: 16px;
   }
   .recipe-detail-hero h1 {
-    font-size: 28px;
-    line-height: 1.2;
+    font-size: 30px;
+    margin-bottom: 10px;
   }
   .recipe-detail-hero p {
     font-size: 14px;
+    line-height: 1.5;
   }
   .recipe-facts {
-    font-size: 12px;
-    gap: 12px;
     margin: 12px 0;
   }
+  .recipe-intro :deep(.recipe-nutrition) {
+    gap: 12px 20px;
+  }
+  .recipe-intro :deep(.recipe-macros) {
+    gap: 16px;
+  }
+  .recipe-intro :deep(.recipe-energy strong) {
+    font-size: 16px;
+  }
   .recipe-detail-hero .nutrition-caption {
-    font-size: 11px;
+    font-size: 10px;
+    margin-top: 8px;
   }
   .cook-price {
-    font-size: 17px;
-    margin: 0;
-    text-align: right;
+    font-size: 12px;
   }
   .cook-price + p {
-    grid-column: 1 / -1;
-    font-size: 12px;
-    margin-top: 4px;
+    font-size: 11px;
   }
-  .recipe-purchase {
+  .recipe-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .recipe-instructions {
+    border-top: 1px solid var(--line);
+    padding-top: 24px;
+    font-size: 15px;
+  }
+  .recipe-instructions h2 {
     margin-bottom: 20px;
   }
-  .recipe-purchase > div {
-    flex-direction: column;
-    gap: 4px;
-  }
-  .ingredient-line strong {
-    font-size: 14px;
+  .recipe-instructions li {
+    padding-left: 34px;
+    margin-bottom: 20px;
   }
   .ingredient-line .checkbox {
     font-size: 12px;
-    gap: 6px;
   }
-  .recipe-instructions {
-    font-size: 14px;
+  .recipe-purchase .primary {
+    min-height: 48px;
   }
 }
 </style>

@@ -84,7 +84,7 @@ it("rejects unexpected source format without caching a failure", async () => {
 
 it("uses Delivio photos only and prefers a card-sized source image", () => {
   expect(delivioImage("/uploads/img/food/photo.jpg")).toBe(
-    "https://cdn.delivio.by/uploads/img/food/photo.jpg",
+    "https://cdn.delivio.by/be/uploads/img/food/photo.jpg",
   );
   expect(delivioImage("https://cdn.delivio.by/photo.jpg")).toBe(
     "https://cdn.delivio.by/photo.jpg",
@@ -103,5 +103,5 @@ it("uses Delivio photos only and prefers a card-sized source image", () => {
       [{ ...food(1, 9), pictureSmall: "/small.jpg", picture: "/full.jpg" }],
       [1],
     )[0].image,
-  ).toBe("https://cdn.delivio.by/small.jpg");
+  ).toBe("https://cdn.delivio.by/be/small.jpg");
 });

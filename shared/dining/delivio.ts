@@ -20,7 +20,14 @@ export function delivioSearchUrl(query: string) {
 export function delivioImage(value: unknown): string | undefined {
   if (typeof value !== "string" || !value.trim()) return;
   try {
-    const url = new URL(value, "https://cdn.delivio.by");
+    // Delivio's image helper serves API paths from the CDN under /be.
+    const path =
+      value.startsWith("/") &&
+      !value.startsWith("//") &&
+      !value.startsWith("/be/")
+        ? `/be${value}`
+        : value;
+    const url = new URL(path, "https://cdn.delivio.by");
     if (
       url.protocol === "https:" &&
       ["cdn.delivio.by", "delivio.by"].includes(url.hostname) &&

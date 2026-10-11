@@ -132,6 +132,7 @@ onBeforeUnmount(() => {
           </p>
         </div>
       </div>
+      <RecipeDining :title="recipe.title" />
       <section class="recipe-ingredients">
         <div class="section-head">
           <h2>Ингредиенты</h2>

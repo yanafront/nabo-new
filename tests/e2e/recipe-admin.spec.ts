@@ -50,7 +50,9 @@ test("редактор сохраняет отдельные поисковые 
   await page
     .getByRole("button", { name: "Сохранить черновик", exact: true })
     .click();
-  await expect(page.getByRole("status")).toContainText("Черновик сохранён");
+  await expect(
+    page.locator(".nabo-toast").filter({ hasText: "Черновик сохранён" }),
+  ).toContainText("Черновик сохранён");
   expect(requests[0].publish).toBe(false);
   expect(requests[0].revision).toBe(1);
   expect(requests[0].document.recipe.ingredients[0].name).toBe(
@@ -61,7 +63,9 @@ test("редактор сохраняет отдельные поисковые 
   );
   expect(requests[0].document.recipe.ingredients[0].exactUnit).toBe("200 г");
   await page.getByRole("button", { name: "Опубликовать", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("Рецепт опубликован.");
+  await expect(
+    page.locator(".nabo-toast").filter({ hasText: "Рецепт опубликован" }),
+  ).toContainText("Рецепт опубликован.");
   expect(requests[1].publish).toBe(true);
   expect(requests[1].revision).toBe(2);
   expect(

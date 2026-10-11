@@ -41,6 +41,10 @@ beforeAll(async () => {
       res.statusCode = req.headers.authorization ? 403 : 401;
       return res.end("{}");
     }
+    if (req.method === "DELETE") {
+      res.statusCode = req.url?.endsWith("revision=3") ? 204 : 409;
+      return res.end();
+    }
     if (req.method === "PUT") {
       res.statusCode = 409;
       return res.end('{"message":"revision conflict"}');
@@ -79,6 +83,10 @@ beforeAll(async () => {
   router.put(
     "/api/admin/recipes/:slug",
     (await import("../server/api/admin/recipes/[slug].put")).default,
+  );
+  router.delete(
+    "/api/admin/recipes/:slug",
+    (await import("../server/api/admin/recipes/[slug].delete")).default,
   );
   router.post(
     "/api/admin/recipe-photo",
@@ -192,4 +200,44 @@ it("reports an undeployed editor API as unavailable instead of a missing page", 
   });
   expect(response.status).toBe(503);
   expect(await response.text()).toContain("API редактора ещё не подключён");
+});
+
+it("deletes only an authorized version and forwards conflicts", async () => {
+  const url = base + "/api/admin/recipes/test?revision=3";
+  expect((await fetch(url, { method: "DELETE" })).status).toBe(401);
+  expect(
+    (
+      await fetch(url, {
+        method: "DELETE",
+        headers: { cookie: "nabo-session=ordinary-token" },
+      })
+    ).status,
+  ).toBe(403);
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { cookie: "nabo-session=admin-token" },
+  });
+  expect(response.status).toBe(204);
+  expect(last.url).toBe("/api/admin/recipes/test?revision=3");
+  expect(last.token).toBe("Bearer admin-token");
+  expect(
+    (
+      await fetch(base + "/api/admin/recipes/test?revision=2", {
+        method: "DELETE",
+        headers: { cookie: "nabo-session=admin-token" },
+      })
+    ).status,
+  ).toBe(409);
+  expect(
+    (await fetch(base + "/api/admin/recipes/test", { method: "DELETE" }))
+      .status,
+  ).toBe(400);
+  expect(
+    (
+      await fetch(url, {
+        method: "DELETE",
+        headers: { origin: "https://evil.test" },
+      })
+    ).status,
+  ).toBe(403);
 });

@@ -15,6 +15,9 @@ interface RecordRow {
   revision: number;
   published: boolean;
 }
+const route = useRoute();
+const deleteTarget = ref<RecordRow>();
+const deleting = ref(false);
 const photosConfigured = ref(false),
   uploading = ref(false);
 const records = ref<RecordRow[]>([]);
@@ -56,6 +59,12 @@ async function load() {
     photosConfigured.value = data.photosConfigured;
     records.value = data.records;
     authStatus.value = 200;
+    if (!draft.value && typeof route.query.recipe === "string") {
+      const target = records.value.find(
+        (row) => row.slug === route.query.recipe,
+      );
+      if (target) select(target.document.recipe);
+    }
   } catch (e: any) {
     authStatus.value = e.statusCode || e.status;
     error.value =
@@ -75,7 +84,7 @@ function canLeave() {
   );
 }
 function select(recipe?: Recipe) {
-  if (saving.value || uploading.value || !canLeave()) return;
+  if (saving.value || uploading.value || deleting.value || !canLeave()) return;
   checkController?.abort();
   checking.value = false;
   checkIndex.value = -1;
@@ -245,6 +254,47 @@ async function save(publish: boolean) {
     saving.value = false;
   }
 }
+function confirmDelete() {
+  const target = records.value.find((row) => row.slug === lockedSlug.value);
+  if (target && !saving.value && !uploading.value)
+    deleteTarget.value = { ...target, revision: revision.value };
+}
+async function deleteRecipe() {
+  if (!deleteTarget.value || deleting.value) return;
+  deleting.value = true;
+  error.value = "";
+  const target = deleteTarget.value;
+  try {
+    await $fetch(`/api/admin/recipes/${target.slug}`, {
+      method: "DELETE",
+      query: { revision: target.revision },
+      retry: 0,
+    });
+    records.value = records.value.filter((row) => row.slug !== target.slug);
+    if (lockedSlug.value === target.slug) {
+      checkController?.abort();
+      checking.value = false;
+      results.value = [];
+      draft.value = undefined;
+      dirty.value = false;
+      revision.value = 0;
+      lockedSlug.value = "";
+    }
+    deleteTarget.value = undefined;
+    message.value = "Рецепт удалён из редактора и каталога.";
+  } catch (e: any) {
+    if (e.statusCode === 409) await load();
+    error.value =
+      e.statusCode === 409
+        ? "Рецепт изменён или уже удалён. Откройте его заново в обновлённом списке."
+        : e.statusCode === 401
+          ? "Сессия истекла. Войдите снова."
+          : "Не удалось удалить рецепт. Повторите попытку.";
+    if (e.statusCode === 409) deleteTarget.value = undefined;
+  } finally {
+    deleting.value = false;
+  }
+}
 async function uploadPhoto(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -332,9 +382,14 @@ useHead({
         <h1>Редактор рецептов</h1>
         <p class="muted">Служебный раздел Nabo</p>
       </div>
-      <button v-if="authStatus === 200" class="primary" @click="select()">
-        Новый рецепт
-      </button>
+      <div v-if="authStatus === 200" class="admin-create-actions">
+        <button class="primary" :disabled="deleting" @click="select()">
+          Новый рецепт
+        </button>
+        <NuxtLink class="secondary" to="/admin/recipes-json"
+          >Создать из JSON</NuxtLink
+        >
+      </div>
     </div>
     <p v-if="pending" role="status">Проверяем доступ…</p>
     <AppFeedback v-if="error" :message="error" />
@@ -381,7 +436,7 @@ useHead({
         @input="dirty = true"
         @change="dirty = true"
       >
-        <fieldset :disabled="saving || uploading">
+        <fieldset :disabled="saving || uploading || deleting">
           <h2>{{ draft.recipe.title || "Новый рецепт" }}</h2>
           <div class="admin-fields">
             <label
@@ -718,6 +773,15 @@ useHead({
             </ol>
           </details>
           <div class="admin-save">
+            <button
+              v-if="lockedSlug"
+              type="button"
+              class="admin-delete text-button"
+              :disabled="deleting"
+              @click="confirmDelete"
+            >
+              <AppIcon name="Trash2" :size="16" /> Удалить рецепт
+            </button>
             <button class="secondary" type="submit">
               {{ saving ? "Сохраняем…" : "Сохранить черновик" }}</button
             ><button class="primary" type="button" @click="save(true)">
@@ -741,9 +805,46 @@ useHead({
         </p>
       </div>
     </div>
+    <AppModal
+      v-if="deleteTarget"
+      title="Удалить рецепт?"
+      @close="!deleting && (deleteTarget = undefined)"
+    >
+      <p>
+        «{{ deleteTarget.document.recipe.title }}» будет удалён из редактора и
+        каталога. Восстановить рецепт через сайт не получится.
+      </p>
+      <p v-if="dirty" class="muted">
+        Несохранённые правки этого рецепта тоже будут потеряны.
+      </p>
+      <template #footer
+        ><div class="admin-create-actions">
+          <button
+            class="secondary"
+            :disabled="deleting"
+            @click="deleteTarget = undefined"
+          >
+            Отмена</button
+          ><button class="primary" :disabled="deleting" @click="deleteRecipe">
+            <span v-if="deleting" class="spinner" />{{
+              deleting ? "Удаляем…" : "Удалить рецепт"
+            }}
+          </button>
+        </div></template
+      >
+    </AppModal>
   </div>
 </template>
 <style scoped>
+.admin-create-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.admin-delete {
+  color: var(--danger);
+}
+
 .admin-layout {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);

@@ -1,6 +1,7 @@
 import type { Item } from "../data/catalog";
 import type { SearchResult } from "./yandex";
 import { recipeSearchBasket } from "./recipe-search-basket";
+import { normalized } from "./recipe/model";
 import { packagesFor, packageMeasure } from "./recipe/purchasing";
 export function recipeStorePrice(
   requests: Item[],
@@ -22,9 +23,27 @@ export function recipeStorePrice(
           product.price >= 0,
       ),
     };
+    // Exact names vary between retailers. Prefer the editor's exact match,
+    // then retain the available results returned for its search query.
+    const exact = valid?.products.filter(
+      (product) =>
+        (!request.product?.exactName ||
+          normalized(product.name) === normalized(request.product.exactName)) &&
+        (!request.product?.unit ||
+          normalized(product.unit) === normalized(request.product.unit)),
+    );
+    const candidates = valid && {
+      ...valid,
+      products: [...(exact || []), ...valid.products],
+    };
     const chosen = recipeSearchBasket(
-      [request],
-      [valid ? { stores: [valid] } : null],
+      [
+        {
+          ...request,
+          product: { ...request.product!, exactName: undefined, unit: "" },
+        },
+      ],
+      [candidates ? { stores: [candidates] } : null],
     ).items[0];
     const source = result?.products.find(
       (product) => product.id === chosen?.product?.sourceId,

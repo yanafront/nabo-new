@@ -73,10 +73,10 @@ describe("recipe store price", () => {
         .items,
     ).toHaveLength(0);
   });
-  it("preserves exact names and units and rejects unavailable or invalid prices", () => {
+  it("falls back to returned search results and rejects unavailable or invalid prices", () => {
     const exact = request();
     exact.product!.exactName = "Творог другой";
-    expect(recipeStorePrice([exact], { Творог: result }).items).toHaveLength(0);
+    expect(recipeStorePrice([exact], { Творог: result }).items).toHaveLength(1);
     for (const changed of [
       { available: false },
       { price: NaN },
@@ -92,6 +92,26 @@ describe("recipe store price", () => {
         }).items,
       ).toHaveLength(0);
     }
+  });
+  it("prefers an exact available match even when it is not the first result", () => {
+    const exact = request(200);
+    exact.product!.exactName = "Творог другой";
+    const selected = recipeStorePrice([exact], {
+      Творог: {
+        ...result,
+        products: [
+          result.products[0]!,
+          {
+            ...result.products[0]!,
+            id: "exact",
+            name: "Творог другой",
+            price: 4,
+          },
+        ],
+      },
+    });
+    expect(selected.items[0]!.product!.sourceId).toBe("exact");
+    expect(selected.total).toBe(4);
   });
   it("sums quantities for duplicate selected products instead of overwriting demand", () => {
     expect(

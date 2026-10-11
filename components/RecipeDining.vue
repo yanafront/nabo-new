@@ -402,6 +402,11 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   .dining-heading {
     display: block;
   }
+  .dining-heading > div {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
   .dining-from {
     font-size: 18px;
     margin: 6px 0 4px;

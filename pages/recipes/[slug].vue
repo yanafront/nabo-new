@@ -159,23 +159,25 @@ onBeforeUnmount(() => {
       </div>
       <RecipeDining :title="recipe.title">
         <template #cook-summary>
-          <h2>Приготовить дома</h2>
-          <label class="price-store-label">
-            <span class="sr-only">Магазин для продуктов рецепта</span>
-            <select
-              v-model="priceStore"
-              aria-label="Магазин для продуктов рецепта"
-              :disabled="resolving"
-            >
-              <option
-                v-for="store in retailStores"
-                :key="store.id"
-                :value="store.id"
+          <div class="cook-summary-head">
+            <h2>Приготовить дома</h2>
+            <label class="price-store-label">
+              <span class="sr-only">Магазин для продуктов рецепта</span>
+              <select
+                v-model="priceStore"
+                aria-label="Магазин для продуктов рецепта"
+                :disabled="resolving"
               >
-                {{ store.name }}
-              </option>
-            </select>
-          </label>
+                <option
+                  v-for="store in retailStores"
+                  :key="store.id"
+                  :value="store.id"
+                >
+                  {{ store.name }}
+                </option>
+              </select>
+            </label>
+          </div>
           <span v-if="priceLoading" class="price-loading" role="status"
             ><span class="spinner" />Считаем стоимость…</span
           >
@@ -197,11 +199,7 @@ onBeforeUnmount(() => {
             · {{ quantityLabel(servings, "порция", "порции", "порций") }} · без
             доставки
           </p>
-          <small
-            v-if="!priceLoading && estimate.items.length && !estimate.complete"
-            class="muted"
-            >Сумма только найденных товаров</small
-          >
+
           <button
             v-if="priceError && !priceLoading"
             class="text-button price-retry"
@@ -517,11 +515,23 @@ h2 {
   margin: 0;
   font-size: 22px;
 }
+.cook-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cook-summary-head h2 {
+  min-width: 0;
+}
 .price-store-label {
   display: block;
-  margin: 6px 0;
+  flex-shrink: 0;
+  margin: 0;
 }
 .price-store-label select {
+  min-height: 24px;
+  height: 24px;
   font: inherit;
   font-size: 12px;
   color: var(--muted);
@@ -937,6 +947,17 @@ h2 {
   }
   .recipe-purchase .primary {
     min-height: 48px;
+  }
+}
+@media (max-width: 700px) {
+  .cook-summary-head {
+    gap: 6px;
+    min-height: 36px;
+  }
+  .price-store-label select {
+    font-size: 11px;
+    max-width: 72px;
+    padding-right: 12px;
   }
 }
 </style>

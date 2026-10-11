@@ -183,7 +183,11 @@ test("restaurant offers show portions, prices and external links without changin
   expect(columns).toBe(test.info().project.name === "mobile" ? 2 : 4);
   const cookSummary = await block.locator(".cook-summary").boundingBox();
   const diningSummary = await block.locator(".dining-heading").boundingBox();
-  expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
+  if (test.info().project.name === "mobile")
+    expect(diningSummary!.y).toBeGreaterThanOrEqual(
+      cookSummary!.y + cookSummary!.height,
+    );
+  else expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
   await expect(block.locator(".cook-price")).toContainText("BYN");
   await expect(
     page.getByRole("button", {
@@ -365,10 +369,30 @@ test("batch price follows store and servings and adds the same products without 
     .selectOption("green");
   await expect(page.locator(".drawer-price")).toContainText("4,00 BYN");
   await page
-    .getByRole("button", {
-      name: "Добавить ингредиенты в корзину",
-      exact: true,
-    })
+    .getByRole("dialog")
+    .getByRole("button", { name: "Закрыть", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Посмотреть товары", exact: true })
+    .click();
+  const found = page.getByRole("dialog");
+  await expect(found).toHaveAccessibleName("Продукты · Green");
+  await expect(found.locator(".found-product-info")).toContainText(
+    "Творог выбранный",
+  );
+  await expect(found.locator(".found-product-info")).toContainText(
+    "1 уп. × 4,00 BYN",
+  );
+  await expect(found.locator(".found-products-total")).toContainText(
+    "4,00 BYN",
+  );
+  expect(batches).toHaveLength(2);
+  const overflows = await found.evaluate(
+    (el) => el.scrollWidth > el.clientWidth,
+  );
+  expect(overflows).toBe(false);
+  await found
+    .getByRole("button", { name: "Добавить товары в корзину", exact: true })
     .click();
   await expect(page).toHaveURL(/\/basket$/);
   const saved = await page.evaluate(

@@ -26,6 +26,16 @@ const servings = ref(
 const excluded = ref<string[]>([]);
 const imageFailed = ref(false);
 const ingredientsOpen = ref(false);
+const foundProductsOpen = ref(false);
+const failedProductImages = ref(new Set<string>());
+const loadedProductImages = ref(new Set<string>());
+const priceStoreName = computed(
+  () => retailStores.find((store) => store.id === priceStore.value)?.name,
+);
+function closeFoundProducts() {
+  if (resolving.value) controller?.abort();
+  foundProductsOpen.value = false;
+}
 function closeIngredients() {
   if (resolving.value) controller?.abort();
   ingredientsOpen.value = false;
@@ -201,6 +211,13 @@ onBeforeUnmount(() => {
           </p>
 
           <button
+            v-if="estimate.items.length && !priceLoading"
+            class="text-button found-products-trigger"
+            @click="foundProductsOpen = true"
+          >
+            Посмотреть товары <AppIcon name="ArrowRight" :size="14" />
+          </button>
+          <button
             v-if="priceError && !priceLoading"
             class="text-button price-retry"
             @click="price.refresh()"
@@ -275,6 +292,95 @@ onBeforeUnmount(() => {
           </div>
         </template>
       </RecipeDining>
+      <AppModal
+        v-if="foundProductsOpen"
+        class="found-products-modal"
+        :title="`Продукты · ${priceStoreName}`"
+        @close="closeFoundProducts"
+      >
+        <div class="found-products-body">
+          <p class="found-products-context muted">
+            {{ quantityLabel(servings, "порция", "порции", "порций") }} · целые
+            упаковки
+          </p>
+          <ul class="found-products-list">
+            <li v-for="row in estimate.items" :key="row.productId">
+              <div class="found-product-image">
+                <img
+                  v-if="
+                    row.product?.image &&
+                    !failedProductImages.has(row.productId)
+                  "
+                  :src="row.product.image"
+                  :class="{
+                    'is-loading': !loadedProductImages.has(row.productId),
+                  }"
+                  @load="loadedProductImages.add(row.productId)"
+                  alt=""
+                  loading="lazy"
+                  @error="failedProductImages.add(row.productId)"
+                />
+                <AppIcon
+                  v-if="
+                    !row.product?.image ||
+                    failedProductImages.has(row.productId) ||
+                    !loadedProductImages.has(row.productId)
+                  "
+                  name="ShoppingBasket"
+                  :size="24"
+                />
+              </div>
+              <div class="found-product-info">
+                <strong>{{ row.product?.name }}</strong>
+                <small
+                  >{{ row.product?.unit }}{{ row.product?.unit ? " · " : ""
+                  }}{{ row.quantity }} уп. ×
+                  {{ money(row.product?.price || 0) }} BYN</small
+                >
+              </div>
+              <strong class="found-product-price"
+                >{{
+                  money((row.product?.price || 0) * row.quantity)
+                }}
+                BYN</strong
+              >
+            </li>
+          </ul>
+          <p v-if="estimate.missing.length" class="found-products-missing">
+            Не найдены: {{ estimate.missing.join(", ") }}. В сумму не включены.
+          </p>
+          <p v-if="items.length" class="muted found-products-context">
+            Добавим к товарам, которые уже есть в корзине.
+          </p>
+        </div>
+        <template #footer>
+          <div class="found-products-footer">
+            <p
+              v-if="localError || resolveError"
+              class="drawer-error"
+              role="alert"
+            >
+              {{ localError || resolveError }}
+            </p>
+            <div class="found-products-total">
+              <span
+                >{{ estimate.complete ? "Итого" : "За найденные товары"
+                }}<small>Без доставки</small></span
+              >
+              <strong>{{ money(estimate.total) }} BYN</strong>
+            </div>
+            <button
+              class="primary"
+              :disabled="resolving || priceLoading || !estimate.items.length"
+              @click="build"
+            >
+              <span v-if="resolving" class="spinner" />
+              {{ resolving ? "Добавляем…" : "Добавить товары в корзину" }}
+              <AppIcon v-if="!resolving" name="ArrowRight" :size="18" />
+            </button>
+          </div>
+        </template>
+      </AppModal>
       <AppModal
         v-if="ingredientsOpen"
         title="Продукты для корзины"
@@ -440,6 +546,151 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.found-products-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0 0;
+  font-size: 12px;
+}
+.found-products-modal[open] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(690px, calc(100vw - 24px));
+  height: fit-content;
+  max-height: 88dvh;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.found-products-modal :deep(.modal-head) {
+  position: static;
+  flex-shrink: 0;
+  padding: 16px 20px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+.found-products-modal :deep(.modal-head h2) {
+  font-size: 20px;
+}
+.found-products-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px;
+}
+.found-products-context {
+  font-size: 12px;
+  margin: 12px 0;
+}
+.found-products-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.found-products-list li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.found-product-image {
+  background: var(--surface);
+  border-radius: 8px;
+  width: 52px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.found-product-image > * {
+  grid-area: 1 / 1;
+}
+.found-product-image img.is-loading {
+  opacity: 0;
+}
+.found-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.found-product-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.found-product-info strong {
+  font-size: 14px;
+  line-height: 1.4;
+  display: block;
+}
+.found-product-info small {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.found-product-price {
+  font-size: 14px;
+  white-space: nowrap;
+}
+.found-products-missing {
+  font-size: 12px;
+  color: var(--muted);
+}
+.found-products-footer {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+  background: white;
+}
+.found-products-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.found-products-total span {
+  font-size: 14px;
+}
+.found-products-total small {
+  display: block;
+  margin-top: 2px;
+}
+.found-products-total strong {
+  font-size: 22px;
+}
+.found-products-footer .primary {
+  width: 100%;
+}
+@media (max-width: 600px) {
+  .found-products-list li {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 8px 12px;
+  }
+  .found-product-image {
+    width: 44px;
+    height: 52px;
+    grid-row: span 2;
+  }
+  .found-product-price {
+    grid-column: 2;
+  }
+  .found-product-info strong {
+    font-size: 13px;
+  }
+  .found-products-body {
+    padding: 0 16px;
+  }
+  .found-products-footer {
+    padding: 12px 16px;
+  }
+}
 .recipe-detail {
   padding-bottom: 24px;
 }

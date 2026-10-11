@@ -386,8 +386,8 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 }
 @media (max-width: 700px) {
   .recipe-dining {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 24px 12px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
     padding-top: 0;
   }
   .cook-summary :deep(h2),
@@ -403,7 +403,7 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
     display: block;
   }
   .dining-heading > div {
-    min-height: 36px;
+    min-height: 24px;
     display: flex;
     align-items: center;
   }
@@ -427,12 +427,6 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   }
   .dining-price {
     font-size: 16px;
-  }
-}
-@media (max-width: 360px) {
-  .cook-summary :deep(h2),
-  .dining-heading h2 {
-    min-height: 2.6em;
   }
 }
 </style>

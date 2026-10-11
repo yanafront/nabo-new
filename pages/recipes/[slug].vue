@@ -952,7 +952,7 @@ h2 {
 @media (max-width: 700px) {
   .cook-summary-head {
     gap: 6px;
-    min-height: 36px;
+    min-height: 24px;
   }
   .price-store-label select {
     font-size: 11px;

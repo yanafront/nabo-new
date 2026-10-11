@@ -13,6 +13,29 @@ import {
 } from "~/shared/store-baskets";
 const { items, compareItems, change, remove, addProduct } = useBasket();
 const cart = useCartSync();
+const { show: showToast, dismiss: dismissToast } = useToast();
+let savingToast: string | undefined;
+watch(
+  () => cart.state.value === "saving" || cart.state.value === "updating",
+  (saving) => {
+    if (saving)
+      savingToast = showToast(
+        "Сохраняем изменения…",
+        "info",
+        undefined,
+        undefined,
+        0,
+      );
+    else if (savingToast) {
+      dismissToast(savingToast);
+      savingToast = undefined;
+    }
+  },
+);
+onBeforeUnmount(() => {
+  if (savingToast) dismissToast(savingToast);
+});
+
 const {
   comparisons,
   location,
@@ -250,15 +273,6 @@ onBeforeUnmount(() => {
             <AppIcon name="RefreshCw" :size="14" />Обновить
           </button>
         </div>
-        <p
-          v-if="
-            cart.state.value === 'saving' || cart.state.value === 'updating'
-          "
-          class="muted"
-          role="status"
-        >
-          Сохраняем изменения…
-        </p>
         <p v-if="refreshing" class="store-basket-status" role="status">
           <span class="spinner" />{{
             cart.state.value === "saving"

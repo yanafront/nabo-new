@@ -5,6 +5,7 @@ export interface ToastMessage {
   kind: ToastKind;
   actionLabel?: string;
   action?: () => void;
+  durationMs?: number;
 }
 export function useToast() {
   const messages = useState<ToastMessage[]>("toast-messages", () => []);
@@ -16,6 +17,7 @@ export function useToast() {
     kind: ToastKind = "info",
     actionLabel?: string,
     action?: () => void,
+    durationMs?: number,
   ) {
     if (!import.meta.client || !message.trim()) return;
     const duplicate = messages.value.find(
@@ -25,7 +27,7 @@ export function useToast() {
     const id = crypto.randomUUID();
     messages.value = [
       ...messages.value.slice(-2),
-      { id, message, kind, actionLabel, action },
+      { id, message, kind, actionLabel, action, durationMs },
     ];
     return id;
   }

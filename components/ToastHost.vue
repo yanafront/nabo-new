@@ -39,10 +39,13 @@ function pause(id: string) {
 function resume(id: string) {
   pause(id);
   const item = messages.value.find((message) => message.id === id);
-  if (item)
+  if (item && item.durationMs !== 0)
     timers.set(
       id,
-      setTimeout(() => dismiss(id), item.kind === "error" ? 9000 : 5000),
+      setTimeout(
+        () => dismiss(id),
+        item.durationMs ?? (item.kind === "error" ? 9000 : 5000),
+      ),
     );
 }
 watch(

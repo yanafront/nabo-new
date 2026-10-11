@@ -215,16 +215,30 @@ test("editing stays visible while saving and refreshing comparison in the backgr
   });
   await page.goto("/basket");
   await expect(page.locator(".basket-summary")).toContainText("7,00");
+  const before = await page
+    .locator(".product-row")
+    .first()
+    .evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
   await page
     .getByRole("button", { name: "Удалить: Авокадо", exact: true })
     .click();
   await expect(page.locator(".product-row")).toHaveCount(1);
+  await expect(page.locator(".nabo-toast")).toContainText(
+    "Сохраняем изменения",
+  );
+  expect(
+    await page
+      .locator(".product-row")
+      .first()
+      .evaluate((node) => node.getBoundingClientRect().top + window.scrollY),
+  ).toBe(before);
   await expect(page.locator(".basket-summary")).toContainText("3,00");
   await expect(page.locator(".spinner")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: `Увеличить количество: ${longName}` }),
   ).toBeVisible();
   release();
+  await expect(page.locator(".nabo-toast")).toHaveCount(0);
   await expect(page.locator(".basket-benefit")).toContainText(
     "Евроопт · 1,00 BYN",
   );

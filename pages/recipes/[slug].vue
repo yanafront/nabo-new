@@ -6,6 +6,7 @@ import {
   type Recipe,
   type Ingredient,
 } from "~/shared/recipe/model";
+import { retailStores } from "~/shared/yandex";
 import { recipePurchaseRequest } from "~/shared/recipe/purchasing";
 const route = useRoute();
 const slug = String(route.params.slug);
@@ -57,6 +58,13 @@ const request = computed(() =>
       )
     : null,
 );
+const price = useRecipeStorePrice(request);
+const {
+  storeId: priceStore,
+  estimate,
+  loading: priceLoading,
+  error: priceError,
+} = price;
 watch(
   [recipe, dictionary],
   ([current, entries]) => {
@@ -76,8 +84,16 @@ watch(
 async function build() {
   localError.value = "";
   if (!request.value) return;
+  if (priceLoading.value || !estimate.value.items.length) return;
   controller = new AbortController();
-  if (await resolve(request.value, controller.signal, items.value.length > 0))
+  if (
+    await resolve(
+      request.value,
+      controller.signal,
+      items.value.length > 0,
+      estimate.value,
+    )
+  )
     await navigateTo("/basket");
 }
 onBeforeUnmount(() => {
@@ -144,11 +160,55 @@ onBeforeUnmount(() => {
       <RecipeDining :title="recipe.title">
         <template #cook-summary>
           <h2>Приготовить дома</h2>
-          <strong class="cook-price">После подбора</strong>
-          <p class="muted">
-            Цена в корзине ·
-            {{ quantityLabel(servings, "порция", "порции", "порций") }}
+          <label class="price-store-label">
+            <span class="sr-only">Магазин для продуктов рецепта</span>
+            <select
+              v-model="priceStore"
+              aria-label="Магазин для продуктов рецепта"
+              :disabled="resolving"
+            >
+              <option
+                v-for="store in retailStores"
+                :key="store.id"
+                :value="store.id"
+              >
+                {{ store.name }}
+              </option>
+            </select>
+          </label>
+          <span v-if="priceLoading" class="price-loading" role="status"
+            ><span class="spinner" />Считаем стоимость…</span
+          >
+          <strong v-else-if="estimate.items.length" class="cook-price"
+            >{{ !estimate.complete ? "от " : ""
+            }}{{ money(estimate.total) }} BYN</strong
+          >
+          <strong v-else class="cook-price">{{
+            request?.items.length
+              ? "Не удалось подобрать"
+              : "Нет продуктов к покупке"
+          }}</strong>
+          <p class="muted price-caption">
+            {{
+              estimate.complete
+                ? "Все продукты"
+                : `Найдено ${estimate.matched} из ${estimate.requested}`
+            }}
+            · {{ quantityLabel(servings, "порция", "порции", "порций") }} · без
+            доставки
           </p>
+          <small
+            v-if="!priceLoading && estimate.items.length && !estimate.complete"
+            class="muted"
+            >Сумма только найденных товаров</small
+          >
+          <button
+            v-if="priceError && !priceLoading"
+            class="text-button price-retry"
+            @click="price.refresh()"
+          >
+            Повторить расчёт
+          </button>
         </template>
         <template #cook-content>
           <div class="recipe-body">
@@ -224,6 +284,22 @@ onBeforeUnmount(() => {
         @close="closeIngredients"
       >
         <div class="ingredients-drawer-body">
+          <label class="drawer-store"
+            >Магазин
+            <select
+              v-model="priceStore"
+              :disabled="resolving"
+              aria-label="Магазин для сборки корзины"
+            >
+              <option
+                v-for="store in retailStores"
+                :key="store.id"
+                :value="store.id"
+              >
+                {{ store.name }}
+              </option>
+            </select>
+          </label>
           <section class="recipe-ingredients">
             <div class="section-head">
               <h2>Ингредиенты</h2>
@@ -284,12 +360,24 @@ onBeforeUnmount(() => {
             В корзине уже есть товары. Добавим продукты этого блюда к ним.
           </p>
           <p class="muted purchase-help">
-            Цены по магазинам покажем в корзине. Покупаем целые упаковки; для
+            В корзине можно сравнить магазины. Покупаем целые упаковки; для
             ложек и «по вкусу» подберём одну. Количество можно изменить.
           </p>
         </div>
         <template #footer>
           <div class="ingredients-drawer-footer">
+            <p class="drawer-price" aria-live="polite">
+              <span>{{
+                retailStores.find((store) => store.id === priceStore)?.name
+              }}</span
+              ><strong>{{
+                priceLoading
+                  ? "Считаем…"
+                  : estimate.items.length
+                    ? `${!estimate.complete ? "от " : ""}${money(estimate.total)} BYN`
+                    : "Нет найденных товаров"
+              }}</strong>
+            </p>
             <p
               v-if="localError || resolveError"
               class="drawer-error"
@@ -310,18 +398,21 @@ onBeforeUnmount(() => {
                   }}
                   к покупке</strong
                 ><small
-                  ><span v-if="excluded.length"
+                  ><span v-if="!priceLoading && !estimate.complete"
+                    >Найдено {{ estimate.matched }} из
+                    {{ estimate.requested }}</span
+                  ><span v-else-if="excluded.length"
                     >{{ excluded.length }} не покупаем</span
                   ></small
                 >
               </div>
               <button
                 class="primary"
-                :disabled="resolving || !request?.items.length"
+                :disabled="resolving || priceLoading || !estimate.items.length"
                 @click="build"
               >
                 {{
-                  resolving
+                  resolving || priceLoading
                     ? "Подбираем товары…"
                     : items.length
                       ? "Добавить ингредиенты"
@@ -425,6 +516,40 @@ onBeforeUnmount(() => {
 h2 {
   margin: 0;
   font-size: 22px;
+}
+.price-store-label {
+  display: block;
+  margin: 6px 0;
+}
+.price-store-label select {
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  padding: 0 20px 0 0;
+  max-width: 100%;
+  cursor: pointer;
+}
+.price-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  min-height: 24px;
+}
+.price-loading .spinner {
+  width: 14px;
+  height: 14px;
+}
+.price-caption {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.price-retry {
+  font-size: 12px;
+  padding: 4px 0 0;
 }
 .cook-price {
   display: block;
@@ -670,6 +795,31 @@ h2 {
   margin-top: 18px;
   padding: 12px 16px;
   font-size: 13px;
+}
+.drawer-store {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.drawer-store select {
+  font: inherit;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+}
+.drawer-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+.drawer-price strong {
+  font-size: 20px;
 }
 .drawer-error {
   color: var(--danger);

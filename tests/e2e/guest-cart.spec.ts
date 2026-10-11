@@ -158,6 +158,25 @@ test("guest recipe ingredients use retail search and session cart", async ({
     .first()
     .click();
   await page.locator('a.dish-card[href="/recipes/syrniki"]').first().click();
+  await page.route("**/api/yandex/search/batch", (route) => {
+    const body = route.request().postDataJSON();
+    return route.fulfill({
+      json: {
+        items: body.queries.map((query: string) => ({
+          query,
+          result: {
+            storeId: body.storeId,
+            status: "ok",
+            currency: "BYN",
+            products: body.storeId === "green" ? [product] : [],
+          },
+        })),
+      },
+    });
+  });
+  await page
+    .getByLabel("Магазин для продуктов рецепта", { exact: true })
+    .selectOption("green");
   await page
     .getByRole("button", { name: "Собрать корзину", exact: true })
     .click();

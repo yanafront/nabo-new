@@ -97,6 +97,9 @@ export interface SearchResult {
   fetchedAt: string;
   currency: "BYN";
 }
+export interface SearchBatchResult {
+  items: Array<{ query: string; result: SearchResult }>;
+}
 export interface SearchAllResult {
   stores: SearchResult[];
 }

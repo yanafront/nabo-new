@@ -140,6 +140,26 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
       image: null,
     },
   ];
+  await page.route("**/api/yandex/search/batch", (route) => {
+    const body = route.request().postDataJSON();
+    if (body.storeId === "green") searches.push(...body.queries);
+    return route.fulfill({
+      json: {
+        items: body.queries.map((query: string) => ({
+          query,
+          result: {
+            storeId: body.storeId,
+            status: "ok",
+            currency: "BYN",
+            products: body.storeId === "green" ? [product] : [],
+          },
+        })),
+      },
+    });
+  });
+  await page
+    .getByLabel("Магазин для продуктов рецепта", { exact: true })
+    .selectOption("green");
   await page
     .getByRole("button", { name: "Собрать корзину", exact: true })
     .click();
@@ -153,7 +173,7 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
   expect(writes[0].find((item) => item.id === product.id)).toMatchObject({
     id: product.id,
     storeId: "green",
-    count: 1,
+    count: 3,
   });
   await expect(
     page.getByRole("button", { name: `Увеличить количество: ${product.name}` }),
@@ -166,9 +186,9 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
     .click();
   await expect
     .poll(() => writes.at(-1)?.find((item) => item.id === product.id)?.count)
-    .toBe(2);
+    .toBe(4);
   await expect(page.getByRole("tab", { name: /Green/ })).toContainText(
-    "9,00 BYN",
+    "15,00 BYN",
   );
   await page.waitForTimeout(600);
   expect(events.slice(requestsBeforeQuantity)).toEqual(["save"]);
@@ -191,7 +211,7 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
       id: "green:curd-123",
       query: product.name,
       exactName: product.name,
-      quantity: 1,
+      quantity: 3,
       unit: product.unit,
     },
   ]);

@@ -5,6 +5,34 @@ const seed = JSON.parse(
 );
 const recipe = seed.recipes.find((r: any) => r.slug === "syrniki");
 test.beforeEach(async ({ page }) => {
+  await page.route("**/api/yandex/search/batch", (route) => {
+    const body = route.request().postDataJSON();
+    return route.fulfill({
+      json: {
+        items: body.queries.map((query: string) => ({
+          query,
+          result: {
+            storeId: body.storeId,
+            status: "ok",
+            currency: "BYN",
+            products: [
+              {
+                id: query,
+                name: query,
+                unit: "100 г",
+                price: 2,
+                available: true,
+                stock: null,
+                storeId: body.storeId,
+                placeSlug: body.storeId,
+                fetchedAt: "2026-10-11",
+              },
+            ],
+          },
+        })),
+      },
+    });
+  });
   await page.route("**/api/recipes/syrniki", (route) =>
     route.fulfill({ json: { recipe, ingredients: seed.ingredients } }),
   );
@@ -156,7 +184,7 @@ test("restaurant offers show portions, prices and external links without changin
   const cookSummary = await block.locator(".cook-summary").boundingBox();
   const diningSummary = await block.locator(".dining-heading").boundingBox();
   expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
-  await expect(block.getByText("После подбора")).toBeVisible();
+  await expect(block.locator(".cook-price")).toContainText("BYN");
   await expect(
     page.getByRole("button", {
       name: "Собрать корзину",
@@ -236,4 +264,122 @@ test("no matching dishes does not invent a price", async ({ page }) => {
     page.locator(".recipe-dining").getByText(/предложений пока нет/),
   ).toBeVisible();
   await expect(page.locator(".dining-from")).toHaveCount(0);
+});
+
+test("batch price follows store and servings and adds the same products without another search", async ({
+  page,
+}) => {
+  const pricedRecipe = {
+    ...recipe,
+    servings: 2,
+    ingredients: [
+      {
+        ...recipe.ingredients[0],
+        quantity: 500,
+        unit: "g",
+        searchQuery: "Творог точный запрос",
+        exactName: "Творог выбранный",
+        exactUnit: "",
+      },
+    ],
+  };
+  await page.route("**/api/recipes/syrniki", (route) =>
+    route.fulfill({
+      json: { recipe: pricedRecipe, ingredients: seed.ingredients },
+    }),
+  );
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({ status: 401, json: {} }),
+  );
+  let cartCalls = 0,
+    searches = 0;
+  const batches: any[] = [];
+  await page.route("**/api/cart**", (route) => {
+    cartCalls++;
+    return route.fulfill({ status: 401, json: {} });
+  });
+  await page.route("**/api/search", (route) => {
+    searches++;
+    return route.fulfill({ json: { stores: [] } });
+  });
+  await page.route("**/api/yandex/compare", (route) =>
+    route.fulfill({ json: { offers: [] } }),
+  );
+  await page.route("**/api/dining/search?*", (route) =>
+    route.fulfill({ json: { offers: [] } }),
+  );
+  await page.route("**/api/yandex/search/batch", (route) => {
+    const body = route.request().postDataJSON();
+    batches.push(body);
+    const green = body.storeId === "green";
+    return route.fulfill({
+      json: {
+        items: body.queries.map((query: string) => ({
+          query,
+          result: {
+            storeId: body.storeId,
+            status: "ok",
+            currency: "BYN",
+            products: [
+              {
+                id: "curd",
+                name: "Творог выбранный",
+                storeId: body.storeId,
+                unit: green ? "250 г" : "200 г",
+                price: green ? 4 : 3,
+                stock: null,
+                available: true,
+                fetchedAt: "",
+                placeSlug: body.storeId,
+              },
+            ],
+          },
+        })),
+      },
+    });
+  });
+  await page.goto("/recipes/syrniki");
+  await page.getByRole("button", { name: "Повторить", exact: true }).click();
+  const cookies = page.getByRole("button", {
+    name: "Только необходимые",
+    exact: true,
+  });
+  if (await cookies.isVisible()) await cookies.click();
+  await expect(page.locator(".cook-price")).toHaveText("9,00 BYN");
+  expect(batches[0]).toMatchObject({
+    storeId: "evroopt",
+    queries: ["Творог точный запрос"],
+    location: { lat: 53.9, lon: 27.5667 },
+  });
+  expect(cartCalls).toBe(0);
+  await page
+    .getByRole("button", { name: "Собрать корзину", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Уменьшить порции", exact: true })
+    .click();
+  await expect(page.locator(".drawer-price")).toContainText("6,00 BYN");
+  expect(batches).toHaveLength(1);
+  await page
+    .getByLabel("Магазин для сборки корзины", { exact: true })
+    .selectOption("green");
+  await expect(page.locator(".drawer-price")).toContainText("4,00 BYN");
+  await page
+    .getByRole("button", {
+      name: "Добавить ингредиенты в корзину",
+      exact: true,
+    })
+    .click();
+  await expect(page).toHaveURL(/\/basket$/);
+  const saved = await page.evaluate(
+    () =>
+      JSON.parse(sessionStorage.getItem("nabo-guest-cart-v1") || "{}").items,
+  );
+  expect(saved[0]).toMatchObject({
+    quantity: 1,
+    product: { sourceId: "curd", storeId: "green", price: 4 },
+  });
+  expect(batches).toHaveLength(2);
+  expect(searches).toBe(0);
+  expect(cartCalls).toBe(0);
 });

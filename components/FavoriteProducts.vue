@@ -103,8 +103,12 @@ onBeforeUnmount(() => {
     >
       Загружаем любимые товары…
     </div>
-    <div v-else-if="status === 'error'" class="error-state" role="alert">
-      <p>{{ error }}</p>
+    <div v-else-if="status === 'error'" class="error-state">
+      <AppFeedback
+        :message="error"
+        action-label="Повторить"
+        @action="load(true)"
+      />
       <button class="secondary" @click="load(true)">Повторить</button>
     </div>
     <template v-else-if="favorites.length">
@@ -124,7 +128,7 @@ onBeforeUnmount(() => {
       <p class="muted favorite-hint">
         Подходящие любимые товары учитываются при подборе корзины.
       </p>
-      <p v-if="resolveError" class="error" role="alert">{{ resolveError }}</p>
+      <AppFeedback v-if="resolveError" :message="resolveError" />
       <div class="favorite-grid">
         <template v-for="reference in visible" :key="key(reference)">
           <div v-if="productFor(reference)" class="favorite-result">

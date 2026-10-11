@@ -1619,8 +1619,15 @@ ol {
 .catalog-product-link > .product-image,
 .catalog-product-link > .product-emoji {
   height: 145px;
+  min-height: 145px;
+  max-height: 145px;
+  flex-shrink: 0;
+  object-fit: contain;
   width: 100%;
   margin-bottom: 14px;
+}
+.catalog-product-link > .product-image {
+  display: block;
 }
 .catalog-product-copy {
   display: flex;
@@ -2591,6 +2598,8 @@ ol {
   .catalog-product-link > .product-image,
   .catalog-product-link > .product-emoji {
     height: 120px;
+    min-height: 120px;
+    max-height: 120px;
     margin-bottom: 12px;
   }
   .catalog-product-copy h3 {
@@ -3191,10 +3200,15 @@ input[type="checkbox"] {
 .dish-card:hover { border-color: #ccd7f5; box-shadow: 0 4px 18px #151c2910; }
 .dish-photo {
   position: relative;
-  aspect-ratio: 2/1;
+  height: 150px;
+  flex: 0 0 150px;
+  overflow: hidden;
   background: #f3f4f6;
 }
 .dish-photo img {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -4671,4 +4685,18 @@ input[type="checkbox"] {
     border-color: var(--blue, #2f6bff);
     box-shadow: 0 3px 12px rgb(15 15 16 / 8%);
   }
+}
+
+/* Native selects and custom dropdowns share a readable leading edge. */
+select, select option {
+  text-align: left;
+  text-align-last: left;
+}
+:is([role="listbox"], [role="menu"], .account-dropdown, .basket-tools-menu) :is(button, a, [role="option"], [role="menuitem"]) {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+@media (max-width: 760px) {
+  .dish-photo { height: 110px; flex-basis: 110px; }
 }

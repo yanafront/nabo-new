@@ -111,17 +111,21 @@ it("serializes rapid additions; every operation reads the result of the previous
   ).toEqual([1, 2]);
   expect(c.items()).toHaveLength(2);
 });
-it("requires login and never falls back to saving a local cart", async () => {
-  const c = setup([row("local")]);
+it("guest additions never call backend cart and quantities and clearing stay local", async () => {
+  const c = setup();
   c.request.mockRejectedValue({ statusCode: 401 });
+  expect(await c.sync.initialize()).toBe(true);
   expect(
     await c.sync.mutate((current) => appendCartItems(current, [row("new")])),
-  ).toBe(false);
-  expect(c.request.mock.calls.every((call) => call[0] === "/api/auth/me")).toBe(
-    true,
-  );
+  ).toBe(true);
+  expect(await c.sync.quantity("green:new", 1)).toBe(true);
+  expect(c.items()[0].quantity).toBe(2);
+  expect(c.sync.comparisonItems()![0].quantity).toBe(2);
+  expect(await c.sync.clear()).toBe(true);
   expect(c.items()).toEqual([]);
-  expect(c.status).toHaveBeenLastCalledWith("guest", expect.any(String));
+  expect(c.request).toHaveBeenCalledTimes(1);
+  expect(c.request.mock.calls[0][0]).toBe("/api/auth/me");
+  expect(c.status).toHaveBeenLastCalledWith("guest");
 });
 it("does not save when loading the current backend cart fails", async () => {
   const c = setup([], [row("old")]);
@@ -189,4 +193,46 @@ it("rolls back a rejected quantity save and requires refresh before further edit
   expect(c.items()[0].quantity).toBe(1);
   expect(c.sync.comparisonItems()).toBeNull();
   expect(await c.sync.quantity("green:milk", 1)).toBe(false);
+});
+
+it("restores guest session, merges it on login and keeps account data out of guest storage", async () => {
+  let items: Item[] = [];
+  let guest = [row("guest", 2)];
+  let stored = accountCartItems([row("remote")]);
+  let loggedIn = false;
+  const request = vi.fn(async (url: string, options?: any) => {
+    if (url === "/api/auth/me") {
+      if (!loggedIn) throw { statusCode: 401 };
+      return {};
+    }
+    if (options?.method === "POST") {
+      stored = options.body.items;
+      return true;
+    }
+    return { items: structuredClone(stored) };
+  });
+  const sync = createCartSync({
+    read: () => items,
+    write: (rows) => {
+      items = rows;
+    },
+    readGuest: () => guest,
+    writeGuest: (rows) => {
+      guest = rows;
+    },
+    request,
+    status: vi.fn(),
+    location: () => ({ lat: 53.9, lon: 27.5667, label: "Минск" }),
+  });
+  await sync.initialize();
+  expect(items).toEqual(guest);
+  await sync.mutate((current) => appendCartItems(current, [row("extra")]));
+  expect(guest).toHaveLength(2);
+  loggedIn = true;
+  expect(await sync.login()).toBe(true);
+  expect(stored.map((item) => item.id)).toEqual(["remote", "guest", "extra"]);
+  expect(guest).toEqual([]);
+  sync.logout();
+  expect(items).toEqual([]);
+  expect(sync.isGuest()).toBe(true);
 });

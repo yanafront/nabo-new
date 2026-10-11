@@ -86,7 +86,7 @@ function schedule() {
     if (
       disposed ||
       pending.value ||
-      cart.state.value !== "saved" ||
+      !["saved", "guest"].includes(cart.state.value) ||
       !items.value.length
     )
       return;
@@ -266,9 +266,13 @@ onBeforeUnmount(() => {
               : "Сравниваем цены и наличие…"
           }}
         </p>
-        <div v-else-if="error" class="store-basket-status error" role="alert">
-          {{ error
-          }}<button class="text-button" @click="compare()">Повторить</button>
+        <div v-else-if="error" class="store-basket-status">
+          <AppFeedback :message="error" /><button
+            class="text-button"
+            @click="compare()"
+          >
+            Повторить
+          </button>
         </div>
         <p v-else-if="!selected" class="store-basket-status">
           Магазин не вернул данные. Попробуйте обновить сравнение.
@@ -364,7 +368,7 @@ onBeforeUnmount(() => {
               {{ copied ? "Скопировано" : "Копировать список" }}
             </button>
           </div>
-          <p v-if="copyError" class="error" role="alert">{{ copyError }}</p>
+          <AppFeedback v-if="copyError" :message="copyError" />
         </template>
       </section>
       <aside class="basket-summary" aria-label="Итог выбранного магазина">

@@ -226,10 +226,12 @@ onBeforeUnmount(() => {
                 : `${total} товаров во всех магазинах`
         }}</span>
       </div>
-      <p v-if="searchError" class="error" role="alert">{{ searchError }}</p>
-      <p v-else-if="errors.length" class="info-note">
-        Не ответили: {{ errors.join(", ") }}. Остальные результаты доступны.
-      </p>
+      <AppFeedback v-if="searchError" :message="searchError" />
+      <AppFeedback
+        v-else-if="errors.length"
+        :message="`Не ответили: ${errors.join(', ')}. Остальные результаты доступны.`"
+        kind="info"
+      />
       <div class="product-store-tabs" role="tablist" aria-label="Магазины">
         <button
           v-for="(entry, index) in retailStores"

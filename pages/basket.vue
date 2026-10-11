@@ -59,10 +59,11 @@ async function clearBasket() {
         </details>
       </div>
     </div>
-    <p v-if="cartSync.error.value" class="error" role="alert">
-      {{ cartSync.error.value }}
-      <button class="text-button" @click="cartSync.refresh">Повторить</button>
-    </p>
+    <AppFeedback
+      :message="cartSync.error.value"
+      action-label="Повторить"
+      @action="cartSync.refresh"
+    />
     <div
       v-if="items.length && (unresolved.length || pendingIngredients.length)"
       class="basket-notice"
@@ -83,7 +84,7 @@ async function clearBasket() {
       <button class="text-button" :disabled="resolving" @click="retryMissing">
         {{ resolving ? "Подбираем…" : "Подобрать" }}
       </button>
-      <p v-if="resolveError" class="error">{{ resolveError }}</p>
+      <AppFeedback v-if="resolveError" :message="resolveError" />
     </div>
     <BasketStores v-if="items.length" />
     <div v-if="hasContent && !items.length" class="basket-notice" role="status">
@@ -102,7 +103,7 @@ async function clearBasket() {
       <button class="text-button" :disabled="resolving" @click="retryMissing">
         {{ resolving ? "Подбираем…" : "Подобрать недостающие" }}
       </button>
-      <p v-if="resolveError" class="error">{{ resolveError }}</p>
+      <AppFeedback v-if="resolveError" :message="resolveError" />
     </div>
     <div v-if="!hasContent" class="empty-state">
       <span class="empty-icon"
@@ -114,6 +115,12 @@ async function clearBasket() {
         >Найти товары <AppIcon name="ArrowRight" /></NuxtLink
       ><NuxtLink to="/recipes" class="text-button"> Выбрать рецепт</NuxtLink>
     </div>
+    <p
+      v-if="cartSync.state.value === 'guest' && hasContent"
+      class="muted guest-cart-note"
+    >
+      Корзина сохранена в этой вкладке. Войдите, чтобы перенести её в аккаунт.
+    </p>
     <details class="basket-account-tools">
       <summary>
         Сохранение и восстановление в аккаунте
@@ -127,12 +134,12 @@ async function clearBasket() {
       @close="confirmClear = false"
     >
       <p>Удалим все товары и недостающие ингредиенты из текущей корзины.</p>
-      <p v-if="cartSync.error.value" role="alert" class="error">
-        {{ cartSync.error.value }}
-      </p>
+      <AppFeedback
+        v-if="cartSync.error.value"
+        :message="cartSync.error.value"
+      />
       <p class="muted">
-        Сохранённые списки останутся. После входа корзина очистится и в
-        аккаунте.
+        Сохранённые списки останутся. Очистим только текущую корзину.
       </p>
       <template #footer>
         <div class="account-cart-actions">

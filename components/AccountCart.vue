@@ -34,6 +34,6 @@ const { state, error, refresh } = useCartSync();
     >
       {{ state === "error" ? "Повторить" : "Обновить из аккаунта" }}
     </button>
-    <p v-if="error" role="alert" class="error">{{ error }}</p>
+    <AppFeedback v-if="error" :message="error" />
   </section>
 </template>

@@ -232,13 +232,11 @@ onBeforeUnmount(() => controller?.abort());
     :class="['product-page', modal ? 'product-preview-detail' : 'inner-page']"
   >
     <div class="product-content">
-      <p
+      <AppFeedback
         v-if="addMessage"
-        :class="addFailed ? 'error' : 'preview-success'"
-        role="status"
-      >
-        {{ addMessage }}
-      </p>
+        :message="addMessage"
+        :kind="addFailed ? 'error' : 'success'"
+      />
       <NuxtLink
         v-if="!modal"
         :to="{
@@ -255,7 +253,7 @@ onBeforeUnmount(() => controller?.abort());
         <span class="spinner" /> Загружаем товар…
       </div>
       <div v-else-if="error" class="catalog-error panel">
-        <p class="error" role="alert">{{ error }}</p>
+        <AppFeedback :message="error" action-label="Повторить" @action="load" />
         <button class="secondary" @click="load">Повторить</button>
       </div>
       <template v-else-if="product">

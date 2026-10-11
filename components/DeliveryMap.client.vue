@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
       <AppIcon name="MapPin" :size="18" />
     </button>
     <p v-if="pending" role="status" class="muted">Загружаем карту…</p>
-    <p v-if="failure" role="status" class="error">{{ failure }}</p>
+    <AppFeedback v-if="failure" :message="failure" />
     <small v-if="source && !compact" class="muted">{{ source }}</small>
   </div>
 </template>

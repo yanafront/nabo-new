@@ -164,7 +164,7 @@ async function openBasket() {
       <span class="spinner" /> Ищем в магазине…
     </p>
     <div v-else-if="error">
-      <p role="alert" class="error">{{ error }}</p>
+      <AppFeedback :message="error" action-label="Повторить" @action="search" />
       <button class="secondary" @click="search">Повторить</button>
     </div>
     <div v-else class="picker-list">
@@ -209,13 +209,11 @@ async function openBasket() {
       </p>
     </div>
     <div v-if="!inline" class="picker-cart-footer">
-      <p
+      <AppFeedback
         v-if="feedback"
-        :role="feedbackError ? 'alert' : 'status'"
-        :class="feedbackError ? 'error' : 'added-feedback'"
-      >
-        {{ feedback }}
-      </p>
+        :message="feedback"
+        :kind="feedbackError ? 'error' : 'success'"
+      />
       <button
         class="primary full"
         :disabled="!items.length"

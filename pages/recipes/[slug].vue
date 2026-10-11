@@ -217,9 +217,10 @@ onBeforeUnmount(() => {
       <p v-if="items.length" class="info-note">
         В корзине уже есть товары. Добавим продукты этого блюда к ним.
       </p>
-      <p v-if="localError || resolveError" class="error" role="alert">
-        {{ localError || resolveError }}
-      </p>
+      <AppFeedback
+        v-if="localError || resolveError"
+        :message="localError || resolveError"
+      />
       <div class="recipe-sticky">
         <div>
           <strong

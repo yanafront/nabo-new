@@ -210,8 +210,12 @@ function reset() {
         </div>
       </section>
     </div>
-    <div v-else-if="error" class="info-note" role="alert">
-      Не удалось загрузить каталог.
+    <div v-else-if="error" class="info-note">
+      <AppFeedback
+        message="Не удалось загрузить каталог."
+        action-label="Повторить"
+        @action="refresh()"
+      />
       <button class="text-button" @click="refresh()">Повторить</button>
     </div>
     <div v-else-if="pending" class="dish-grid" aria-label="Загрузка рецептов">

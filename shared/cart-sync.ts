@@ -5,13 +5,15 @@ import {
   restoredCartItems,
   savedCartCompareItems,
 } from "./account-cart";
-import { CartChangeError } from "./cart-actions";
+import { appendCartItems, CartChangeError } from "./cart-actions";
 
-/** Structural edits reload the server cart; quantity edits reuse its confirmed snapshot. */
+/** Account edits use the backend; guest edits stay in the browser session. */
 export function createCartSync(options: {
   read: () => Item[];
   write: (items: Item[]) => void;
   location: () => DeliveryLocation;
+  readGuest?: () => Item[];
+  writeGuest?: (items: Item[]) => void;
   request: (url: string, options?: any) => Promise<any>;
   status: (
     state: "guest" | "loading" | "saving" | "updating" | "saved" | "error",
@@ -19,6 +21,7 @@ export function createCartSync(options: {
   ) => void;
 }) {
   let authenticated = false;
+  let authChecked = false;
   let generation = 0;
   let pending = 0;
   let queue: Promise<unknown> = Promise.resolve();
@@ -27,10 +30,22 @@ export function createCartSync(options: {
     | undefined;
   const fingerprint = () => JSON.stringify(accountCartItems(options.read()));
   async function authenticate() {
-    if (!authenticated) {
+    if (authChecked) return;
+    try {
       await options.request("/api/auth/me", { retry: 0, timeout: 15000 });
       authenticated = true;
+      authChecked = true;
+    } catch (error: any) {
+      if ((error?.statusCode || error?.status) !== 401) throw error;
+      authenticated = false;
+      authChecked = true;
+      options.write(options.readGuest?.() || []);
     }
+  }
+  function saveGuest(rows: Item[]) {
+    options.write(rows);
+    options.writeGuest?.(rows);
+    options.status("guest");
   }
   async function load(withPrices: boolean) {
     const point = { ...options.location() };
@@ -56,10 +71,11 @@ export function createCartSync(options: {
     confirmed = undefined;
     if ((error?.statusCode || error?.status) === 401) {
       authenticated = false;
-      options.write([]);
+      authChecked = true;
+      options.write(options.readGuest?.() || []);
       options.status(
         "guest",
-        "Войдите в аккаунт, чтобы добавлять товары и сохранять корзину.",
+        "Сессия аккаунта завершилась. Доступна гостевая корзина.",
       );
     } else
       options.status(
@@ -72,6 +88,7 @@ export function createCartSync(options: {
   function enqueue(
     change?: (rows: Item[]) => Item[],
     clear = false,
+    onSaved?: () => void,
   ): Promise<boolean> {
     const session = generation;
     pending++;
@@ -87,6 +104,12 @@ export function createCartSync(options: {
             options.write(clear ? [] : change!(previous));
           await authenticate();
           if (session !== generation) return false;
+          if (!authenticated) {
+            saveGuest(
+              clear ? [] : change ? change(options.read()) : options.read(),
+            );
+            return true;
+          }
           if (change || clear) {
             const next = clear ? [] : change!((await load(false)).rows);
             if (session !== generation) return false;
@@ -97,6 +120,7 @@ export function createCartSync(options: {
               timeout: 70000,
             });
             posted = true;
+            if (session === generation) onSaved?.();
           }
           if (session !== generation) return false;
           const loaded = await load(true);
@@ -136,9 +160,8 @@ export function createCartSync(options: {
         const snapshot = confirmed;
         try {
           if (
-            !authenticated ||
-            !snapshot ||
-            snapshot.signature !== fingerprint()
+            authenticated &&
+            (!snapshot || snapshot.signature !== fingerprint())
           )
             throw new CartChangeError(
               "Обновите корзину перед изменением количества.",
@@ -155,6 +178,10 @@ export function createCartSync(options: {
           });
           options.status("updating");
           options.write(next);
+          if (!authenticated) {
+            saveGuest(next);
+            return true;
+          }
           await options.request("/api/cart", {
             method: "POST",
             body: { items: accountCartItems(next) },
@@ -163,8 +190,8 @@ export function createCartSync(options: {
           });
           if (session !== generation) return false;
           confirmed = {
-            ...snapshot,
-            items: snapshot.items.map((item) => ({
+            ...snapshot!,
+            items: snapshot!.items.map((item) => ({
               ...item,
               count: next.find(
                 (row) => row.productId === item.storeId + ":" + item.id,
@@ -192,10 +219,13 @@ export function createCartSync(options: {
     generation++;
     authenticated = false;
     confirmed = undefined;
-    options.write([]);
+    authChecked = true;
+    options.write(options.readGuest?.() || []);
     options.status("guest");
   }
   function comparisonItems() {
+    if (authChecked && !authenticated && !pending)
+      return savedCartCompareItems(accountCartItems(options.read()));
     if (
       !authenticated ||
       pending ||
@@ -207,8 +237,30 @@ export function createCartSync(options: {
       return null;
     return savedCartCompareItems(confirmed.items);
   }
+  async function login() {
+    await queue;
+    const guest =
+      !authenticated && authChecked
+        ? (JSON.parse(JSON.stringify(options.read())) as Item[])
+        : [];
+    authChecked = false;
+    if (!(await refresh()) || !authenticated) return false;
+    if (guest.length) {
+      if (
+        !(await enqueue(
+          (current) => appendCartItems(current, guest),
+          false,
+          () => options.writeGuest?.([]),
+        ))
+      )
+        return false;
+    }
+    return true;
+  }
   return {
     initialize: refresh,
+    login,
+    isGuest: () => authChecked && !authenticated,
     refresh,
     mutate,
     quantity,

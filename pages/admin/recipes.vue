@@ -337,7 +337,7 @@ useHead({
       </button>
     </div>
     <p v-if="pending" role="status">Проверяем доступ…</p>
-    <p v-if="error" class="error" role="alert">{{ error }}</p>
+    <AppFeedback v-if="error" :message="error" />
     <NuxtLink
       v-if="authStatus === 401"
       :to="{ path: '/account', query: { returnTo: '/admin/recipes' } }"
@@ -351,7 +351,7 @@ useHead({
     >
       Повторить
     </button>
-    <p v-if="message" role="status">{{ message }}</p>
+    <AppFeedback :message="message" kind="success" />
     <div v-if="authStatus === 200" class="admin-layout">
       <aside class="panel admin-list">
         <label

@@ -233,13 +233,10 @@ function save() {
           Отмена
         </button>
       </div>
-      <p
+      <AppFeedback
         v-if="addressError || geoError"
-        role="alert"
-        class="error location-error"
-      >
-        {{ addressError || geoError }}
-      </p>
+        :message="addressError || geoError"
+      />
       <div class="location-map-area">
         <div
           v-if="results.length"

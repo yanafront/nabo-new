@@ -236,7 +236,7 @@ defineExpose({ submit, selectMode });
     >
       Ищем рецепты…
     </p>
-    <p v-if="error" class="error" role="alert">{{ error }}</p>
+    <AppFeedback v-if="error" :message="error" />
     <div v-if="loading" class="generation" role="status">
       <span class="spinner" /> {{ stage }}
       <button type="button" class="text-button" @click="cancel">

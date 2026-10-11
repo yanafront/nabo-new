@@ -84,7 +84,7 @@ async function logout() {
       <button :disabled="pending" @click="logout">
         <AppIcon name="LogOut" :size="17" />{{ pending ? "Выходим…" : "Выйти" }}
       </button>
-      <p v-if="error" class="error" role="alert">{{ error }}</p>
+      <AppFeedback v-if="error" :message="error" />
     </div>
   </div>
 </template>

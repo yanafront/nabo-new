@@ -10,7 +10,7 @@ export function useCartSync() {
     error,
     refresh: () => controller()?.refresh(),
     comparisonItems: () => controller()?.comparisonItems() || null,
-    login: () => controller()?.initialize(),
+    login: () => controller()?.login(),
     mutate: (
       change: (
         rows: import("~/data/catalog").Item[],

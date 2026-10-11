@@ -10,7 +10,15 @@ const info = ref(false);
 const cookieSettings = useState("cookie-settings-open", () => false);
 const showLocation = ref(false);
 const offline = ref(false);
-let timer: ReturnType<typeof setTimeout>;
+const { show: showToast } = useToast();
+watch(offline, (value) => {
+  showToast(
+    value
+      ? "Нет интернета. Для поиска и обновления цен нужно подключение."
+      : "Подключение восстановлено",
+    value ? "error" : "success",
+  );
+});
 const updateConnection = () => {
   offline.value = !navigator.onLine;
 };
@@ -19,12 +27,15 @@ onMounted(() => {
   window.addEventListener("online", updateConnection);
   window.addEventListener("offline", updateConnection);
 });
-watch(notice, () => {
-  clearTimeout(timer);
-  if (notice.value) timer = setTimeout(() => (notice.value = ""), 5000);
+watch(notice, (message) => {
+  if (!message) return;
+  const error = /не удалось|недоступн|ошибк|не сохран|войдите/i.test(message);
+  const success =
+    !error && /добавлен|сохранён|очищен|заменён|скопирован/i.test(message);
+  showToast(message, error ? "error" : success ? "success" : "info");
+  notice.value = "";
 });
 onUnmounted(() => {
-  clearTimeout(timer);
   window.removeEventListener("online", updateConnection);
   window.removeEventListener("offline", updateConnection);
 });
@@ -63,10 +74,6 @@ onUnmounted(() => {
       </button>
       <AccountMenu />
     </header>
-    <div v-if="offline" class="offline-banner" role="status">
-      Нет интернета. Корзина сохранена на устройстве. Для обновления цен нужно
-      подключение.
-    </div>
     <main id="main"><NuxtPage :key="$route.path" /></main>
     <footer class="footer">
       <span>Цены в BYN · Покупка у магазина</span>
@@ -98,12 +105,7 @@ onUnmounted(() => {
       >
       <NuxtLink to="/saved"><AppIcon name="Heart" />Сохранённое</NuxtLink>
     </nav>
-    <div v-if="notice" class="toast" role="status">
-      <AppIcon name="Check" :size="18" />{{ notice
-      }}<button aria-label="Закрыть уведомление" @click="notice = ''">
-        <AppIcon name="X" :size="16" />
-      </button>
-    </div>
+    <ToastHost />
     <LazyProductPreviewModal v-if="previewProduct" />
     <CookieConsent />
     <LazyLocationPicker v-if="showLocation" @close="showLocation = false" />

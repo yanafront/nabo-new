@@ -76,7 +76,7 @@ async function submit() {
         {{
           returnTo
             ? "Войдите, чтобы сохранять товары и корзины в Nabo."
-            : "Войдите, чтобы собирать корзину и сравнивать цены."
+            : "Войдите, чтобы сохранять корзину в аккаунте и открывать её на других устройствах."
         }}
       </p>
       <form @submit.prevent="submit" class="account-form" :aria-busy="pending">
@@ -146,8 +146,8 @@ async function submit() {
         }}
       </button>
     </template>
-    <p v-if="error" role="alert" class="account-error">{{ error }}</p>
-    <p v-if="message" role="status">{{ message }}</p>
+    <AppFeedback v-if="error" :message="error" />
+    <AppFeedback :message="message" kind="success" />
   </section>
 </template>
 

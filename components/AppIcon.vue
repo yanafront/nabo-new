@@ -34,6 +34,8 @@ import {
   ListPlus,
   Wallet,
   History,
+  Info,
+  CircleAlert,
 } from "lucide-vue-next";
 const props = defineProps<{ name: string; size?: number }>();
 const icons: Record<string, any> = {
@@ -71,6 +73,8 @@ const icons: Record<string, any> = {
   ListPlus,
   Wallet,
   History,
+  Info,
+  CircleAlert,
 };
 </script>
 <template>

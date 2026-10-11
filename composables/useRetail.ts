@@ -45,7 +45,7 @@ export function useRetail() {
       const items = app.$cartSync.comparisonItems();
       if (!items) {
         error.value =
-          "Для сравнения нужна сохранённая корзина. Войдите в аккаунт или повторите сохранение корзины.";
+          "Не удалось подготовить корзину для сравнения. Повторите попытку.";
         return;
       }
       if (!items.length) return;

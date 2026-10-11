@@ -40,8 +40,6 @@ export function useBasket() {
     const success = await cartSync.mutate(change);
     if (!success) {
       notice.value = cartSync.error.value;
-      if (cartSync.state.value === "guest")
-        await navigateTo({ path: "/account", query: { returnTo: "/basket" } });
     }
     return success;
   }

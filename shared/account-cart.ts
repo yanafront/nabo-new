@@ -81,7 +81,7 @@ export function restoredCartItems(items: AccountCartItem[]): Item[] {
   );
 }
 
-/** Comparison inputs come exclusively from a successfully loaded account cart. */
+/** Build comparison input from selected products saved in the account or guest session. */
 export function savedCartCompareItems(items: AccountCartItem[]): CompareItem[] {
   return items.map((item) => ({
     id: `${item.storeId}:${item.id}`,

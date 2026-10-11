@@ -88,7 +88,7 @@ onBeforeUnmount(() => controller?.abort());
       <span class="spinner" /> Загружаем товары…
     </div>
     <div v-else-if="error" class="catalog-error">
-      <p class="error" role="alert">{{ error }}</p>
+      <AppFeedback :message="error" action-label="Повторить" @action="search()" />
       <button class="secondary" @click="search()">Повторить</button>
     </div>
     <template v-else>

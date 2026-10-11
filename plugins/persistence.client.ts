@@ -1,3 +1,4 @@
+import { guestCartKey, parseGuestCart } from "~/shared/guest-cart";
 import { createCartSync } from "~/shared/cart-sync";
 import { accountCartItems, savedCartCompareItems } from "~/shared/account-cart";
 import { products, type Item } from "~/data/catalog";
@@ -10,7 +11,38 @@ export default defineNuxtPlugin(() => {
     "guest" | "loading" | "saving" | "updating" | "saved" | "error"
   >("cart-sync-state", () => "loading");
   const syncError = useState("cart-sync-error", () => "");
+  let restoringGuest = false;
+  let guestSnapshot: import("~/shared/guest-cart").GuestCart | null = null;
+  const persistGuest = (rows = items.value) => {
+    guestSnapshot = {
+      items: rows,
+      title: !rows.length && !cartSync.isGuest() ? "Моя корзина" : title.value,
+      unresolved: !rows.length && !cartSync.isGuest() ? [] : unresolved.value,
+      pendingIngredients:
+        !rows.length && !cartSync.isGuest() ? [] : pendingIngredients.value,
+    };
+    try {
+      sessionStorage.setItem(guestCartKey, JSON.stringify(guestSnapshot));
+    } catch {
+      notice.value =
+        "Хранилище сессии недоступно. Корзина доступна до обновления страницы.";
+    }
+  };
   const cartSync = createCartSync({
+    readGuest: () => {
+      try {
+        guestSnapshot = parseGuestCart(sessionStorage.getItem(guestCartKey));
+      } catch {
+        /* Keep the in-memory session when storage is unavailable. */
+      }
+      restoringGuest = true;
+      title.value = guestSnapshot?.title || "Моя корзина";
+      unresolved.value = guestSnapshot?.unresolved || [];
+      pendingIngredients.value = guestSnapshot?.pendingIngredients || [];
+      restoringGuest = false;
+      return guestSnapshot?.items || [];
+    },
+    writeGuest: persistGuest,
     read: () => items.value,
     write: (rows) => {
       items.value = rows;
@@ -124,6 +156,7 @@ export default defineNuxtPlugin(() => {
     const stop = watch(
       [items, title, saved, location, unresolved, pendingIngredients],
       () => {
+        if (cartSync.isGuest() && !restoringGuest) persistGuest();
         dirty = true;
         clearTimeout(saveTimer);
         saveTimer = setTimeout(persist, 150);

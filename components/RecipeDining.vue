@@ -265,8 +265,8 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 28px 32px;
   margin: 0;
-  padding: 24px 0 0;
-  border-top: 1px solid var(--line);
+  padding: 0;
+  border: 0;
 }
 .cook-content {
   grid-column: 1 / -1;
@@ -276,12 +276,20 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 .dining-content {
   min-width: 0;
 }
+.cook-summary,
 .dining-heading {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 6px 16px;
+  background: #f6f7f9;
+  padding: 18px 20px;
+  border-radius: 16px;
+}
+.cook-summary :deep(h2),
+.dining-heading h2 {
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.dining-heading {
+  display: block;
 }
 .dining-heading h2 a {
   color: inherit;
@@ -307,13 +315,13 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 }
 .dining-heading h2 {
   margin: 0;
-  font-size: 21px;
+  font-size: 17px;
 }
 .dining-from {
   display: block;
-  margin: 0;
+  margin: 8px 0 6px;
   padding: 0;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1.2;
   background: none;
   border-radius: 0;
@@ -379,19 +387,25 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 @media (max-width: 700px) {
   .recipe-dining {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 24px 20px;
-    padding-top: 20px;
+    gap: 24px 12px;
+    padding-top: 0;
   }
   .cook-summary :deep(h2),
   .dining-heading h2 {
-    font-size: 16px;
+    font-size: 15px;
+    min-height: 2.6em;
+  }
+  .cook-summary,
+  .dining-heading {
+    padding: 14px 12px;
+    border-radius: 12px;
   }
   .dining-heading {
     display: block;
   }
   .dining-from {
-    font-size: 21px;
-    margin: 6px 0 4px;
+    font-size: 18px;
+    margin: 8px 0 6px;
   }
   .dining-subtitle {
     font-size: 11px;

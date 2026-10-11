@@ -124,7 +124,7 @@ test("restaurant offers show portions, prices and external links without changin
   const cookSummary = await block.locator(".cook-summary").boundingBox();
   const diningSummary = await block.locator(".dining-heading").boundingBox();
   expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
-  await expect(block.getByText("Цена продуктов — после подбора")).toBeVisible();
+  await expect(block.getByText("После подбора")).toBeVisible();
   await expect(
     page.getByRole("button", {
       name: "Добавить ингредиенты в корзину",

@@ -131,11 +131,10 @@ onBeforeUnmount(() => {
       <RecipeDining :title="recipe.title">
         <template #cook-summary>
           <h2>Приготовить дома</h2>
-          <span class="cook-price">Цена продуктов — после подбора</span>
+          <strong class="cook-price">После подбора</strong>
           <p class="muted">
-            Продукты на
-            {{ quantityLabel(servings, "порцию", "порции", "порций") }} · целые
-            упаковки
+            Цена в корзине ·
+            {{ quantityLabel(servings, "порция", "порции", "порций") }}
           </p>
         </template>
         <template #cook-content>
@@ -367,14 +366,16 @@ h2 {
 }
 .cook-price {
   display: block;
-  font-size: 14px;
-  color: var(--muted);
-  margin-top: 6px;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 8px 0 6px;
 }
 .cook-price + p {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
+  line-height: 1.5;
 }
 .recipe-body {
   display: grid;
@@ -568,7 +569,7 @@ h2 {
     margin-top: 8px;
   }
   .cook-price {
-    font-size: 12px;
+    font-size: 18px;
   }
   .cook-price + p {
     font-size: 11px;

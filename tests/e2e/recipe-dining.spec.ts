@@ -119,7 +119,33 @@ test("restaurant offers show portions, prices and external links without changin
     .evaluate(
       (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
     );
-  expect(columns).toBe(test.info().project.name === "mobile" ? 2 : 4);
+  expect(columns).toBe(2);
+  const cookSummary = await block.locator(".cook-summary").boundingBox();
+  const diningSummary = await block.locator(".dining-heading").boundingBox();
+  expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
+  await expect(block.getByText("Стоимость — в корзине")).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Добавить ингредиенты в корзину",
+      exact: true,
+    }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", {
+      name: "Добавить ингредиенты в корзину",
+      exact: true,
+    }),
+  ).toBeInViewport();
+  await expect(
+    block.getByRole("link", { name: "Заказать готовое", exact: true }),
+  ).toHaveAttribute("href", "#recipe-ready-offers");
+  const cover = await page.locator(".recipe-cover").boundingBox();
+  const image = await page.locator(".recipe-cover img").boundingBox();
+  expect(Math.abs(cover!.height - image!.height)).toBeLessThan(1);
+  await page.screenshot({
+    path: `/tmp/nabo-recipe-after-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   await block.screenshot({
     path: `/tmp/nabo-dining-${test.info().project.name}.png`,
   });

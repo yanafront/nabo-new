@@ -13,6 +13,15 @@ test("restaurant offers show portions, prices and external links without changin
   page,
 }) => {
   let requests = 0;
+  await page.route("https://cdn.delivio.by/test-*.jpg", (route) => {
+    if (route.request().url().includes("broken"))
+      return route.fulfill({ status: 404 });
+    const height = route.request().url().includes("tall") ? 600 : 50;
+    return route.fulfill({
+      contentType: "image/svg+xml",
+      body: `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="${height}"><rect width="200" height="${height}" fill="#f1e4d2"/></svg>`,
+    });
+  });
   await page.route("**/api/dining/search?*", (route) => {
     requests++;
     expect(new URL(route.request().url()).searchParams.get("q")).toBe(
@@ -22,6 +31,7 @@ test("restaurant offers show portions, prices and external links without changin
       json: {
         offers: [
           {
+            image: "https://cdn.delivio.by/test-wide.jpg",
             id: "1",
             name: "Сырники",
             restaurant: "Кафе",
@@ -29,6 +39,35 @@ test("restaurant offers show portions, prices and external links without changin
             portion: "180 г",
             available: true,
             url: "https://delivio.by/restaurant/cafe",
+          },
+          {
+            id: "2",
+            name: "Сырники с ягодами, сметаной и очень длинным названием",
+            restaurant: "Кафе с длинным названием на улице Победителей",
+            price: 12,
+            portion: "250 г",
+            available: true,
+            url: "https://delivio.by/restaurant/second",
+            image: "https://cdn.delivio.by/test-tall.jpg",
+          },
+          {
+            id: "3",
+            name: "Сырники",
+            restaurant: "Без фото",
+            price: 14,
+            portion: "200 г",
+            available: true,
+            url: "https://delivio.by/restaurant/third",
+            image: "https://cdn.delivio.by/test-broken.jpg",
+          },
+          {
+            id: "4",
+            name: "Сырники с джемом",
+            restaurant: "Завтраки",
+            price: 15,
+            portion: "210 г",
+            available: false,
+            url: "https://delivio.by/restaurant/fourth",
           },
         ],
         searchUrl: "https://delivio.by/search?type=1&q=сырники",
@@ -46,7 +85,8 @@ test("restaurant offers show portions, prices and external links without changin
   if (await cookies.isVisible()) await cookies.click();
   const block = page.locator(".recipe-dining");
   await expect(block.getByText("от 9,00 BYN")).toBeVisible();
-  await expect(block.getByText("Кафе · 180 г")).toBeVisible();
+  await expect(block.getByText("Кафе", { exact: true }).first()).toBeVisible();
+  await expect(block.getByText("180 г", { exact: true }).first()).toBeVisible();
   await expect(
     block.getByRole("link", { name: "Открыть Кафе в Delivio" }),
   ).toHaveAttribute("href", "https://delivio.by/restaurant/cafe");
@@ -60,6 +100,26 @@ test("restaurant offers show portions, prices and external links without changin
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  await expect(block.locator(".dining-card")).toHaveCount(4);
+  await expect(block.locator(".dining-image-placeholder")).toHaveCount(2);
+  const dimensions = await block
+    .locator(".dining-image")
+    .evaluateAll((elements) =>
+      elements.map((el) => ({
+        width: el.getBoundingClientRect().width,
+        height: el.getBoundingClientRect().height,
+      })),
+    );
+  expect(
+    Math.max(...dimensions.map((d) => d.height)) -
+      Math.min(...dimensions.map((d) => d.height)),
+  ).toBeLessThan(1);
+  const columns = await block
+    .locator(".dining-offers")
+    .evaluate(
+      (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+    );
+  expect(columns).toBe(test.info().project.name === "mobile" ? 2 : 4);
   await block.screenshot({
     path: `/tmp/nabo-dining-${test.info().project.name}.png`,
   });

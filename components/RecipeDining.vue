@@ -29,8 +29,15 @@ const cheapest = computed(() =>
 );
 const searchUrl = computed(() => delivioSearchUrl(props.title));
 const expanded = ref(false);
-watch(key, () => (expanded.value = false));
-const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 3));
+const failedImages = ref(new Set<string>());
+function imageFailed(id: string) {
+  failedImages.value = new Set([...failedImages.value, id]);
+}
+watch(key, () => {
+  expanded.value = false;
+  failedImages.value = new Set();
+});
+const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 </script>
 <template>
   <section class="recipe-dining panel" aria-labelledby="recipe-dining-title">
@@ -61,32 +68,53 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 3));
     </p>
     <ul v-else class="dining-offers">
       <li v-for="offer in shown" :key="offer.id">
-        <div class="dining-description">
-          <strong>{{ offer.name }}</strong
-          ><span class="muted"
-            >{{ offer.restaurant
-            }}<template v-if="offer.portion">
-              · {{ offer.portion }}</template
-            ></span
-          ><small v-if="!offer.available" class="muted"
-            >Сейчас недоступно для заказа</small
-          >
-        </div>
-        <div class="dining-price">
-          <strong>{{ money(offer.price) }} BYN</strong
-          ><a
-            :href="offer.url"
-            target="_blank"
-            rel="noopener noreferrer"
-            :aria-label="`Открыть ${offer.restaurant} в Delivio`"
-            >В Delivio <AppIcon name="ExternalLink" :size="14"
-          /></a>
-        </div>
+        <a
+          class="dining-card"
+          :class="{ 'is-unavailable': !offer.available }"
+          :href="offer.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          :aria-label="`Открыть ${offer.restaurant} в Delivio`"
+          :title="`${offer.name} · ${offer.restaurant}`"
+        >
+          <div class="dining-image">
+            <img
+              v-if="offer.image && !failedImages.has(offer.id)"
+              :src="offer.image"
+              :alt="offer.name"
+              loading="lazy"
+              decoding="async"
+              referrerpolicy="no-referrer"
+              @error="imageFailed(offer.id)"
+            />
+            <div
+              v-else
+              class="dining-image-placeholder"
+              aria-label="Фото блюда отсутствует"
+            >
+              <AppIcon name="Utensils" :size="28" />
+            </div>
+            <span v-if="!offer.available" class="dining-unavailable"
+              >Сейчас недоступно</span
+            >
+          </div>
+          <div class="dining-card-body">
+            <strong class="dining-name">{{ offer.name }}</strong>
+            <span class="dining-restaurant muted">{{ offer.restaurant }}</span>
+            <span class="dining-portion muted">{{
+              offer.portion || "Порция заведения"
+            }}</span>
+            <div class="dining-price">
+              <strong>{{ money(offer.price) }} BYN</strong
+              ><AppIcon name="ExternalLink" :size="15" />
+            </div>
+          </div>
+        </a>
       </li>
     </ul>
     <div class="dining-footer">
       <button
-        v-if="offers.length > 3 && !expanded"
+        v-if="offers.length > 4 && !expanded"
         class="text-button"
         @click="expanded = true"
       >
@@ -143,47 +171,129 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 3));
   font-size: 14px;
 }
 .dining-offers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
   list-style: none;
   padding: 0;
-  margin: 16px 0 0;
+  margin: 18px 0 0;
 }
 .dining-offers li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 16px;
-  padding: 13px 0;
-  border-top: 1px solid var(--line);
-}
-.dining-description {
-  display: grid;
-  gap: 5px;
   min-width: 0;
-  overflow-wrap: anywhere;
 }
-.dining-description strong {
+.dining-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.dining-card:hover {
+  border-color: var(--brand-hover);
+  box-shadow: 0 4px 16px #0f0f100c;
+}
+.dining-card:focus-visible {
+  outline: 2px solid var(--brand-hover);
+  outline-offset: 3px;
+}
+.dining-image {
+  position: relative;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f6f7f8;
+}
+.dining-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dining-image-placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--muted);
+}
+.dining-unavailable {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  width: fit-content;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: #fffffff0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+.is-unavailable .dining-image img {
+  opacity: 0.65;
+}
+.dining-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+}
+.dining-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.4;
+  min-height: 2.8em;
 }
-.dining-description span,
-.dining-description small {
+.dining-restaurant {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12px;
+  line-height: 1.4;
+}
+.dining-portion {
+  font-size: 11px;
   line-height: 1.4;
 }
 .dining-price {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
-  font-size: 14px;
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 15px;
   white-space: nowrap;
 }
-.dining-price a,
+.dining-price svg {
+  color: var(--link, #2f6bff);
+  flex-shrink: 0;
+}
 .dining-footer a {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   font-size: 12px;
   color: var(--link, #2f6bff);
+}
+@media (max-width: 1000px) {
+  .dining-offers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .dining-footer {
   display: flex;
@@ -222,8 +332,14 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 3));
     font-size: 16px;
     padding: 6px 10px;
   }
-  .dining-offers li {
+  .dining-offers {
     gap: 10px;
+  }
+  .dining-card-body {
+    padding: 10px;
+  }
+  .dining-name {
+    font-size: 13px;
   }
   .dining-price {
     font-size: 13px;

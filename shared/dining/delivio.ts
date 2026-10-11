@@ -1,6 +1,7 @@
 export interface DiningOffer {
   id: string;
   name: string;
+  image?: string;
   restaurant: string;
   price: number;
   portion: string;
@@ -15,6 +16,22 @@ export interface DiningResult {
 }
 export function delivioSearchUrl(query: string) {
   return `https://delivio.by/search?type=1&q=${encodeURIComponent(query)}`;
+}
+export function delivioImage(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return;
+  try {
+    const url = new URL(value, "https://cdn.delivio.by");
+    if (
+      url.protocol === "https:" &&
+      ["cdn.delivio.by", "delivio.by"].includes(url.hostname) &&
+      !url.username &&
+      !url.password &&
+      !url.port
+    )
+      return url.href;
+  } catch {
+    /* Missing or malformed source image: show a placeholder. */
+  }
 }
 export function delivioOffers(rows: unknown, ids: number[]): DiningOffer[] {
   if (!Array.isArray(rows)) throw new Error("Invalid Delivio foods");
@@ -45,6 +62,10 @@ export function delivioOffers(rows: unknown, ids: number[]): DiningOffer[] {
         {
           id,
           name: food.name,
+          image:
+            delivioImage(food.pictureSmall) ||
+            delivioImage(food.pictureThumb) ||
+            delivioImage(food.picture),
           restaurant: restaurant.name,
           price: food.price,
           portion:

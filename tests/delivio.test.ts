@@ -1,5 +1,5 @@
 import { expect, it, vi, afterEach } from "vitest";
-import { delivioOffers } from "../shared/dining/delivio";
+import { delivioOffers, delivioImage } from "../shared/dining/delivio";
 import { searchDelivio } from "../server/utils/delivio";
 const food = (id: number, price: number, open = true) => ({
   id,
@@ -80,4 +80,28 @@ it("rejects unexpected source format without caching a failure", async () => {
     [],
   );
   expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it("uses Delivio photos only and prefers a card-sized source image", () => {
+  expect(delivioImage("/uploads/img/food/photo.jpg")).toBe(
+    "https://cdn.delivio.by/uploads/img/food/photo.jpg",
+  );
+  expect(delivioImage("https://cdn.delivio.by/photo.jpg")).toBe(
+    "https://cdn.delivio.by/photo.jpg",
+  );
+  for (const value of [
+    null,
+    "",
+    "javascript:alert(1)",
+    "https://example.com/photo.jpg",
+    "//evil.test/photo.jpg",
+    "http://delivio.by/photo.jpg",
+  ])
+    expect(delivioImage(value)).toBeUndefined();
+  expect(
+    delivioOffers(
+      [{ ...food(1, 9), pictureSmall: "/small.jpg", picture: "/full.jpg" }],
+      [1],
+    )[0].image,
+  ).toBe("https://cdn.delivio.by/small.jpg");
 });

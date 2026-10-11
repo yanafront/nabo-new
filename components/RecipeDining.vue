@@ -279,12 +279,12 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 .cook-summary,
 .dining-heading {
   background: #f6f7f9;
-  padding: 18px 20px;
-  border-radius: 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
 }
 .cook-summary :deep(h2),
 .dining-heading h2 {
-  font-size: 17px;
+  font-size: 14px;
   line-height: 1.3;
   font-weight: 600;
 }
@@ -315,13 +315,13 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 }
 .dining-heading h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: 14px;
 }
 .dining-from {
   display: block;
-  margin: 8px 0 6px;
+  margin: 6px 0 4px;
   padding: 0;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.2;
   background: none;
   border-radius: 0;
@@ -392,12 +392,11 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   }
   .cook-summary :deep(h2),
   .dining-heading h2 {
-    font-size: 15px;
-    min-height: 2.6em;
+    font-size: 14px;
   }
   .cook-summary,
   .dining-heading {
-    padding: 14px 12px;
+    padding: 12px;
     border-radius: 12px;
   }
   .dining-heading {
@@ -405,7 +404,7 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   }
   .dining-from {
     font-size: 18px;
-    margin: 8px 0 6px;
+    margin: 6px 0 4px;
   }
   .dining-subtitle {
     font-size: 11px;
@@ -423,6 +422,12 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
   }
   .dining-price {
     font-size: 16px;
+  }
+}
+@media (max-width: 360px) {
+  .cook-summary :deep(h2),
+  .dining-heading h2 {
+    min-height: 2.6em;
   }
 }
 </style>

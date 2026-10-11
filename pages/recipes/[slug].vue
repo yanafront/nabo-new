@@ -366,10 +366,10 @@ h2 {
 }
 .cook-price {
   display: block;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.2;
   color: var(--ink);
-  margin: 8px 0 6px;
+  margin: 6px 0 4px;
 }
 .cook-price + p {
   margin: 0;
@@ -491,17 +491,38 @@ h2 {
 .recipe-instructions li {
   counter-increment: steps;
   position: relative;
-  padding-left: 38px;
-  margin: 0 0 24px;
+  padding: 3px 0 24px 48px;
+  margin: 0;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 .recipe-instructions li::before {
-  content: counter(steps, decimal-leading-zero);
+  content: counter(steps);
   position: absolute;
   left: 0;
   top: 0;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+.recipe-instructions li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 15.5px;
+  top: 38px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--line);
+}
+.recipe-instructions li:last-child {
+  padding-bottom: 0;
 }
 .recipe-source {
   margin-top: 24px;
@@ -587,8 +608,9 @@ h2 {
     margin-bottom: 20px;
   }
   .recipe-instructions li {
-    padding-left: 34px;
-    margin-bottom: 20px;
+    padding-left: 44px;
+    padding-bottom: 20px;
+    margin: 0;
   }
   .ingredient-line .checkbox {
     font-size: 12px;

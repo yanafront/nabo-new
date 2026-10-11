@@ -357,18 +357,36 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
 }
 @media (max-width: 700px) {
   .recipe-dining {
-    gap: 20px 20px;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
     padding-top: 20px;
+  }
+  .cook-summary,
+  .dining-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    align-items: baseline;
+  }
+  .cook-summary :deep(h2),
+  .dining-heading h2 {
+    font-size: 17px;
+  }
+  .dining-heading {
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
   }
   .dining-heading h2 {
     font-size: 17px;
   }
   .dining-from {
-    font-size: 23px;
-    margin-top: 8px;
+    font-size: 20px;
+    margin: 0;
   }
   .dining-subtitle {
-    font-size: 11px;
+    grid-column: 1 / -1;
+    font-size: 12px;
+    margin-top: 0;
   }
   .cook-content,
   .dining-content {

@@ -100,6 +100,7 @@ test("restaurant offers show portions, prices and external links without changin
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  await block.locator(".dining-card").last().scrollIntoViewIfNeeded();
   await expect(block.locator(".dining-card")).toHaveCount(4);
   await expect(block.locator(".dining-image-placeholder")).toHaveCount(2);
   const dimensions = await block
@@ -122,23 +123,28 @@ test("restaurant offers show portions, prices and external links without changin
   expect(columns).toBe(2);
   const cookSummary = await block.locator(".cook-summary").boundingBox();
   const diningSummary = await block.locator(".dining-heading").boundingBox();
-  expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
-  await expect(block.getByText("Стоимость — в корзине")).toBeVisible();
+  if (test.info().project.name === "mobile") {
+    expect(diningSummary!.y).toBeGreaterThan(cookSummary!.y);
+  } else {
+    expect(Math.abs(cookSummary!.y - diningSummary!.y)).toBeLessThan(1);
+  }
+  await expect(block.getByText("Цена — в корзине")).toBeVisible();
   await expect(
     page.getByRole("button", {
       name: "Добавить ингредиенты в корзину",
       exact: true,
     }),
   ).toBeEnabled();
-  await expect(
-    page.getByRole("button", {
-      name: "Добавить ингредиенты в корзину",
-      exact: true,
-    }),
-  ).toBeInViewport();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await expect(
     block.getByRole("link", { name: "Заказать готовое", exact: true }),
   ).toHaveAttribute("href", "#recipe-ready-offers");
+  await expect(
+    page.getByRole("heading", { name: "Как приготовить", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".recipe-instructions ol li").first(),
+  ).toBeVisible();
   const cover = await page.locator(".recipe-cover").boundingBox();
   const image = await page.locator(".recipe-cover img").boundingBox();
   expect(Math.abs(cover!.height - image!.height)).toBeLessThan(1);

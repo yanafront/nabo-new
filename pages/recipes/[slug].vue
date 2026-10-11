@@ -134,7 +134,7 @@ onBeforeUnmount(() => {
       <RecipeDining :title="recipe.title">
         <template #cook-summary>
           <h2>Приготовить дома</h2>
-          <strong class="cook-price">Стоимость — в корзине</strong>
+          <strong class="cook-price">Цена — в корзине</strong>
           <p class="muted">
             Продукты на
             {{ quantityLabel(servings, "порцию", "порции", "порций") }} · целые
@@ -242,29 +242,37 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </section>
-          <details class="recipe-instructions">
-            <summary>Приготовление и источник</summary>
+          <section
+            class="recipe-instructions"
+            aria-labelledby="recipe-steps-title"
+          >
+            <h2 id="recipe-steps-title">Как приготовить</h2>
             <ol v-if="recipe.instructions?.length">
               <li v-for="(step, n) in recipe.instructions" :key="n">
                 {{ step.text }}
               </li>
             </ol>
             <p v-else>Шаги приготовления не переданы источником.</p>
-            <p class="muted">
-              Источник данных:
-              <a
-                v-if="recipe.sourceUrl"
-                :href="recipe.sourceUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                >{{ recipe.source }}</a
-              ><span v-else>{{ recipe.source }}</span>
-              <template v-if="recipe.license"> · {{ recipe.license }}</template>
-            </p>
-            <small v-if="recipe.imageAttribution"
-              >Фото: {{ recipe.imageAttribution }}</small
-            >
-          </details>
+            <details class="recipe-source">
+              <summary>Источник и фото</summary>
+              <p class="muted">
+                Источник данных:
+                <a
+                  v-if="recipe.sourceUrl"
+                  :href="recipe.sourceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >{{ recipe.source }}</a
+                ><span v-else>{{ recipe.source }}</span>
+                <template v-if="recipe.license">
+                  · {{ recipe.license }}</template
+                >
+              </p>
+              <small v-if="recipe.imageAttribution"
+                >Фото: {{ recipe.imageAttribution }}</small
+              >
+            </details>
+          </section>
           <p v-if="items.length" class="muted basket-context">
             В корзине уже есть товары. Добавим продукты этого блюда к ним.
           </p>
@@ -420,8 +428,20 @@ h2 {
   font-size: 14px;
   line-height: 1.6;
 }
-.recipe-instructions summary {
-  font-weight: 600;
+.recipe-instructions h2 {
+  font-size: 21px;
+  margin-bottom: 16px;
+}
+.recipe-instructions li {
+  margin-bottom: 14px;
+  padding-left: 6px;
+}
+.recipe-source {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.recipe-source summary {
   cursor: pointer;
 }
 .recipe-instructions ol {
@@ -435,42 +455,39 @@ h2 {
 }
 @media (max-width: 700px) {
   .recipe-detail-hero {
-    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
-    align-items: start;
     margin-bottom: 24px;
   }
   .recipe-cover {
+    aspect-ratio: 2 / 1;
+    max-height: 190px;
     border-radius: 16px;
   }
   .recipe-detail-hero h1 {
-    font-size: 26px;
-    line-height: 1.15;
+    font-size: 28px;
+    line-height: 1.2;
   }
   .recipe-detail-hero p {
-    font-size: 13px;
+    font-size: 14px;
   }
   .recipe-facts {
-    font-size: 11px;
-    gap: 8px;
+    font-size: 12px;
+    gap: 12px;
     margin: 12px 0;
   }
-  .recipe-detail-hero :deep(.recipe-nutrition) {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
   .recipe-detail-hero .nutrition-caption {
-    font-size: 10px;
-  }
-  h2 {
-    font-size: 17px;
+    font-size: 11px;
   }
   .cook-price {
-    font-size: 19px;
-    margin-top: 8px;
+    font-size: 17px;
+    margin: 0;
+    text-align: right;
   }
   .cook-price + p {
-    font-size: 11px;
+    grid-column: 1 / -1;
+    font-size: 12px;
+    margin-top: 4px;
   }
   .recipe-purchase {
     margin-bottom: 20px;
@@ -480,20 +497,14 @@ h2 {
     gap: 4px;
   }
   .ingredient-line strong {
-    font-size: 13px;
+    font-size: 14px;
   }
   .ingredient-line .checkbox {
-    font-size: 11px;
-    gap: 5px;
+    font-size: 12px;
+    gap: 6px;
   }
-}
-@media (max-width: 360px) {
-  .recipe-detail-hero {
-    grid-template-columns: 80px minmax(0, 1fr);
-    gap: 12px;
-  }
-  .cook-price {
-    font-size: 17px;
+  .recipe-instructions {
+    font-size: 14px;
   }
 }
 </style>

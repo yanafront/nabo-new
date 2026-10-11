@@ -1,9 +1,10 @@
 <script setup lang="ts">
-const props = defineProps<{ title: string }>();
+const props = defineProps<{ title: string; variant?: "drawer" }>();
 const emit = defineEmits<{ close: [] }>();
 const dialog = ref<HTMLDialogElement>();
 let previous: HTMLElement | null = null;
 let pressedOutside = false;
+let previousOverflow = "";
 function outsideDialog(event: MouseEvent) {
   const bounds = dialog.value?.getBoundingClientRect();
   return (
@@ -30,14 +31,24 @@ function closeFromBackdrop(event: MouseEvent) {
 }
 onMounted(() => {
   previous = document.activeElement as HTMLElement;
+  if (props.variant === "drawer") {
+    previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
   dialog.value?.showModal();
 });
-onBeforeUnmount(() => previous?.focus());
+onBeforeUnmount(() => {
+  dialog.value?.close();
+  if (props.variant === "drawer")
+    document.body.style.overflow = previousOverflow;
+  previous?.focus();
+});
 </script>
 <template>
   <dialog
     ref="dialog"
     class="modal"
+    :class="{ 'modal-drawer': variant === 'drawer' }"
     aria-labelledby="modal-title"
     @cancel.prevent="emit('close')"
     @pointerdown.capture="startPointer"
@@ -58,3 +69,53 @@ onBeforeUnmount(() => previous?.focus());
     <slot name="footer" />
   </dialog>
 </template>
+
+<style scoped>
+.modal.modal-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  width: min(480px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0;
+  border: 0;
+  border-radius: 20px 0 0 20px;
+  overflow: hidden;
+}
+.modal-drawer[open] {
+  display: flex;
+  flex-direction: column;
+  animation: drawer-enter 0.2s ease-out;
+}
+.modal-drawer .modal-head {
+  top: 0;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.modal-drawer .modal-head h2 {
+  font-size: 22px;
+}
+@keyframes drawer-enter {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@media (max-width: 600px) {
+  .modal.modal-drawer {
+    width: 100vw;
+    border-radius: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-drawer[open] {
+    animation: none;
+  }
+}
+</style>

@@ -24,6 +24,11 @@ const servings = ref(
 );
 const excluded = ref<string[]>([]);
 const imageFailed = ref(false);
+const ingredientsOpen = ref(false);
+function closeIngredients() {
+  if (resolving.value) controller?.abort();
+  ingredientsOpen.value = false;
+}
 const { resolve, resolving, resolveError } = useRecipeBasket();
 const { items } = useBasket();
 resolveError.value = "";
@@ -126,6 +131,14 @@ onBeforeUnmount(() => {
                 : "Для этого рецепта пищевая ценность пока не указана."
             }}
           </p>
+          <div class="recipe-actions">
+            <button class="primary" @click="ingredientsOpen = true">
+              <AppIcon name="ShoppingBasket" :size="18" />Собрать корзину
+            </button>
+            <a class="recipe-steps-link" href="#recipe-steps-title"
+              >Как приготовить <AppIcon name="ChevronDown" :size="16"
+            /></a>
+          </div>
         </div>
       </div>
       <RecipeDining :title="recipe.title">
@@ -139,113 +152,37 @@ onBeforeUnmount(() => {
         </template>
         <template #cook-content>
           <div class="recipe-body">
-            <div class="recipe-shopping">
-              <section class="recipe-ingredients">
-                <div class="section-head">
-                  <h2>Ингредиенты</h2>
-                  <div class="serving-control">
-                    <button
-                      aria-label="Уменьшить порции"
-                      :disabled="servings <= 1 || resolving"
-                      @click="servings--"
-                    >
-                      <AppIcon name="Minus" :size="18" /></button
-                    ><output aria-live="polite">{{ servings }} порц.</output
-                    ><button
-                      aria-label="Увеличить порции"
-                      :disabled="servings >= 30 || resolving"
-                      @click="servings++"
-                    >
-                      <AppIcon name="Plus" :size="18" />
-                    </button>
-                  </div>
-                </div>
-                <p class="muted ingredient-help">
-                  Отметьте продукты, которые уже есть дома.
-                </p>
-                <div
-                  v-for="group in [
-                    { title: 'Основные', rows: main },
-                    { title: 'Проверьте, есть ли дома', rows: pantry },
-                  ]"
-                  :key="group.title"
-                  class="ingredient-group"
-                >
-                  <h3 v-if="group.rows.length">{{ group.title }}</h3>
-                  <div
-                    v-for="row in group.rows"
-                    :key="row.key"
-                    class="ingredient-line"
-                    :class="{ excluded: excluded.includes(row.key) }"
-                  >
-                    <div>
-                      <strong>{{ row.i.name }}</strong
-                      ><span>{{ ingredientAmount(row.i) }}</span
-                      ><small v-if="row.i.optional">По желанию</small>
-                    </div>
-                    <label class="checkbox"
-                      ><input
-                        v-model="excluded"
-                        type="checkbox"
-                        :value="row.key"
-                        :disabled="resolving"
-                      />{{
-                        row.entry?.pantry ? "У меня уже есть" : "Не покупать"
-                      }}</label
-                    >
-                  </div>
-                </div>
-              </section>
-              <div class="recipe-purchase">
-                <div>
-                  <strong
-                    >{{
-                      quantityLabel(
-                        request?.items.length || 0,
-                        "продукт",
-                        "продукта",
-                        "продуктов",
-                      )
-                    }}
-                    к покупке</strong
-                  ><small
-                    ><span v-if="excluded.length"
-                      >{{ excluded.length }} не покупаем</span
-                    ></small
-                  >
-                </div>
-                <button
-                  class="primary"
-                  :disabled="resolving || !request?.items.length"
-                  @click="build"
-                >
-                  {{
-                    resolving
-                      ? "Подбираем товары…"
-                      : items.length
-                        ? "Добавить ингредиенты"
-                        : "Добавить ингредиенты в корзину"
-                  }}<AppIcon
-                    v-if="!resolving"
-                    name="ArrowRight"
-                    :size="18"
-                  /></button
-                ><button
-                  v-if="resolving"
-                  class="text-button"
-                  @click="controller?.abort()"
-                >
-                  Отменить
+            <section
+              class="recipe-composition"
+              aria-labelledby="recipe-composition-title"
+            >
+              <div class="composition-head">
+                <h2 id="recipe-composition-title">Ингредиенты</h2>
+                <button class="text-button" @click="ingredientsOpen = true">
+                  Изменить
                 </button>
               </div>
-              <p v-if="items.length" class="muted basket-context">
-                В корзине уже есть товары. Добавим продукты этого блюда к ним.
+              <p class="muted composition-servings">
+                На {{ quantityLabel(servings, "порцию", "порции", "порций") }}
               </p>
-              <p class="muted purchase-help">
-                Цены по магазинам покажем в корзине. Покупаем целые упаковки;
-                для ложек и «по вкусу» подберём одну. Количество можно изменить.
-              </p>
-            </div>
+              <ul class="composition-list">
+                <li v-for="row in rows" :key="row.key">
+                  <span
+                    >{{ row.i.name
+                    }}<small v-if="row.i.optional"> · по желанию</small></span
+                  ><span class="muted">{{ ingredientAmount(row.i) }}</span>
+                </li>
+              </ul>
+              <button
+                class="secondary composition-action"
+                @click="ingredientsOpen = true"
+              >
+                Выбрать продукты для корзины<AppIcon
+                  name="ArrowRight"
+                  :size="16"
+                />
+              </button>
+            </section>
             <section
               class="recipe-instructions"
               aria-labelledby="recipe-steps-title"
@@ -280,6 +217,131 @@ onBeforeUnmount(() => {
           </div>
         </template>
       </RecipeDining>
+      <AppModal
+        v-if="ingredientsOpen"
+        title="Продукты для корзины"
+        variant="drawer"
+        @close="closeIngredients"
+      >
+        <div class="ingredients-drawer-body">
+          <section class="recipe-ingredients">
+            <div class="section-head">
+              <h2>Ингредиенты</h2>
+              <div class="serving-control">
+                <button
+                  aria-label="Уменьшить порции"
+                  :disabled="servings <= 1 || resolving"
+                  @click="servings--"
+                >
+                  <AppIcon name="Minus" :size="18" /></button
+                ><output aria-live="polite">{{ servings }} порц.</output
+                ><button
+                  aria-label="Увеличить порции"
+                  :disabled="servings >= 30 || resolving"
+                  @click="servings++"
+                >
+                  <AppIcon name="Plus" :size="18" />
+                </button>
+              </div>
+            </div>
+            <p class="muted ingredient-help">
+              Отметьте продукты, которые уже есть дома.
+            </p>
+            <div
+              v-for="group in [
+                { title: 'Основные', rows: main },
+                { title: 'Проверьте, есть ли дома', rows: pantry },
+              ]"
+              :key="group.title"
+              class="ingredient-group"
+            >
+              <h3 v-if="group.rows.length">{{ group.title }}</h3>
+              <div
+                v-for="row in group.rows"
+                :key="row.key"
+                class="ingredient-line"
+                :class="{ excluded: excluded.includes(row.key) }"
+              >
+                <div>
+                  <strong>{{ row.i.name }}</strong
+                  ><span>{{ ingredientAmount(row.i) }}</span
+                  ><small v-if="row.i.optional">По желанию</small>
+                </div>
+                <label class="checkbox"
+                  ><input
+                    v-model="excluded"
+                    type="checkbox"
+                    :value="row.key"
+                    :disabled="resolving"
+                  />{{
+                    row.entry?.pantry ? "У меня уже есть" : "Не покупать"
+                  }}</label
+                >
+              </div>
+            </div>
+          </section>
+          <p v-if="items.length" class="muted basket-context">
+            В корзине уже есть товары. Добавим продукты этого блюда к ним.
+          </p>
+          <p class="muted purchase-help">
+            Цены по магазинам покажем в корзине. Покупаем целые упаковки; для
+            ложек и «по вкусу» подберём одну. Количество можно изменить.
+          </p>
+        </div>
+        <template #footer>
+          <div class="ingredients-drawer-footer">
+            <p
+              v-if="localError || resolveError"
+              class="drawer-error"
+              role="alert"
+            >
+              {{ localError || resolveError }}
+            </p>
+            <div class="recipe-purchase">
+              <div>
+                <strong
+                  >{{
+                    quantityLabel(
+                      request?.items.length || 0,
+                      "продукт",
+                      "продукта",
+                      "продуктов",
+                    )
+                  }}
+                  к покупке</strong
+                ><small
+                  ><span v-if="excluded.length"
+                    >{{ excluded.length }} не покупаем</span
+                  ></small
+                >
+              </div>
+              <button
+                class="primary"
+                :disabled="resolving || !request?.items.length"
+                @click="build"
+              >
+                {{
+                  resolving
+                    ? "Подбираем товары…"
+                    : items.length
+                      ? "Добавить ингредиенты"
+                      : "Добавить ингредиенты в корзину"
+                }}<AppIcon
+                  v-if="!resolving"
+                  name="ArrowRight"
+                  :size="18"
+                /></button
+              ><button
+                v-if="resolving"
+                class="text-button"
+                @click="controller?.abort()"
+              >
+                Отменить
+              </button>
+            </div>
+          </div>
+        </template>
+      </AppModal>
       <AppFeedback
         v-if="localError || resolveError"
         :message="localError || resolveError"
@@ -379,7 +441,7 @@ h2 {
 }
 .recipe-body {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: minmax(240px, 0.65fr) minmax(0, 1fr);
   gap: 56px;
   align-items: start;
 }
@@ -449,7 +511,7 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 24px;
+  margin: 0;
 }
 .recipe-purchase > div {
   display: flex;
@@ -538,6 +600,114 @@ h2 {
   line-height: 1.5;
   color: var(--muted);
   margin: 12px 0 0;
+}
+.recipe-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 24px;
+}
+.recipe-actions .primary {
+  min-height: 48px;
+  font-size: 14px;
+}
+.recipe-steps-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 14px;
+  text-decoration: none;
+}
+.recipe-steps-link:hover {
+  text-decoration: underline;
+}
+#recipe-steps-title {
+  scroll-margin-top: 100px;
+}
+.composition-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.composition-head .text-button {
+  padding: 0;
+  font-size: 13px;
+}
+.composition-servings {
+  font-size: 12px;
+  margin: 6px 0 16px;
+}
+.composition-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.composition-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.composition-list li > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.composition-list li > span:last-child {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.composition-list small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.composition-action {
+  margin-top: 18px;
+  padding: 12px 16px;
+  font-size: 13px;
+}
+.drawer-error {
+  color: var(--danger);
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+.ingredients-drawer-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  flex: 1;
+  padding: 20px;
+}
+.ingredients-drawer-body .section-head h2 {
+  font-size: 17px;
+}
+.ingredients-drawer-footer {
+  flex-shrink: 0;
+  padding: 16px 20px max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: white;
+}
+@media (max-width: 700px) {
+  .recipe-actions {
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .recipe-actions .primary {
+    flex: 1;
+    justify-content: center;
+  }
+  .recipe-steps-link {
+    font-size: 12px;
+  }
+  .composition-action {
+    width: 100%;
+    justify-content: center;
+  }
 }
 @media (max-width: 900px) {
   .recipe-detail-hero {

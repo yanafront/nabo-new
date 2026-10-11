@@ -141,6 +141,9 @@ test("recipe → saveCart/getCart → comparison from saved cart → clear", asy
     },
   ];
   await page
+    .getByRole("button", { name: "Собрать корзину", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: /Добавить ингредиенты в корзину/ })
     .click();
   await expect(page).toHaveURL(/\/basket$/);

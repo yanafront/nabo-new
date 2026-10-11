@@ -90,9 +90,41 @@ test("restaurant offers show portions, prices and external links without changin
   await expect(
     block.getByRole("link", { name: "Открыть Кафе в Delivio" }),
   ).toHaveAttribute("href", "https://delivio.by/restaurant/cafe");
+  const assemble = page.getByRole("button", {
+    name: "Собрать корзину",
+    exact: true,
+  });
+  await assemble.click();
+  const drawer = page.getByRole("dialog", {
+    name: "Продукты для корзины",
+    exact: true,
+  });
+  await expect(drawer).toBeVisible();
+  await expect(
+    drawer.getByRole("button", {
+      name: "Добавить ингредиенты в корзину",
+      exact: true,
+    }),
+  ).toBeInViewport();
+  await expect
+    .poll(async () => {
+      const bounds = await drawer.boundingBox();
+      return Math.round(bounds!.x + bounds!.width);
+    })
+    .toBe(page.viewportSize()!.width);
+  await drawer.screenshot({
+    path: `/tmp/nabo-ingredients-drawer-${test.info().project.name}.png`,
+  });
   await page
     .getByRole("button", { name: "Увеличить порции", exact: true })
     .click();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toHaveCount(0);
+  await expect(assemble).toBeFocused();
+  await expect(page.locator(".composition-servings")).toHaveText("На 3 порции");
+  await assemble.click();
+  await expect(page.locator(".serving-control output")).toHaveText("3 порц.");
+  await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   expect(requests).toBe(1);
   await expect(block.getByText("от 9,00 BYN")).toBeVisible();
   expect(
@@ -127,7 +159,7 @@ test("restaurant offers show portions, prices and external links without changin
   await expect(block.getByText("После подбора")).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: "Добавить ингредиенты в корзину",
+      name: "Собрать корзину",
       exact: true,
     }),
   ).toBeEnabled();
@@ -172,7 +204,7 @@ test("a source outage leaves the recipe and basket action usable", async ({
   ).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: "Добавить ингредиенты в корзину",
+      name: "Собрать корзину",
       exact: true,
     }),
   ).toBeEnabled();

@@ -159,6 +159,9 @@ test("guest recipe ingredients use retail search and session cart", async ({
     .click();
   await page.locator('a.dish-card[href="/recipes/syrniki"]').first().click();
   await page
+    .getByRole("button", { name: "Собрать корзину", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: /Добавить ингредиенты в корзину/ })
     .click();
   await expect(page).toHaveURL(/\/basket$/);

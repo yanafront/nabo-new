@@ -33,12 +33,7 @@ defineEmits<{
           {{ product.name }}</button
         ><template v-else>{{ product.name }}</template>
       </h3>
-      <p>
-        {{ product.unit
-        }}<template v-if="product.storeId">
-          · <StoreBrand :store-id="product.storeId" size="inline"
-        /></template>
-      </p>
+      <p v-if="product.unit">{{ product.unit }}</p>
       <p v-if="product.refreshStatus === 'not_found'" class="error">
         Нет в наличии
       </p>

@@ -266,14 +266,7 @@ onBeforeUnmount(() => {
         :aria-labelledby="`store-tab-${activeStore}`"
         :aria-busy="pending"
       >
-        <p
-          v-if="!activeGroup && pending && !activeFailed"
-          role="status"
-          class="products-progress"
-        >
-          <span class="spinner" />Ищем во всех магазинах…
-        </p>
-        <div v-else-if="activeFailed" class="empty-state compact">
+        <div v-if="activeFailed" class="empty-state compact">
           <h2>Магазин не ответил</h2>
           <p>Выберите другую вкладку или повторите поиск.</p>
           <button

@@ -254,10 +254,13 @@ async function save(publish: boolean) {
     saving.value = false;
   }
 }
-function confirmDelete() {
-  const target = records.value.find((row) => row.slug === lockedSlug.value);
-  if (target && !saving.value && !uploading.value)
-    deleteTarget.value = { ...target, revision: revision.value };
+function confirmDelete(slug = lockedSlug.value) {
+  const target = records.value.find((row) => row.slug === slug);
+  if (target && !saving.value && !uploading.value && !deleting.value)
+    deleteTarget.value = {
+      ...target,
+      revision: slug === lockedSlug.value ? revision.value : target.revision,
+    };
 }
 async function deleteRecipe() {
   if (!deleteTarget.value || deleting.value) return;
@@ -413,21 +416,31 @@ useHead({
           >Найти рецепт<input
             v-model="filter"
             type="search"
-            placeholder="Название" /></label
-        ><button
-          v-for="r in list"
-          :key="r.slug"
-          class="admin-list-item"
-          :class="{ selected: draft?.recipe.slug === r.slug }"
-          @click="select(r)"
-        >
-          <strong>{{ r.title }}</strong
-          ><small>{{
-            records.find((v) => v.slug === r.slug)
-              ? "Есть редакция"
-              : "Исходный каталог"
-          }}</small>
-        </button>
+            placeholder="Название"
+        /></label>
+        <div v-for="r in list" :key="r.slug" class="admin-recipe-row">
+          <button
+            class="admin-list-item"
+            :class="{ selected: draft?.recipe.slug === r.slug }"
+            @click="select(r)"
+          >
+            <strong>{{ r.title }}</strong
+            ><small>{{
+              records.find((v) => v.slug === r.slug)
+                ? "Есть редакция"
+                : "Исходный каталог"
+            }}</small>
+          </button>
+          <button
+            class="admin-row-delete"
+            type="button"
+            :aria-label="`Удалить рецепт «${r.title}»`"
+            :disabled="saving || uploading || deleting"
+            @click="confirmDelete(r.slug)"
+          >
+            <AppIcon name="Trash2" :size="17" />
+          </button>
+        </div>
       </aside>
       <form
         v-if="draft"
@@ -778,7 +791,7 @@ useHead({
               type="button"
               class="admin-delete text-button"
               :disabled="deleting"
-              @click="confirmDelete"
+              @click="confirmDelete()"
             >
               <AppIcon name="Trash2" :size="16" /> Удалить рецепт
             </button>
@@ -814,7 +827,7 @@ useHead({
         «{{ deleteTarget.document.recipe.title }}» будет удалён из редактора и
         каталога. Восстановить рецепт через сайт не получится.
       </p>
-      <p v-if="dirty" class="muted">
+      <p v-if="dirty && deleteTarget.slug === lockedSlug" class="muted">
         Несохранённые правки этого рецепта тоже будут потеряны.
       </p>
       <template #footer
@@ -836,6 +849,31 @@ useHead({
   </div>
 </template>
 <style scoped>
+.admin-recipe-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.admin-recipe-row .admin-list-item {
+  flex: 1;
+  min-width: 0;
+}
+.admin-row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--danger);
+  background: var(--surface);
+}
+.admin-row-delete:hover {
+  background: var(--danger-soft);
+}
+
 .admin-create-actions {
   display: flex;
   gap: 10px;

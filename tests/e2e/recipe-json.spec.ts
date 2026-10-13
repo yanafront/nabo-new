@@ -106,13 +106,17 @@ test("deletion needs confirmation and sends the current revision", async ({
   });
   await page.goto("/admin/recipes");
   await page
-    .getByRole("button", { name: /Омлет с помидорами.*Есть редакция/ })
+    .getByRole("button", {
+      name: "Удалить рецепт «Омлет с помидорами»",
+      exact: true,
+    })
     .click();
-  await page
-    .getByRole("button", { name: "Удалить рецепт", exact: true })
-    .click();
+  await expect(page.getByRole("dialog")).toContainText("Омлет с помидорами");
   await page.getByRole("button", { name: "Отмена", exact: true }).click();
   expect(deletes).toHaveLength(0);
+  await page
+    .getByRole("button", { name: /Омлет с помидорами.*Есть редакция/ })
+    .click();
   await page
     .getByRole("button", { name: "Удалить рецепт", exact: true })
     .click();

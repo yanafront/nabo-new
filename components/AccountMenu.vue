@@ -61,7 +61,7 @@ async function logout() {
       v-else-if="!user"
       to="/account"
       class="account-signin"
-      aria-label="Аккаунт"
+      aria-label="Войти в аккаунт"
       >Войти</NuxtLink
     >
     <button

@@ -13,10 +13,10 @@ const store = computed(() =>
 const extensions: Record<StoreId, string> = {
   evroopt: "svg",
   green: "svg",
-  gippo: "png",
-  sosedi: "png",
+  gippo: "webp",
+  sosedi: "webp",
   belmarket: "svg",
-  santa: "png",
+  santa: "webp",
 };
 const failed = ref(false);
 </script>

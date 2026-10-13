@@ -1,6 +1,6 @@
 <template>
   <img
-    src="/brand/nabo-logo.png"
+    src="/brand/nabo-logo-small.webp"
     class="brand-mark"
     width="2172"
     height="724"

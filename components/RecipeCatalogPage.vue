@@ -255,9 +255,10 @@ usePageSeo(() => ({
         </div>
         <div class="dish-grid">
           <RecipeCard
-            v-for="recipe in section.recipes"
+            v-for="(recipe, index) in section.recipes"
             :key="recipe.id"
             :recipe="recipe"
+            :eager="index < 2"
             :context-query="addingToBasket ? { add: 1 } : undefined"
           />
         </div>
@@ -285,9 +286,10 @@ usePageSeo(() => ({
     </div>
     <div v-else class="dish-grid">
       <RecipeCard
-        v-for="recipe in data.recipes"
+        v-for="(recipe, index) in data.recipes"
         :key="recipe.id"
         :recipe="recipe"
+        :eager="index < 2"
         :context-query="
           collection === 'budget'
             ? { servings: Math.max(1, Number(servings) || 2), budget }

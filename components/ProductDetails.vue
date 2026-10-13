@@ -259,7 +259,7 @@ onBeforeUnmount(() => controller?.abort());
       <template v-else-if="product">
         <section class="product-detail panel">
           <div class="product-detail-image">
-            <ProductImage :src="product.image" />
+            <ProductImage :src="product.image" :alt="product.name" eager />
           </div>
           <div class="product-detail-copy">
             <div class="product-store-line">

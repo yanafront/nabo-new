@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: false },
   routeRules: { "/compare": { redirect: { to: "/basket", statusCode: 301 } } },
-  css: ["leaflet/dist/leaflet.css", "~/assets/css/design-system.css"],
+  css: ["~/assets/css/design-system.css"],
   runtimeConfig: {
     recipesApiBase: "",
     seoIngestKey: "",
@@ -31,6 +31,13 @@ export default defineNuxtConfig({
       title: "Nabo — что сегодня приготовим?",
       htmlAttrs: { lang: "ru" },
       link: [
+        {
+          rel: "preload",
+          href: "/fonts/InterVariable.woff2",
+          as: "font",
+          type: "font/woff2",
+          crossorigin: "anonymous",
+        },
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
         {
           rel: "icon",

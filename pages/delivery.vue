@@ -11,6 +11,8 @@ const { data } = await useAsyncData(
     }),
   { watch: [page] },
 );
+if (page.value > 1 && data.value && (page.value - 1) * 24 >= data.value.total)
+  throw createError({ statusCode: 404, statusMessage: "Страница не найдена" });
 function pageLink(n: number) {
   return { path: "/delivery", query: { page: n > 1 ? String(n) : undefined } };
 }
@@ -45,7 +47,7 @@ usePageSeo(() => ({
     </div>
     <div class="dish-grid">
       <NuxtLink
-        v-for="recipe in data?.recipes"
+        v-for="(recipe, index) in data?.recipes"
         :key="recipe.slug"
         :to="`/recipes/${recipe.slug}#recipe-ready-offers`"
         class="delivery-dish"
@@ -53,7 +55,8 @@ usePageSeo(() => ({
           v-if="recipe.image"
           :src="recipe.image"
           :alt="recipe.title"
-          loading="lazy"
+          :loading="index < 2 ? 'eager' : 'lazy'"
+          decoding="async"
           width="400"
           height="280"
         />

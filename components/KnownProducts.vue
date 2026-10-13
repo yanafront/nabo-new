@@ -56,7 +56,7 @@ function link(n: number) {
         :to="productPath(product.storeId, product.id)"
         class="catalog-product-card known-product-link"
       >
-        <ProductImage :src="product.image" />
+        <ProductImage :src="product.image" :alt="product.name" />
         <h3>{{ product.name }}</h3>
         <p class="muted">
           {{ product.unit }} · {{ providerName(product.storeId as StoreId) }}

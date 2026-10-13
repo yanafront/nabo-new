@@ -48,7 +48,7 @@ test("гостевой вход сменяется меню аккаунта, в
   await menu.click();
   await page.getByRole("button", { name: "Выйти", exact: true }).click();
   await expect(
-    page.getByRole("link", { name: "Аккаунт", exact: true }),
+    page.getByRole("link", { name: "Войти в аккаунт", exact: true }),
   ).toHaveText("Войти");
   expect(
     await page.evaluate(

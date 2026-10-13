@@ -164,6 +164,11 @@ onBeforeUnmount(() => {
             v-if="recipe.image && !imageFailed"
             :src="recipe.image"
             :alt="recipe.title"
+            width="800"
+            height="600"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
             @error="imageFailed = true"
           />
           <div v-else class="dish-placeholder">

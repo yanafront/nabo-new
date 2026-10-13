@@ -22,6 +22,16 @@ const { data, status, error, refresh } = await useLazyAsyncData(
     }),
   {
     server: false,
+    getCachedData: (_key, app, context) => {
+      if (
+        context.cause === "initial" &&
+        app.isHydrating &&
+        location.value.lat === 53.9 &&
+        location.value.lon === 27.5667
+      )
+        return props.initialResult || undefined;
+      return undefined;
+    },
     default: () =>
       location.value.lat === 53.9 && location.value.lon === 27.5667
         ? props.initialResult || null

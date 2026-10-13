@@ -24,7 +24,7 @@ test("official local logos keep the requested order and fit store/catalog screen
   await page.goto("/stores");
   const images = page.locator(".store-catalog-grid .store-brand img");
   await expect(images).toHaveCount(6);
-  await expect(images.last()).toHaveAttribute("src", "/brand/stores/santa.png");
+  await expect(images.last()).toHaveAttribute("src", "/brand/stores/santa.webp");
   expect(
     await images.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("alt")),

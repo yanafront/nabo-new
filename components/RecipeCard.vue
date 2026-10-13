@@ -6,6 +6,7 @@ import {
 } from "~/shared/recipe/model";
 const props = defineProps<{
   recipe: Recipe;
+  eager?: boolean;
   contextQuery?: Record<string, string | number>;
 }>();
 const nutrition = computed(() => perServing(props.recipe));
@@ -21,8 +22,10 @@ const failed = ref(false);
       <img
         v-if="recipe.image && !failed"
         :src="recipe.image"
-        alt=""
-        loading="lazy"
+        :alt="recipe.title"
+        width="640"
+        height="480"
+        :loading="eager ? 'eager' : 'lazy'"
         decoding="async"
         @error="failed = true"
       />

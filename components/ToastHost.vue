@@ -70,6 +70,7 @@ onBeforeUnmount(() => {
       tag="div"
       class="toast-stack"
       :style="modalPosition"
+      role="region"
       aria-label="Уведомления"
     >
       <div

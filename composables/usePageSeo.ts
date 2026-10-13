@@ -49,6 +49,18 @@ export function usePageSeo(input: MaybeRefOrGetter<PageSeo>) {
               name: "Nabo",
               inLanguage: "ru-BY",
             },
+            {
+              "@type": "WebPage",
+              "@id": canonical.value + "#webpage",
+              url: canonical.value,
+              name: data.value.title,
+              description: data.value.description,
+              inLanguage: "ru-BY",
+              isPartOf: { "@id": origin + "/#website" },
+              ...(data.value.image
+                ? { primaryImageOfPage: new URL(data.value.image, origin).href }
+                : {}),
+            },
             ...(data.value.schemas || []),
           ],
         }),

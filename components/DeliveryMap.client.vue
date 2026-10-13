@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import "leaflet/dist/leaflet.css";
 import type { DeliveryLocation } from "~/shared/yandex";
 import { validDeliveryPoint } from "~/shared/delivery-location";
 import type { Map as LeafletMap, Marker } from "leaflet";

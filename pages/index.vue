@@ -5,6 +5,18 @@ const { data: ideas } = await useAsyncData("home-recipe-ideas", () =>
 );
 import { retailStores } from "~/shared/yandex";
 const { items } = useBasket();
+useHead({
+  link: [
+    {
+      rel: "preload",
+      as: "image",
+      imagesrcset:
+        "/images/grocery-hero-400.webp 400w, /images/grocery-hero-700.webp 700w, /images/grocery-hero.webp 1000w",
+      imagesizes: "(max-width: 600px) 260px, (max-width: 1000px) 45vw, 550px",
+      fetchpriority: "high",
+    },
+  ],
+});
 </script>
 <template>
   <div class="home">
@@ -19,7 +31,13 @@ const { items } = useBasket();
         </div>
         <div class="hero-art" aria-hidden="true">
           <img
-            src="/images/grocery-hero.webp"
+            src="/images/grocery-hero-700.webp"
+            srcset="
+              /images/grocery-hero-400.webp  400w,
+              /images/grocery-hero-700.webp  700w,
+              /images/grocery-hero.webp     1000w
+            "
+            sizes="(max-width: 600px) 260px, (max-width: 1000px) 45vw, 550px"
             width="1000"
             height="667"
             alt=""
@@ -132,9 +150,18 @@ const { items } = useBasket();
   background: #fff;
 }
 @media (max-width: 700px) {
-  .one-basket-icon { display: none; }
-  .one-basket-copy { flex-basis: 100%; }
-  .one-basket-stores { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
-  .one-basket-stores li { padding: 4px; }
+  .one-basket-icon {
+    display: none;
+  }
+  .one-basket-copy {
+    flex-basis: 100%;
+  }
+  .one-basket-stores {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: none;
+  }
+  .one-basket-stores li {
+    padding: 4px;
+  }
 }
 </style>

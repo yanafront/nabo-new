@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { recipeJsonExample } from "../../shared/recipe/json-editor";
+import {
+  recipeJsonExample,
+  parseRecipeJson,
+} from "../../shared/recipe/json-editor";
 test("JSON: preview, draft creation and protection from duplicate saves", async ({
   page,
 }) => {
@@ -165,4 +168,55 @@ test("JSON creation is hidden from non-editor accounts", async ({ page }) => {
     page.getByRole("alert").filter({ hasText: "нет доступа" }),
   ).toBeVisible();
   await expect(page.getByLabel("JSON нового рецепта")).toHaveCount(0);
+});
+
+test("category can change from the list without publishing the recipe draft", async ({
+  page,
+}) => {
+  const doc = parseRecipeJson(JSON.stringify(recipeJsonExample));
+  await page.route("**/api/admin/recipes", (route) =>
+    route.fulfill({
+      json: {
+        records: [
+          {
+            slug: doc.recipe.slug,
+            revision: 5,
+            published: true,
+            document: doc,
+          },
+        ],
+        photosConfigured: false,
+      },
+    }),
+  );
+  let payload: any;
+  await page.route(
+    `**/api/admin/recipes/${doc.recipe.slug}/category`,
+    (route) => {
+      expect(route.request().method()).toBe("PATCH");
+      payload = route.request().postDataJSON();
+      return route.fulfill({ json: { revision: 6 } });
+    },
+  );
+  await page.goto("/admin/recipes");
+  await page
+    .getByRole("button", {
+      name: `Изменить категорию «${doc.recipe.title}»`,
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Категория рецепта", exact: true })
+    .selectOption("soups");
+  await page
+    .getByRole("button", { name: "Сохранить категорию", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(payload).toEqual({ categoryId: "soups", revision: 5 });
+  await page
+    .getByRole("button", { name: new RegExp(doc.recipe.title + ".*Супы") })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "Категория", exact: true }),
+  ).toHaveValue("soups");
 });

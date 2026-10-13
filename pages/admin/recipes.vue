@@ -18,6 +18,48 @@ interface RecordRow {
 const route = useRoute();
 const deleteTarget = ref<RecordRow>();
 const deleting = ref(false);
+const categoryTarget = ref<RecordRow>();
+const categoryValue = ref("");
+const categorySaving = ref(false);
+function editCategory(slug: string) {
+  if (saving.value || uploading.value || deleting.value || categorySaving.value)
+    return;
+  const target = records.value.find((row) => row.slug === slug);
+  if (!target) return;
+  categoryTarget.value = target;
+  categoryValue.value = target.document.recipe.categoryId;
+}
+async function saveCategory() {
+  const target = categoryTarget.value;
+  if (!target || categorySaving.value) return;
+  categorySaving.value = true;
+  error.value = "";
+  try {
+    const result = await $fetch<{ revision: number }>(
+      `/api/admin/recipes/${target.slug}/category`,
+      {
+        method: "PATCH",
+        body: { categoryId: categoryValue.value, revision: target.revision },
+        retry: 0,
+      },
+    );
+    target.document.recipe.categoryId = categoryValue.value;
+    target.revision = result.revision;
+    if (lockedSlug.value === target.slug && draft.value) {
+      draft.value.recipe.categoryId = categoryValue.value;
+      revision.value = result.revision;
+    }
+    categoryTarget.value = undefined;
+    message.value = "Категория обновлена. Каталог обновится в течение минуты.";
+  } catch (e: any) {
+    error.value =
+      e.statusCode === 409
+        ? "Рецепт изменён в другой вкладке. Обновите список перед повторной попыткой."
+        : "Не удалось изменить категорию. Попробуйте ещё раз.";
+  } finally {
+    categorySaving.value = false;
+  }
+}
 const photosConfigured = ref(false),
   uploading = ref(false);
 const records = ref<RecordRow[]>([]);
@@ -425,11 +467,26 @@ useHead({
             @click="select(r)"
           >
             <strong>{{ r.title }}</strong
-            ><small>{{
-              records.find((v) => v.slug === r.slug)
-                ? "Есть редакция"
-                : "Исходный каталог"
-            }}</small>
+            ><small
+              >{{
+                recipeCategories.find((c) => c.id === r.categoryId)?.title
+              }}
+              ·
+              {{
+                records.find((v) => v.slug === r.slug)
+                  ? "Есть редакция"
+                  : "Исходный каталог"
+              }}</small
+            >
+          </button>
+          <button
+            class="admin-row-category"
+            type="button"
+            :aria-label="`Изменить категорию «${r.title}»`"
+            :disabled="saving || uploading || deleting || categorySaving"
+            @click="editCategory(r.slug)"
+          >
+            <AppIcon name="Tag" :size="17" />
           </button>
           <button
             class="admin-row-delete"
@@ -819,6 +876,47 @@ useHead({
       </div>
     </div>
     <AppModal
+      v-if="categoryTarget"
+      title="Изменить категорию"
+      @close="!categorySaving && (categoryTarget = undefined)"
+    >
+      <p>{{ categoryTarget.document.recipe.title }}</p>
+      <label class="admin-category-field"
+        >Категория рецепта
+        <select v-model="categoryValue" :disabled="categorySaving">
+          <option v-for="c in recipeCategories" :key="c.id" :value="c.id">
+            {{ c.title }}
+          </option>
+        </select>
+      </label>
+      <p class="muted">
+        Изменится только категория. Остальные черновые правки не публикуются.
+      </p>
+      <template #footer
+        ><div class="admin-create-actions">
+          <button
+            class="secondary"
+            :disabled="categorySaving"
+            @click="categoryTarget = undefined"
+          >
+            Отмена
+          </button>
+          <button
+            class="primary"
+            :disabled="
+              categorySaving ||
+              categoryValue === categoryTarget.document.recipe.categoryId
+            "
+            @click="saveCategory"
+          >
+            <span v-if="categorySaving" class="spinner" />{{
+              categorySaving ? "Сохраняем…" : "Сохранить категорию"
+            }}
+          </button>
+        </div></template
+      >
+    </AppModal>
+    <AppModal
       v-if="deleteTarget"
       title="Удалить рецепт?"
       @close="!deleting && (deleteTarget = undefined)"
@@ -858,6 +956,7 @@ useHead({
   flex: 1;
   min-width: 0;
 }
+.admin-row-category,
 .admin-row-delete {
   display: inline-flex;
   align-items: center;
@@ -869,6 +968,17 @@ useHead({
   border-radius: 10px;
   color: var(--danger);
   background: var(--surface);
+}
+.admin-row-category {
+  color: var(--accent-blue);
+}
+.admin-category-field {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.admin-category-field select {
+  width: 100%;
 }
 .admin-row-delete:hover {
   background: var(--danger-soft);

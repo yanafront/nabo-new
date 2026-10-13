@@ -263,27 +263,27 @@ async function save(publish: boolean) {
       i.name ||= row.name;
       if (!i.searchTerms[0]) i.searchTerms = [row.searchQuery!];
     }
-    const result = await $fetch<{ revision: number }>(
-      `/api/admin/recipes/${doc.recipe.slug}`,
-      {
-        method: "PUT",
-        body: { document: doc, revision: revision.value, publish },
-        retry: 0,
-      },
-    );
+    const result = await $fetch<{
+      revision: number;
+      document?: RecipeDocument;
+    }>(`/api/admin/recipes/${doc.recipe.slug}`, {
+      method: "PUT",
+      body: { document: doc, revision: revision.value, publish },
+      retry: 0,
+    });
     const previous = records.value.find((r) => r.slug === doc.recipe.slug);
     records.value = [
       ...records.value.filter((r) => r.slug !== doc.recipe.slug),
       {
         slug: doc.recipe.slug,
-        document: doc,
+        document: result.document || doc,
         revision: result.revision,
         published: publish || !!previous?.published,
       },
     ];
     revision.value = result.revision;
     lockedSlug.value = doc.recipe.slug;
-    draft.value = doc;
+    draft.value = result.document || doc;
     dirty.value = false;
     message.value = publish
       ? doc.recipe.isActive
@@ -433,6 +433,9 @@ useHead({
         <p class="muted">Служебный раздел Nabo</p>
       </div>
       <div v-if="authStatus === 200" class="admin-create-actions">
+        <NuxtLink to="/admin/ingredients" class="secondary"
+          >Ингредиенты</NuxtLink
+        >
         <NuxtLink to="/admin/categories" class="secondary">Категории</NuxtLink>
         <button class="primary" :disabled="deleting" @click="select()">
           Новый рецепт
@@ -617,8 +620,12 @@ useHead({
           </div>
           <h2>Ингредиенты</h2>
           <p class="muted">
-            Название увидит читатель. Поисковый запрос уйдёт в магазины:
-            например, «Яйца куриные».
+            Название увидит читатель. Поисковый запрос уйдёт в магазины.
+            <NuxtLink to="/admin/ingredients"
+              >Общие поисковые названия для всех рецептов</NuxtLink
+            >
+            имеют приоритет после сохранения в справочнике: например, «Яйца
+            куриные».
           </p>
           <div
             v-for="(row, index) in draft.recipe.ingredients"

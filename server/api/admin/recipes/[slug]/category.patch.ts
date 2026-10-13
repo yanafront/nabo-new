@@ -1,6 +1,6 @@
 import { requireSameOrigin } from "../../../../utils/backend";
 import { adminBackendResponse } from "../../../../utils/admin-backend";
-import { recipeCategories } from "~/shared/recipe/model";
+
 export default defineEventHandler(async (event) => {
   requireSameOrigin(event);
   const slug = getRouterParam(event, "slug") || "";
@@ -9,7 +9,9 @@ export default defineEventHandler(async (event) => {
     !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ||
     slug.length > 100 ||
     !body ||
-    !recipeCategories.some((c) => c.id === body.categoryId) ||
+    typeof body.categoryId !== "string" ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(body.categoryId) ||
+    body.categoryId.length > 40 ||
     !Number.isInteger(body.revision) ||
     body.revision < 1 ||
     body.revision >= 2147483647

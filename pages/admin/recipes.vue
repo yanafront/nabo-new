@@ -2,7 +2,7 @@
 import {
   ingredientAmount,
   perServing,
-  recipeCategories,
+  recipeCategories as defaultCategories,
   recipeCollections,
   type Recipe,
   type RecipeIngredient,
@@ -62,6 +62,7 @@ async function saveCategory() {
 }
 const photosConfigured = ref(false),
   uploading = ref(false);
+const recipeCategories = ref(defaultCategories);
 const records = ref<RecordRow[]>([]);
 const pending = ref(true),
   saving = ref(false),
@@ -97,9 +98,11 @@ async function load() {
     const data = await $fetch<{
       records: RecordRow[];
       photosConfigured: boolean;
+      categories?: Array<{ id: string; title: string }>;
     }>("/api/admin/recipes", { retry: 0 });
     photosConfigured.value = data.photosConfigured;
     records.value = data.records;
+    recipeCategories.value = data.categories || defaultCategories;
     authStatus.value = 200;
     if (!draft.value && typeof route.query.recipe === "string") {
       const target = records.value.find(
@@ -137,7 +140,9 @@ function select(recipe?: Recipe) {
       id: "",
       slug: "",
       title: "",
-      categoryId: "mains",
+      categoryId: recipeCategories.value.some((c) => c.id === "mains")
+        ? "mains"
+        : recipeCategories.value[0]?.id || "",
       tags: [],
       servings: 2,
       ingredients: [],
@@ -428,6 +433,7 @@ useHead({
         <p class="muted">Служебный раздел Nabo</p>
       </div>
       <div v-if="authStatus === 200" class="admin-create-actions">
+        <NuxtLink to="/admin/categories" class="secondary">Категории</NuxtLink>
         <button class="primary" :disabled="deleting" @click="select()">
           Новый рецепт
         </button>
@@ -468,9 +474,7 @@ useHead({
           >
             <strong>{{ r.title }}</strong
             ><small
-              >{{
-                recipeCategories.find((c) => c.id === r.categoryId)?.title
-              }}
+              >{{ recipeCategories.find((c) => c.id === r.categoryId)?.title }}
               ·
               {{
                 records.find((v) => v.slug === r.slug)

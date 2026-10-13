@@ -1,6 +1,6 @@
 import { seoPolicy } from "../../shared/seo/core";
-import { recipeCategories } from "../../shared/recipe/model";
-export default defineEventHandler((event) => {
+import { categoriesFor } from "../utils/recipe-categories";
+export default defineEventHandler(async (event) => {
   const url = getRequestURL(event),
     config = useRuntimeConfig(event);
   if (
@@ -13,7 +13,9 @@ export default defineEventHandler((event) => {
     event.method === "GET" &&
     url.pathname === "/recipes" &&
     !url.searchParams.get("q") &&
-    recipeCategories.some((c) => c.id === url.searchParams.get("category"))
+    (await categoriesFor(event)).some(
+      (c) => c.id === url.searchParams.get("category"),
+    )
   ) {
     const category = url.searchParams.get("category")!;
     url.searchParams.delete("category");

@@ -220,7 +220,10 @@ export function validateCatalog(value: unknown): RecipeCatalog {
       !Number.isInteger(r.servings) ||
       r.servings < 1 ||
       r.servings > 100 ||
-      !recipeCategories.some((x) => x.id === r.categoryId) ||
+      !(
+        /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(r.categoryId) &&
+        r.categoryId.length <= 40
+      ) ||
       !Array.isArray(r.tags) ||
       !r.tags.every(safe) ||
       !safe(r.source) ||

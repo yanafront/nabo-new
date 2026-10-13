@@ -1,7 +1,9 @@
 import { recipePage } from "../utils/recipe-page";
-import { recipeCategories, recipeCollections } from "../../shared/recipe/model";
+import { categoriesFor } from "../utils/recipe-categories";
+import { recipeCollections } from "../../shared/recipe/model";
 export default defineEventHandler(async (event) => {
   const q = getQuery(event);
+  const recipeCategories = await categoriesFor(event);
   const number = (v: unknown, fallback: number) =>
     typeof v === "string" && Number.isFinite(Number(v)) ? Number(v) : fallback;
   if (q.view === "categories") {

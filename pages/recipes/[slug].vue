@@ -10,6 +10,7 @@ import type { DiningResult } from "~/shared/dining/delivio";
 import { recipeSchema, breadcrumb } from "~/shared/seo/core";
 import { retailStores } from "~/shared/yandex";
 import { recipePurchaseRequest } from "~/shared/recipe/purchasing";
+const { categories: currentCategories } = await useRecipeCategories();
 const route = useRoute();
 const recipeSeoOrigin = useRuntimeConfig().public.siteUrl;
 const slug = String(route.params.slug);
@@ -40,7 +41,13 @@ usePageSeo(() => ({
   image: recipe.value?.image,
   schemas: recipe.value
     ? [
-        recipeSchema(recipe.value, recipeSeoOrigin, servings.value),
+        recipeSchema(
+          recipe.value,
+          recipeSeoOrigin,
+          servings.value,
+          currentCategories.value.find((c) => c.id === recipe.value?.categoryId)
+            ?.title,
+        ),
         breadcrumb(recipeSeoOrigin, [
           { name: "Главная", path: "/" },
           { name: "Рецепты", path: "/recipes" },

@@ -4,7 +4,7 @@ import {
   SEO_PAGE_SIZE,
   productPath,
 } from "../../../shared/seo/core";
-import { recipeCategories } from "../../../shared/recipe/model";
+import { categoriesFor } from "../../utils/recipe-categories";
 import { retailStores } from "../../../shared/yandex";
 import { sitemapManifest, sitemapRecipes } from "../../utils/sitemap-data";
 import { recipePage } from "../../utils/recipe-page";
@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
   if (!config.public.seoIndexable) throw createError({ statusCode: 404 });
   const origin = siteOrigin(config.public.siteUrl),
     file = getRouterParam(event, "file") || "";
+  const recipeCategories = await categoriesFor(event);
   let entries: Array<{ loc: string; lastmod?: string; image?: string }>;
   if (file === "static.xml")
     entries = [

@@ -5,6 +5,7 @@ import {
 } from "~/shared/recipe/json-editor";
 import type { RecipeDocument } from "~/shared/recipe/editor";
 import { ingredientAmount, perServing } from "~/shared/recipe/model";
+const { categories } = await useRecipeCategories();
 const input = ref("");
 const document = ref<RecipeDocument>();
 const pending = ref(true),
@@ -50,7 +51,7 @@ function check() {
   error.value = "";
   document.value = undefined;
   try {
-    const parsed = parseRecipeJson(input.value);
+    const parsed = parseRecipeJson(input.value, categories.value);
     if (existing.value.has(parsed.recipe.slug))
       throw new Error(
         "Такой адрес рецепта уже есть. Измените slug — эта форма создаёт только новые рецепты.",

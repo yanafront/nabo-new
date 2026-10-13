@@ -7,6 +7,7 @@ import {
 const props = defineProps<{
   recipe: Recipe;
   eager?: boolean;
+  categoryTitle?: string;
   contextQuery?: Record<string, string | number>;
 }>();
 const nutrition = computed(() => perServing(props.recipe));
@@ -31,6 +32,7 @@ const failed = ref(false);
       />
       <div v-else class="dish-placeholder">
         <AppIcon name="ShoppingBasket" :size="40" /><span>{{
+          categoryTitle ||
           recipeCategories.find((c) => c.id === recipe.categoryId)?.title
         }}</span>
       </div>

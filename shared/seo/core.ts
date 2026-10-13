@@ -62,6 +62,7 @@ export function recipeSchema(
   recipe: Recipe,
   origin: string,
   servings = recipe.servings,
+  categoryTitle?: string,
 ) {
   origin = siteOrigin(origin);
   const url = origin + `/recipes/${encodeURIComponent(recipe.slug)}`;
@@ -73,8 +74,9 @@ export function recipeSchema(
     name: recipe.title,
     description: recipe.description,
     image: recipe.image ? [new URL(recipe.image, origin).href] : undefined,
-    recipeCategory: recipeCategories.find((c) => c.id === recipe.categoryId)
-      ?.title,
+    recipeCategory:
+      categoryTitle ||
+      recipeCategories.find((c) => c.id === recipe.categoryId)?.title,
     recipeYield: `${servings} порций`,
     totalTime: recipe.cookingTime ? `PT${recipe.cookingTime}M` : undefined,
     recipeIngredient: scaledIngredients(recipe, servings).map((i) =>

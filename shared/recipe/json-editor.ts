@@ -102,7 +102,10 @@ function url(value: unknown, path: string) {
   return result;
 }
 /** Accept a compact recipe or an exported document, while preserving explicit retail queries. */
-export function parseRecipeJson(input: string): RecipeDocument {
+export function parseRecipeJson(
+  input: string,
+  categories = recipeCategories,
+): RecipeDocument {
   if (new TextEncoder().encode(input).length > 250 * 1024)
     fail("JSON", "файл больше 250 КБ");
   let parsed: unknown;
@@ -137,7 +140,7 @@ export function parseRecipeJson(input: string): RecipeDocument {
       text(tag, `tags[${i}]`, 100),
     ),
   };
-  if (!recipeCategories.some((category) => category.id === recipe.categoryId))
+  if (!categories.some((category) => category.id === recipe.categoryId))
     fail("categoryId", "выберите существующую категорию рецептов");
   for (const [key, limit] of [
     ["description", 5000],

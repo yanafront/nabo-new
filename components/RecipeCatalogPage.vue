@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { recipeCategories, type Recipe } from "~/shared/recipe/model";
+import { type Recipe } from "~/shared/recipe/model";
+const { categories: recipeCategories } = await useRecipeCategories();
 const route = useRoute();
 const router = useRouter();
 const query = ref(typeof route.query.q === "string" ? route.query.q : "");
@@ -110,7 +111,8 @@ const browsingCatalog = computed(
     !search.value && !category.value && !collection.value && page.value === 1,
 );
 const activeCategoryTitle = computed(
-  () => recipeCategories.find((item) => item.id === category.value)?.title,
+  () =>
+    recipeCategories.value.find((item) => item.id === category.value)?.title,
 );
 const recipesCount = (count: number) =>
   quantityLabel(count, "рецепт", "рецепта", "рецептов");
@@ -251,6 +253,9 @@ usePageSeo(() => ({
             v-for="(recipe, index) in section.recipes"
             :key="recipe.id"
             :recipe="recipe"
+            :category-title="
+              recipeCategories.find((c) => c.id === recipe.categoryId)?.title
+            "
             :eager="index < 2"
             :context-query="addingToBasket ? { add: 1 } : undefined"
           />
@@ -286,6 +291,9 @@ usePageSeo(() => ({
         v-for="(recipe, index) in data.recipes"
         :key="recipe.id"
         :recipe="recipe"
+        :category-title="
+          recipeCategories.find((c) => c.id === recipe.categoryId)?.title
+        "
         :eager="index < 2"
         :context-query="
           collection === 'budget'

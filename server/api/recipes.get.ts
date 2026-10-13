@@ -1,26 +1,23 @@
-import { publishedRecipes } from "../utils/published-recipes";
-import { listRecipes } from "../../shared/recipe/search";
+import { recipePage } from "../utils/recipe-page";
 import { recipeCategories, recipeCollections } from "../../shared/recipe/model";
 export default defineEventHandler(async (event) => {
-  const recipeCatalog = await publishedRecipes(event);
   const q = getQuery(event);
   const number = (v: unknown, fallback: number) =>
     typeof v === "string" && Number.isFinite(Number(v)) ? Number(v) : fallback;
   if (q.view === "categories") {
     const limit = Math.min(6, Math.max(1, number(q.limit, 3)));
     return {
-      sections: recipeCategories
-        .map((category) => ({
-          ...category,
-          ...listRecipes(recipeCatalog.recipes, recipeCatalog.ingredients, {
-            category: category.id,
-            limit,
-          }),
-        }))
-        .filter((section) => section.total > 0),
+      sections: (
+        await Promise.all(
+          recipeCategories.map(async (category) => ({
+            ...category,
+            ...(await recipePage(event, { category: category.id, limit })),
+          })),
+        )
+      ).filter((section) => section.total > 0),
     };
   }
-  const result = listRecipes(recipeCatalog.recipes, recipeCatalog.ingredients, {
+  const result = await recipePage(event, {
     q: typeof q.q === "string" ? q.q : "",
     category: typeof q.category === "string" ? q.category : "",
     collection: typeof q.collection === "string" ? q.collection : "",

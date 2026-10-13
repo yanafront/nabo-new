@@ -1,0 +1,249 @@
+import { createServer } from "node:http";
+import { spawn } from "node:child_process";
+import assert from "node:assert/strict";
+const fixturePort = 3121,
+  appPort = 3120,
+  origin = "https://nabo.example";
+const recipe = {
+  id: "seo-test",
+  slug: "seo-test",
+  title: "Проверочный суп",
+  description: "Пошаговый рецепт супа",
+  image: "https://example.com/recipe.jpg",
+  categoryId: "soups",
+  tags: [],
+  servings: 2,
+  cookingTime: 20,
+  source: "Тест",
+  sourceId: "seo-test",
+  isActive: true,
+  shopabilityScore: 100,
+  ingredients: [
+    {
+      ingredientId: "water",
+      name: "Вода",
+      quantity: 500,
+      unit: "ml",
+      searchQuery: "Вода",
+    },
+  ],
+  instructions: [{ text: "Вскипятить воду" }],
+};
+const document = {
+  recipe,
+  ingredients: [
+    {
+      id: "water",
+      name: "Вода",
+      aliases: [],
+      searchTerms: ["Вода"],
+      pantry: false,
+      common: true,
+    },
+  ],
+};
+const product = {
+  id: "sku-1",
+  storeId: "green",
+  name: "Молоко тестовое",
+  unit: "1 л",
+  price: 4.25,
+  oldPrice: null,
+  image: "https://example.com/product.jpg",
+  stock: 10,
+  available: true,
+  fetchedAt: new Date().toISOString(),
+  externalUrl: "https://example.com/buy",
+  placeSlug: "green",
+};
+let ingestion = 0;
+const fixture = createServer(async (req, res) => {
+  const url = new URL(req.url, "http://fixture");
+  let input = "";
+  for await (const part of req) input += part;
+  let body = input ? JSON.parse(input) : {},
+    data;
+  if (url.pathname === "/api/seo/products" && req.method === "POST") {
+    assert.equal(req.headers["x-nabo-seo-key"], "fixture-key");
+    ingestion += body.items.length;
+    data = { saved: body.items.length };
+  } else if (url.pathname === "/api/seo/manifest")
+    data = { recipes: 4001, products: 2001 };
+  else if (url.pathname === "/api/seo/recipes")
+    data = { items: [{ slug: "seo-test", image: recipe.image }] };
+  else if (url.pathname === "/api/seo/products")
+    data = {
+      total: 1,
+      items: [
+        {
+          storeId: product.storeId,
+          id: product.id,
+          name: product.name,
+          unit: product.unit,
+          image: product.image,
+          updatedAt: "2026-10-01T00:00:00Z",
+        },
+      ],
+    };
+  else if (url.pathname === "/api/recipe-catalog/page") {
+    const category = url.searchParams.get("category");
+    data = {
+      total: category && category !== "soups" ? 0 : 36,
+      documents: category && category !== "soups" ? [] : [document],
+    };
+  } else if (url.pathname === "/api/recipe-catalog/seo-test")
+    data = { document };
+  else if (url.pathname === "/api/recipe-catalog")
+    data = { documents: [document] };
+  else if (url.pathname === "/api/product")
+    data = [product.id, "sku/2&3"].includes(body.id)
+      ? { status: "ok", product: { ...product, id: body.id } }
+      : { status: "not_found" };
+  else if (url.pathname === "/api/search")
+    data = {
+      stores: [{ storeId: "green", status: "ok", products: [product] }],
+    };
+  else if (url.pathname === "/be/api/v2/search") data = { food: [1] };
+  else if (url.pathname === "/be/api/foods")
+    data = {
+      "hydra:member": [
+        {
+          id: 1,
+          enabled: true,
+          name: "Суп готовый",
+          price: 9,
+          isOpen: true,
+          showWeight: true,
+          weight: 250,
+          weightUnitStr: "г",
+          restaurant: {
+            id: 1,
+            type: 1,
+            name: "Проверочное кафе",
+            slug: "test-cafe",
+            isOpened: true,
+          },
+        },
+      ],
+    };
+  else {
+    res.writeHead(404);
+    res.end("{}");
+    return;
+  }
+  res.setHeader("content-type", "application/json");
+  res.end(JSON.stringify(data));
+});
+await new Promise((resolve) =>
+  fixture.listen(fixturePort, "127.0.0.1", resolve),
+);
+const child = spawn(process.execPath, [".output/server/index.mjs"], {
+  env: {
+    ...process.env,
+    PORT: String(appPort),
+    HOST: "127.0.0.1",
+    NUXT_RECIPES_API_BASE: `http://127.0.0.1:${fixturePort}`,
+    NUXT_RETAIL_API_BASE: `http://127.0.0.1:${fixturePort}`,
+    NUXT_DINING_API_BASE: `http://127.0.0.1:${fixturePort}`,
+    NUXT_SEO_INGEST_KEY: "fixture-key",
+    NUXT_PUBLIC_SITE_URL: origin,
+    NUXT_PUBLIC_SEO_INDEXABLE: "true",
+  },
+  stdio: ["ignore", "pipe", "pipe"],
+});
+let logs = "";
+child.stdout.on("data", (b) => (logs += b));
+child.stderr.on("data", (b) => (logs += b));
+const base = `http://127.0.0.1:${appPort}`;
+async function get(path) {
+  return fetch(base + path, { redirect: "manual" });
+}
+try {
+  for (let i = 0; i < 50; i++) {
+    try {
+      await get("/robots.txt");
+      break;
+    } catch {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  const robots = await (await get("/robots.txt")).text();
+  assert.match(robots, /Allow: \/api\/product-image/);
+  assert.match(robots, /Sitemap: https:\/\/nabo.example\/sitemap.xml/);
+  const index = await (await get("/sitemap.xml")).text();
+  assert.match(index, /recipes-3.xml/);
+  assert.match(index, /products-2.xml/);
+  const xml = await (await get("/sitemaps/recipes-1.xml")).text();
+  assert.match(xml, /<loc>https:\/\/nabo.example\/recipes\/seo-test<\/loc>/);
+  assert.equal((await get("/sitemaps/recipes-4.xml")).status, 404);
+  const redirect = await get("/recipes?category=soups");
+  assert.equal(redirect.status, 301);
+  assert.equal(redirect.headers.get("location"), "/recipes/category/soups");
+  const category = await (await get("/recipes/category/soups?page=2")).text();
+  assert.match(
+    category,
+    /canonical[^>]+https:\/\/nabo.example\/recipes\/category\/soups\?page=2/,
+  );
+  assert.match(category, /page=1|\/recipes\/category\/soups/);
+  assert.match(category, /ItemList/);
+  const recipeResponse = await get("/recipes/seo-test?utm_source=blog");
+  assert.equal(recipeResponse.status, 200);
+  const recipeHtml = await recipeResponse.text();
+  assert.match(recipeHtml, /Проверочный суп/);
+  assert.match(recipeHtml, /Вскипятить воду/);
+  assert.match(recipeHtml, /"@type":"Recipe"/);
+  assert.match(
+    recipeHtml,
+    /canonical[^>]+https:\/\/nabo.example\/recipes\/seo-test"/,
+  );
+  assert.match(recipeHtml, /Суп готовый/);
+  assert.match(recipeHtml, /Проверочное кафе/);
+  assert.match(recipeHtml, /dining-offers-schema/);
+  const productResponse = await get("/product/green/sku-1");
+  assert.equal(productResponse.status, 200);
+  const html = await productResponse.text();
+  assert.match(html, /Молоко тестовое/);
+  assert.match(html, /"@type":"Product"/);
+  assert.match(html, /"price":4.25/);
+  assert.match(
+    html,
+    /canonical[^>]+https:\/\/nabo.example\/product\/green\/sku-1"/,
+  );
+  assert.equal(
+    (await get("/product/green/sku%2F2%263")).status,
+    200,
+    "encoded SKU is decoded exactly once",
+  );
+  assert.equal((await get("/product/green/missing")).status, 404);
+  assert.equal((await get("/recipes/missing")).status, 404);
+  const privateResponse = await get("/basket");
+  assert.match(privateResponse.headers.get("x-robots-tag"), /noindex/);
+  assert.match(
+    await privateResponse.text(),
+    /name="robots" content="noindex,follow"/,
+  );
+  const search = await get("/products?q=молоко");
+  assert.match(search.headers.get("x-robots-tag"), /noindex/);
+  const hub = await (await get("/products")).text();
+  assert.match(hub, /href="\/product\/green\/sku-1"/);
+  await fetch(base + "/api/search", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      query: "молоко",
+      location: { lat: 53.9, lon: 27.5667 },
+    }),
+  });
+  await new Promise((r) => setTimeout(r, 200));
+  assert.ok(ingestion > 0);
+  console.log(
+    "PASS: raw server HTML, recipe/product/dining schemas, metadata, 404, robots, category redirect, pagination, split sitemaps and background discovery",
+  );
+} catch (error) {
+  console.error(logs);
+  throw error;
+} finally {
+  child.kill("SIGTERM");
+  await new Promise((r) => fixture.close(r));
+  fixture.closeAllConnections();
+}

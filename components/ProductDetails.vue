@@ -26,7 +26,7 @@ const { location } = useRetail();
 const { searchProducts, cachedProduct, getProduct } = useApi();
 const relatedPending = ref(false);
 const { addProduct, items, notice } = useBasket();
-const product = ref<RetailProduct | null>(null);
+const product = ref<RetailProduct | null>(props.snapshot || null);
 type StoreProductGroup = {
   store: (typeof retailStores)[number];
   products: RetailProduct[];
@@ -34,7 +34,7 @@ type StoreProductGroup = {
 const exactRelated = ref<StoreProductGroup[]>([]);
 const related = ref<StoreProductGroup[]>([]);
 const sameStore = ref<RetailProduct[]>([]);
-const pending = ref(true);
+const pending = ref(!props.snapshot);
 const error = ref("");
 let controller: AbortController | undefined;
 

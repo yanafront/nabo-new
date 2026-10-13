@@ -321,5 +321,6 @@ onBeforeUnmount(() => {
         <p>Покажем доступные упаковки и цены отдельно для каждого магазина.</p>
       </div>
     </div>
+    <KnownProducts v-if="!searched" />
   </div>
 </template>

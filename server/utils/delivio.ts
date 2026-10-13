@@ -9,14 +9,15 @@ export async function searchDelivio(
   query: string,
   lat: number,
   lon: number,
+  base = "https://delivio.by",
 ): Promise<DiningResult> {
-  const key = JSON.stringify([query.toLowerCase(), lat, lon]);
+  const key = JSON.stringify([base, query.toLowerCase(), lat, lon]);
   const stored = cache.get(key);
   if (stored && stored.until > Date.now()) return stored.result;
   if (inFlight.has(key)) return inFlight.get(key)!;
   const task = (async () => {
     const found = await $fetch<{ food: unknown }>(
-      "https://delivio.by/be/api/v2/search",
+      `${base}/be/api/v2/search`,
       {
         method: "POST",
         body: {
@@ -47,7 +48,7 @@ export async function searchDelivio(
         ]);
         chunk.forEach((id) => params.append("id[]", String(id)));
         const data = await $fetch<Record<string, unknown>>(
-          `https://delivio.by/be/api/foods?${params}`,
+          `${base}/be/api/foods?${params}`,
           { timeout: 7000, retry: 0 },
         );
         if (!Array.isArray(data["hydra:member"]))

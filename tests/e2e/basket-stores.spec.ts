@@ -136,7 +136,7 @@ test("six store tabs show store totals, best full basket and inline replacements
   ).toMatchObject({ storeId: "green", count: 1 });
   await expect(page.locator(".basket-summary a")).toHaveAttribute(
     "href",
-    "https://green-dostavka.by/",
+    "https://green-dostavka.by/?utm_source=nabo&utm_medium=referral&utm_campaign=outbound",
   );
   await expect(page.locator("dialog[open]")).toHaveCount(0);
   await expect(page).toHaveURL(/\/basket$/);

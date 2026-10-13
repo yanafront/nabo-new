@@ -3107,7 +3107,7 @@ input[type="checkbox"] {
   padding: 2px 0 8px;
   scrollbar-width: thin;
 }
-.recipe-categories button,
+.recipe-categories :is(button,a),
 .recipe-collections button {
   display: flex;
   align-items: center;
@@ -3120,7 +3120,8 @@ input[type="checkbox"] {
   white-space: nowrap;
   flex: 0 0 auto;
 }
-.recipe-categories button[aria-pressed="true"] {
+.recipe-categories button[aria-pressed="true"],
+.recipe-categories a[aria-current="page"] {
   background: var(--brand);
   border-color: var(--brand);
 }
@@ -3788,7 +3789,7 @@ input[type="checkbox"] {
   .recipe-categories {
     gap: 6px;
   }
-  .recipe-categories button {
+  .recipe-categories :is(button,a) {
     font-size: 12px;
     padding: 9px 12px;
   }

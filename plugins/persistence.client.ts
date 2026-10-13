@@ -48,7 +48,7 @@ export default defineNuxtPlugin(() => {
       items.value = rows;
     },
     location: () => location.value,
-    request: (url, options) => $fetch(url, options),
+    request: (url, options) => $fetch<any>(url, options),
     status: (state, error = "") => {
       syncState.value = state;
       syncError.value = error;

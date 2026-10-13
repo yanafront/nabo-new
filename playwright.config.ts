@@ -2,11 +2,19 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   use: { baseURL: "http://127.0.0.1:3100", headless: true, channel: "chrome" },
-  webServer: {
-    command: "PORT=3100 HOST=127.0.0.1 node .output/server/index.mjs",
-    url: "http://127.0.0.1:3100",
-    reuseExistingServer: true,
-  },
+  webServer: [
+    {
+      command: "node tests/fixtures/public-retail.mjs",
+      url: "http://127.0.0.1:3102/health",
+      reuseExistingServer: false,
+    },
+    {
+      command:
+        "PORT=3100 HOST=127.0.0.1 NUXT_RETAIL_API_BASE=http://127.0.0.1:3102 node .output/server/index.mjs",
+      url: "http://127.0.0.1:3100",
+      reuseExistingServer: false,
+    },
+  ],
   projects: [
     { name: "desktop", use: { viewport: { width: 1440, height: 1000 } } },
     {

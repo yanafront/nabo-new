@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { jsonLd } from "~/shared/seo/core";
 import { delivioSearchUrl, type DiningResult } from "~/shared/dining/delivio";
-const props = defineProps<{ title: string }>();
+const props = defineProps<{
+  title: string;
+  initialResult?: DiningResult | null;
+}>();
 const { location } = useRetail();
 const query = computed(() => ({
   q: props.title.trim(),
@@ -16,7 +20,13 @@ const { data, status, error, refresh } = await useLazyAsyncData(
       retry: 0,
       timeout: 16000,
     }),
-  { server: false },
+  {
+    server: false,
+    default: () =>
+      location.value.lat === 53.9 && location.value.lon === 27.5667
+        ? props.initialResult || null
+        : null,
+  },
 );
 const offers = computed(() => data.value?.offers || []);
 const available = computed(() =>
@@ -38,6 +48,39 @@ watch(key, () => {
   failedImages.value = new Set();
 });
 const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
+useHead(() => ({
+  script: data.value?.offers.length
+    ? [
+        {
+          key: "dining-offers-schema",
+          type: "application/ld+json",
+          innerHTML: jsonLd({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            name: `${props.title}: предложения готового блюда`,
+            itemListElement: shown.value.map((offer, i) => ({
+              "@type": "ListItem",
+              position: i + 1,
+              item: {
+                "@type": "MenuItem",
+                name: offer.name,
+                image: offer.image,
+                description: offer.portion,
+                offers: {
+                  "@type": "Offer",
+                  price: offer.price,
+                  priceCurrency: "BYN",
+                  url: offer.url,
+                  availability: `https://schema.org/${offer.available ? "InStock" : "OutOfStock"}`,
+                  seller: { "@type": "Restaurant", name: offer.restaurant },
+                },
+              },
+            })),
+          }),
+        },
+      ]
+    : [],
+}));
 </script>
 <template>
   <section class="recipe-dining" aria-label="Приготовить или заказать">
@@ -62,7 +105,7 @@ const shown = computed(() => offers.value.slice(0, expanded.value ? 12 : 4));
         Предложения Delivio · {{ location.label }}
       </p>
       <div
-        v-if="status === 'pending' || status === 'idle'"
+        v-if="(status === 'pending' || status === 'idle') && !offers.length"
         class="dining-loading"
         role="status"
       >

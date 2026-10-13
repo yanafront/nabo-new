@@ -8,6 +8,10 @@ const store = computed(() =>
 if (!store.value)
   throw createError({ statusCode: 404, statusMessage: "Магазин не найден" });
 
+usePageSeo(() => ({
+  title: `${store.value?.name} — продукты и цены | Nabo`,
+  description: `Товары ${store.value?.name}: найдите продукты, проверьте цены и сравните корзину с другими магазинами Беларуси.`,
+}));
 const { location } = useRetail();
 const { searchProducts } = useApi();
 const query = ref(typeof route.query.q === "string" ? route.query.q : "молоко");
@@ -74,6 +78,7 @@ onBeforeUnmount(() => controller?.abort());
       />
       <button class="primary" type="submit" :disabled="pending">Найти</button>
     </form>
+    <KnownProducts :store-id="store!.id" />
     <div class="catalog-chips" aria-label="Популярные категории">
       <button
         v-for="item in popular"
@@ -88,7 +93,11 @@ onBeforeUnmount(() => controller?.abort());
       <span class="spinner" /> Загружаем товары…
     </div>
     <div v-else-if="error" class="catalog-error">
-      <AppFeedback :message="error" action-label="Повторить" @action="search()" />
+      <AppFeedback
+        :message="error"
+        action-label="Повторить"
+        @action="search()"
+      />
       <button class="secondary" @click="search()">Повторить</button>
     </div>
     <template v-else>

@@ -5,6 +5,8 @@ export default defineNuxtConfig({
   css: ["leaflet/dist/leaflet.css", "~/assets/css/design-system.css"],
   runtimeConfig: {
     recipesApiBase: "",
+    seoIngestKey: "",
+    diningApiBase: "https://delivio.by",
     recipePhotos: {
       accountId: "",
       accessKeyId: "",
@@ -16,6 +18,10 @@ export default defineNuxtConfig({
     geocoderBase: "https://photon.komoot.io",
     yandexGeocoderApiKey: "",
     public: {
+      siteUrl: "https://nabo-new.vercel.app",
+      googleSiteVerification: "",
+      yandexVerification: "",
+      seoIndexable: process.env.VERCEL_ENV !== "preview",
       yandexMapsApiKey: "",
       legal: { operator: "", address: "", email: "", unp: "" },
     },

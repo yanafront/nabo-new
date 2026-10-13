@@ -66,7 +66,7 @@ test("restaurant offers show portions, prices and external links without changin
             price: 9,
             portion: "180 г",
             available: true,
-            url: "https://delivio.by/restaurant/cafe",
+            url: "https://delivio.by/restaurant/cafe?utm_source=nabo&utm_medium=referral&utm_campaign=outbound",
           },
           {
             id: "2",
@@ -117,7 +117,7 @@ test("restaurant offers show portions, prices and external links without changin
   await expect(block.getByText("180 г", { exact: true }).first()).toBeVisible();
   await expect(
     block.getByRole("link", { name: "Открыть Кафе в Delivio" }),
-  ).toHaveAttribute("href", "https://delivio.by/restaurant/cafe");
+  ).toHaveAttribute("href", "https://delivio.by/restaurant/cafe?utm_source=nabo&utm_medium=referral&utm_campaign=outbound");
   const assemble = page.getByRole("button", {
     name: "Собрать корзину",
     exact: true,

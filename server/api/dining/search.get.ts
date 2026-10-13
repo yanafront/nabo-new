@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     });
   setHeader(event, "Cache-Control", "no-store");
   try {
-    return await searchDelivio(q, lat, lon);
+    return await searchDelivio(q, lat, lon, useRuntimeConfig(event).diningApiBase);
   } catch {
     throw createError({
       statusCode: 502,

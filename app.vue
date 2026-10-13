@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useSiteSeo();
 const { items, notice } = useBasket();
 const { location } = useRetail();
 const route = useRoute();
@@ -76,6 +77,7 @@ onUnmounted(() => {
     </header>
     <main id="main"><NuxtPage :key="$route.path" /></main>
     <footer class="footer">
+      <NuxtLink to="/delivery">Готовые блюда с доставкой</NuxtLink>
       <span>Цены в BYN · Покупка у магазина</span>
       <nav class="footer-documents" aria-label="Правовая информация">
         <button @click="info = true">Как работает Nabo</button>

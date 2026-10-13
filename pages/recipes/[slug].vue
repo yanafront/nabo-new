@@ -6,9 +6,12 @@ import {
   type Recipe,
   type Ingredient,
 } from "~/shared/recipe/model";
+import type { DiningResult } from "~/shared/dining/delivio";
+import { recipeSchema, breadcrumb } from "~/shared/seo/core";
 import { retailStores } from "~/shared/yandex";
 import { recipePurchaseRequest } from "~/shared/recipe/purchasing";
 const route = useRoute();
+const recipeSeoOrigin = useRuntimeConfig().public.siteUrl;
 const slug = String(route.params.slug);
 const { data, error, refresh } = await useAsyncData(`recipe:${slug}`, () =>
   $fetch<{ recipe: Recipe; ingredients: Ingredient[] }>(
@@ -16,6 +19,11 @@ const { data, error, refresh } = await useAsyncData(`recipe:${slug}`, () =>
   ),
 );
 const recipe = computed(() => data.value?.recipe);
+if (error.value?.statusCode === 404)
+  throw createError({ statusCode: 404, statusMessage: "Рецепт не найден" });
+if (import.meta.server && error.value)
+  setResponseStatus(useRequestEvent()!, error.value.statusCode || 503);
+
 const dictionary = computed(() => data.value?.ingredients || []);
 const servings = ref(
   Math.min(
@@ -23,6 +31,36 @@ const servings = ref(
     Math.max(1, Number(route.query.servings) || recipe.value?.servings || 2),
   ),
 );
+usePageSeo(() => ({
+  noindex: !recipe.value,
+  title: `${recipe.value?.title || "Рецепт недоступен"} — рецепт и продукты для корзины | Nabo`,
+  description:
+    recipe.value?.description ||
+    `Как приготовить ${recipe.value?.title}: ингредиенты, пошаговый рецепт, стоимость продуктов и предложения готового блюда.`,
+  image: recipe.value?.image,
+  schemas: recipe.value
+    ? [
+        recipeSchema(recipe.value, recipeSeoOrigin, servings.value),
+        breadcrumb(recipeSeoOrigin, [
+          { name: "Главная", path: "/" },
+          { name: "Рецепты", path: "/recipes" },
+          { name: recipe.value.title, path: `/recipes/${slug}` },
+        ]),
+      ]
+    : [],
+}));
+const initialDining = ref<DiningResult | null>(null);
+if (import.meta.server && recipe.value) {
+  try {
+    initialDining.value = await $fetch<DiningResult>("/api/dining/search", {
+      query: { q: recipe.value.title, lat: 53.9, lon: 27.5667 },
+      timeout: 2500,
+      retry: 0,
+    });
+  } catch {
+    /* Recipe HTML stays available during a dining provider outage. */
+  }
+}
 const excluded = ref<string[]>([]);
 const imageFailed = ref(false);
 const ingredientsOpen = ref(false);
@@ -167,7 +205,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-      <RecipeDining :title="recipe.title">
+      <RecipeDining :title="recipe.title" :initial-result="initialDining">
         <template #cook-summary>
           <div class="cook-summary-head">
             <h2>Приготовить дома</h2>
@@ -264,7 +302,11 @@ onBeforeUnmount(() => {
             >
               <h2 id="recipe-steps-title">Как приготовить</h2>
               <ol v-if="recipe.instructions?.length">
-                <li v-for="(step, n) in recipe.instructions" :key="n">
+                <li
+                  v-for="(step, n) in recipe.instructions"
+                  :key="n"
+                  :id="`step-${n + 1}`"
+                >
                   {{ step.text }}
                 </li>
               </ol>

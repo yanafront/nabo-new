@@ -42,7 +42,7 @@ export function useApi() {
     const response = await request<SearchResult>(
       key,
       () =>
-        $fetch("/api/yandex/search", {
+        $fetch<SearchResult>("/api/yandex/search", {
           method: "POST",
           body: input,
           retry: 0,
@@ -85,7 +85,7 @@ export function useApi() {
     const response = await request<SearchAllResult>(
       key,
       () =>
-        $fetch("/api/search", {
+        $fetch<SearchAllResult>("/api/search", {
           method: "POST",
           body: input,
           retry: 0,
@@ -112,7 +112,7 @@ export function useApi() {
     return request<{ recipes: RecipeResult[] }>(
       `recipe:${q}`,
       () =>
-        $fetch("/api/recipes", {
+        $fetch<{ recipes: RecipeResult[] }>("/api/recipes", {
           query: { q },
           retry: 0,
           timeout: 15000,
@@ -140,18 +140,29 @@ export function useApi() {
     },
     signal?: AbortSignal,
   ) {
-    const unique = [...new Map(body.items.map((item) => [
-      JSON.stringify([item.storeId, item.id]), item,
-    ])).values()];
+    const unique = [
+      ...new Map(
+        body.items.map((item) => [
+          JSON.stringify([item.storeId, item.id]),
+          item,
+        ]),
+      ).values(),
+    ];
     const items: ProductResult[] = [];
     for (let offset = 0; offset < unique.length; offset += 200) {
-      const result = await $fetch<{ items: ProductResult[] }>("/api/products/resolve", {
-        method: "POST",
-        body: { items: unique.slice(offset, offset + 200), location: body.location },
-        signal,
-        retry: 0,
-        timeout: 120000,
-      });
+      const result = await $fetch<{ items: ProductResult[] }>(
+        "/api/products/resolve",
+        {
+          method: "POST",
+          body: {
+            items: unique.slice(offset, offset + 200),
+            location: body.location,
+          },
+          signal,
+          retry: 0,
+          timeout: 120000,
+        },
+      );
       items.push(...result.items);
     }
     return { items };

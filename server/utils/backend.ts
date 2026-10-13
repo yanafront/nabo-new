@@ -1,3 +1,4 @@
+import { rememberProducts } from "./seo-service";
 import {
   createError,
   getCookie,
@@ -61,6 +62,19 @@ export async function proxyBackend(
     ? await readBody(event)
     : undefined;
   const response = await backendResponse(event, path, method, body);
+  if (
+    response.ok &&
+    useRuntimeConfig(event).seoIngestKey &&
+    [
+      "/api/search",
+      "/api/yandex/search",
+      "/api/yandex/search/batch",
+      "/api/product",
+      "/api/products/resolve",
+    ].includes(path)
+  ) {
+    event.waitUntil(response.clone().json().then(data=>rememberProducts(event,data)).catch(()=>{}));
+  }
   // Preserve backend status, validation bodies, Retry-After and image headers.
   return sendWebResponse(event, response);
 }

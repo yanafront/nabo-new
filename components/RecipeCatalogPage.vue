@@ -35,7 +35,12 @@ watch(
 watch(
   () => route.params.category,
   (v) => {
-    category.value = typeof v === "string" ? v : "";
+    query.value = typeof route.query.q === "string" ? route.query.q : "";
+    search.value = query.value;
+    collection.value =
+      typeof route.query.collection === "string" ? route.query.collection : "";
+    category.value = !query.value && typeof v === "string" ? v : "";
+    page.value = Math.max(1, Number(route.query.page) || 1);
   },
 );
 function pageLink(n: number) {
@@ -75,7 +80,7 @@ watch([search, category, collection], () =>
 );
 onBeforeUnmount(() => clearTimeout(timer));
 const { data, pending, error, refresh } = await useAsyncData(
-  "recipe-catalog",
+  route.params.category ? "recipe-catalog:category" : "recipe-catalog:index",
   () =>
     $fetch<{ recipes: Recipe[]; total: number }>("/api/recipes", {
       query: {
@@ -109,13 +114,6 @@ const activeCategoryTitle = computed(
 );
 const recipesCount = (count: number) =>
   quantityLabel(count, "рецепт", "рецепта", "рецептов");
-function chooseCategory(id: string) {
-  query.value = "";
-  search.value = "";
-  collection.value = "";
-  category.value = id;
-  page.value = 1;
-}
 function submitSearch() {
   search.value = query.value.trim();
   if (search.value) {
@@ -194,7 +192,6 @@ usePageSeo(() => ({
         :to="`/recipes/category/${c.id}`"
         :class="{ active: category === c.id }"
         :aria-current="category === c.id ? 'page' : undefined"
-        @click="chooseCategory(c.id)"
         >{{ c.title }}</NuxtLink
       >
     </nav>
@@ -245,11 +242,7 @@ usePageSeo(() => ({
             <h2>{{ section.title }}</h2>
             <span>{{ recipesCount(section.total) }}</span>
           </div>
-          <NuxtLink
-            class="text-button"
-            :to="`/recipes/category/${section.id}`"
-            @click="chooseCategory(section.id)"
-          >
+          <NuxtLink class="text-button" :to="`/recipes/category/${section.id}`">
             Смотреть все <AppIcon name="ArrowRight" :size="16" />
           </NuxtLink>
         </div>
@@ -272,7 +265,11 @@ usePageSeo(() => ({
       />
       <button class="text-button" @click="refresh()">Повторить</button>
     </div>
-    <div v-else-if="pending" class="dish-grid" aria-label="Загрузка рецептов">
+    <div
+      v-else-if="pending && !data"
+      class="dish-grid"
+      aria-label="Загрузка рецептов"
+    >
       <div v-for="n in 6" :key="n" class="dish-skeleton skeleton" />
     </div>
     <div v-else-if="!data?.recipes.length" class="empty recipe-empty">

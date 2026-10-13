@@ -75,7 +75,7 @@ onUnmounted(() => {
       </button>
       <AccountMenu />
     </header>
-    <main id="main"><NuxtPage :key="$route.path" /></main>
+    <main id="main"><NuxtPage /></main>
     <footer class="footer">
       <NuxtLink to="/delivery">Готовые блюда с доставкой</NuxtLink>
       <span>Цены в BYN · Покупка у магазина</span>

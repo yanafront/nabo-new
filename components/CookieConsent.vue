@@ -11,7 +11,7 @@ const { valid, open, choose } = useCookieChoice();
       <div>
         <strong>Настройки cookies</strong>
         <p>
-          Необходимые cookies обеспечивают вход. Аналитика Яндекс Метрики —
+          Необходимые cookies обеспечивают вход. Яндекс Метрика и Google Analytics —
           только с вашего разрешения.
           <NuxtLink to="/legal/cookies">Подробнее</NuxtLink>
         </p>

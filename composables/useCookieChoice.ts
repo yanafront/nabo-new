@@ -11,7 +11,7 @@ export function useCookieChoice() {
   });
   const valid = computed(
     () =>
-      choice.value?.version === "2026-10-10" &&
+      choice.value?.version === "2026-10-14" &&
       choice.value.expires > Date.now(),
   );
   const analytics = computed(
@@ -22,17 +22,34 @@ export function useCookieChoice() {
     const revoke = analytics.value && !allow;
     choice.value = {
       analytics: allow,
-      version: "2026-10-10",
+      version: "2026-10-14",
       expires: Date.now() + 180 * 86400 * 1000,
     };
     open.value = false;
     if (revoke && import.meta.client) {
-      const browser = window as Window & { ym?: (...args: unknown[]) => void };
+      const browser = window as Window & {
+        ym?: (...args: unknown[]) => void;
+        gtag?: (...args: unknown[]) => void;
+        "ga-disable-G-MREKXGH3TP"?: boolean;
+      };
       browser.ym?.(113355204, "destruct");
+      browser["ga-disable-G-MREKXGH3TP"] = true;
+      browser.gtag?.("consent", "update", {
+        analytics_storage: "denied",
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+      });
       document.cookie
         .split(";")
         .map((value) => value.trim().split("=")[0])
-        .filter((name) => name.startsWith("_ym_"))
+        .filter(
+          (name) =>
+            name.startsWith("_ym_") ||
+            name === "_ga" ||
+            name.startsWith("_ga_") ||
+            name === "_gid",
+        )
         .forEach((name) => {
           const domains = [
             "",

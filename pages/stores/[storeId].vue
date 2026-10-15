@@ -76,6 +76,14 @@ onBeforeUnmount(() => controller?.abort());
         placeholder="Название продукта или бренд"
         maxlength="160"
       />
+      <VoiceSearchButton
+        @result="
+          (text) => {
+            query = text;
+            search(text);
+          }
+        "
+      />
       <button class="primary" type="submit" :disabled="pending">Найти</button>
     </form>
     <KnownProducts :store-id="store!.id" />

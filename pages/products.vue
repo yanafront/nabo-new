@@ -189,6 +189,14 @@ onBeforeUnmount(() => {
         maxlength="160"
         autofocus
       />
+      <VoiceSearchButton
+        @result="
+          (text) => {
+            query = text;
+            search(text);
+          }
+        "
+      />
       <button
         class="primary"
         type="submit"

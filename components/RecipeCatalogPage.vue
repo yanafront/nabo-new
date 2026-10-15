@@ -184,7 +184,9 @@ usePageSeo(() => ({
         "
       >
         <AppIcon name="X" /></button
-      ><button class="primary">Найти</button>
+      ><VoiceSearchButton @result="query = $event" /><button class="primary">
+        Найти
+      </button>
     </form>
     <nav class="recipe-categories" aria-label="Категории рецептов">
       <button :aria-pressed="browsingCatalog" @click="reset">Все блюда</button

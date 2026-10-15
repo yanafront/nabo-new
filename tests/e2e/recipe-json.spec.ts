@@ -26,6 +26,10 @@ test("JSON: preview, draft creation and protection from duplicate saves", async 
     page.getByRole("link", { name: "Открыть в редакторе" }),
   ).toBeVisible();
   expect(writes).toHaveLength(1);
+  expect(writes[0].document).toEqual(
+    parseRecipeJson(JSON.stringify(recipeJsonExample)),
+  );
+  expect(writes[0].document.recipe.nutrition.calories).toBe(240);
   expect(writes[0].revision).toBe(0);
   expect(writes[0].publish).toBe(false);
   expect(writes[0].document.recipe.ingredients[0].searchQuery).toBe(
@@ -76,6 +80,9 @@ test("JSON upload publishes, while invalid JSON cannot be saved", async ({
   await expect(
     page.getByRole("link", { name: "Открыть в редакторе" }),
   ).toBeVisible();
+  expect(payload.document).toEqual(
+    parseRecipeJson(JSON.stringify(recipeJsonExample)),
+  );
   expect(payload.publish).toBe(true);
   expect(payload.revision).toBe(0);
 });
@@ -83,7 +90,7 @@ test("deletion needs confirmation and sends the current revision", async ({
   page,
 }) => {
   const recipe = {
-    ...recipeJsonExample,
+    ...recipeJsonExample.recipe,
     id: "nabo:omlet-s-pomidorami",
     source: "Nabo",
     sourceId: "omlet-s-pomidorami",
@@ -219,4 +226,92 @@ test("category can change from the list without publishing the recipe draft", as
   await expect(
     page.getByRole("combobox", { name: "Категория", exact: true }),
   ).toHaveValue("soups");
+});
+
+test("full JSON is saved, reopened and edited without dropping nutrition or metadata", async ({
+  page,
+}) => {
+  let stored: any;
+  const writes: any[] = [];
+  await page.route("**/api/admin/recipes", (route) =>
+    route.fulfill({
+      json: {
+        records: stored
+          ? [
+              {
+                slug: stored.recipe.slug,
+                revision: writes.length,
+                published: true,
+                document: stored,
+              },
+            ]
+          : [],
+        photosConfigured: false,
+      },
+    }),
+  );
+  await page.route("**/api/admin/recipes/omlet-s-pomidorami", (route) => {
+    const body = route.request().postDataJSON();
+    writes.push(body);
+    stored = structuredClone(body.document);
+    return route.fulfill({
+      json: { revision: writes.length, document: stored },
+    });
+  });
+  await page.goto("/admin/recipes-json");
+  await page.getByRole("button", { name: "Вставить пример" }).click();
+  await expect(page.locator(".json-preview")).toContainText("240 ккал");
+  await page
+    .getByRole("button", { name: "Создать и опубликовать", exact: true })
+    .click();
+  await page.getByRole("link", { name: "Открыть в редакторе" }).click();
+  await expect(page.getByLabel("Ккал", { exact: true })).toHaveValue("240");
+  await expect(page.getByLabel("Белки, г", { exact: true })).toHaveValue("16");
+  await page.getByLabel("Ккал", { exact: true }).fill("120");
+  await page
+    .getByRole("combobox", { name: "Расчёт", exact: true })
+    .selectOption("100g");
+  await page.getByLabel("Вес готового блюда, г", { exact: true }).fill("600");
+  await page
+    .getByLabel("Автор / источник фото", { exact: true })
+    .fill("Автор тестового фото");
+  await page
+    .getByText("Дополнительные данные ингредиента", { exact: true })
+    .first()
+    .click();
+  await expect(
+    page.getByLabel("Граммов в одной штуке", { exact: true }).first(),
+  ).toHaveValue("50");
+  await page
+    .getByLabel("Граммов в одной штуке", { exact: true })
+    .first()
+    .fill("55");
+  await page
+    .getByRole("button", { name: "Сохранить черновик", exact: true })
+    .click();
+  await expect.poll(() => writes.length).toBe(2);
+  expect(stored.recipe.nutrition).toEqual({
+    ...recipeJsonExample.recipe.nutrition,
+    calories: 120,
+    basis: "100g",
+  });
+  expect(stored.recipe.yieldGrams).toBe(600);
+  expect(stored.recipe.imageAttribution).toBe("Автор тестового фото");
+  expect(stored.recipe.ingredients).toEqual(
+    recipeJsonExample.recipe.ingredients,
+  );
+  expect(stored.ingredients[0]).toEqual({
+    ...recipeJsonExample.ingredients[0],
+    gramsPerPiece: 55,
+  });
+  await page.reload();
+  await expect(page.getByLabel("Ккал", { exact: true })).toHaveValue("120");
+  await expect(
+    page.getByLabel("Вес готового блюда, г", { exact: true }),
+  ).toHaveValue("600");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

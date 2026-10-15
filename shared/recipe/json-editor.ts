@@ -1,28 +1,108 @@
-import { recipeCategories, type Recipe, type Ingredient } from "./model";
+import {
+  recipeCategories,
+  type Recipe,
+  type Ingredient,
+  type RecipeIngredient,
+} from "./model";
 import type { RecipeDocument } from "./editor";
+/** Full editable document. Values are an example, not verified nutritional data. */
 export const recipeJsonExample = {
-  slug: "omlet-s-pomidorami",
-  title: "Омлет с помидорами",
-  categoryId: "breakfast",
-  description: "Быстрый завтрак на двоих",
-  servings: 2,
-  cookingTime: 15,
+  recipe: {
+    id: "",
+    slug: "omlet-s-pomidorami",
+    title: "Омлет с помидорами",
+    categoryId: "breakfast",
+    description: "Быстрый завтрак на двоих",
+    image: "",
+    imageAttribution: "",
+    tags: ["quick20", "easy"],
+    servings: 2,
+    cookingTime: 15,
+    difficulty: "easy",
+    yieldGrams: 500,
+    nutrition: {
+      calories: 240,
+      protein: 16,
+      fat: 16,
+      carbs: 8,
+      basis: "serving",
+      calculationType: "calculated",
+      source: "Пример расчёта — замените проверенными данными",
+    },
+    ingredients: [
+      {
+        ingredientId: "eggs",
+        name: "Яйца",
+        quantity: 4,
+        unit: "piece",
+        weightGrams: 200,
+        categoryId: "eggs",
+        searchQuery: "Яйца куриные",
+        exactName: "",
+        exactUnit: "10 шт",
+        optional: false,
+        unquantified: false,
+      } satisfies Required<RecipeIngredient>,
+      {
+        ingredientId: "tomatoes",
+        name: "Помидоры",
+        quantity: 200,
+        unit: "g",
+        searchQuery: "Помидоры",
+      },
+      {
+        ingredientId: "milk",
+        name: "Молоко",
+        quantity: 100,
+        unit: "ml",
+        searchQuery: "Молоко 3.2%",
+      },
+    ],
+    instructions: [
+      { text: "Нарежьте помидоры." },
+      {
+        text: "Взбейте яйца с молоком. Добавьте помидоры и готовьте под крышкой до готовности.",
+      },
+    ],
+    source: "Nabo",
+    sourceId: "",
+    sourceUrl: "",
+    license: "",
+    isActive: true,
+    shopabilityScore: 100,
+  },
   ingredients: [
     {
+      id: "eggs",
       name: "Яйца",
-      quantity: 4,
-      unit: "piece",
-      searchQuery: "Яйца куриные",
-      exactUnit: "10 шт",
+      aliases: ["Яйцо куриное"],
+      productCategoryId: "eggs",
+      searchTerms: ["Яйца куриные"],
+      pantry: false,
+      common: true,
+      gramsPerPiece: 50,
+      gramsPerTablespoon: 15,
+      density: 1,
+    } satisfies Required<Ingredient>,
+    {
+      id: "tomatoes",
+      name: "Помидоры",
+      aliases: ["Томаты"],
+      searchTerms: ["Помидоры"],
+      pantry: false,
+      common: true,
     },
-    { name: "Помидоры", quantity: 200, unit: "g", searchQuery: "Помидоры" },
-    { name: "Молоко", quantity: 100, unit: "ml", searchQuery: "Молоко 3.2%" },
+    {
+      id: "milk",
+      name: "Молоко",
+      aliases: [],
+      searchTerms: ["Молоко 3.2%"],
+      pantry: false,
+      common: true,
+      density: 1.03,
+    },
   ],
-  instructions: [
-    "Нарежьте помидоры.",
-    "Взбейте яйца с молоком. Добавьте помидоры и готовьте под крышкой до готовности.",
-  ],
-};
+} satisfies { recipe: Required<Recipe>; ingredients: Ingredient[] };
 const units = [
   "g",
   "kg",
@@ -124,9 +204,13 @@ export function parseRecipeJson(
     ...raw,
     slug,
     title: text(raw.title, "title", 200),
-    id: text(raw.id ?? `nabo:${slug}`, "id", 160),
+    id: text((raw.id === "" ? undefined : raw.id) ?? `nabo:${slug}`, "id", 160),
     source: text(raw.source ?? "Nabo", "source", 200),
-    sourceId: text(raw.sourceId ?? slug, "sourceId", 200),
+    sourceId: text(
+      (raw.sourceId === "" ? undefined : raw.sourceId) ?? slug,
+      "sourceId",
+      200,
+    ),
     categoryId: text(raw.categoryId, "categoryId", 50),
     servings: number(raw.servings, "servings", 1, 30, true),
     isActive: flag(raw.isActive ?? true, "isActive"),
@@ -196,6 +280,13 @@ export function parseRecipeJson(
         result.exactName = text(row.exactName, `${path}.exactName`, 500, true);
       if (row.exactUnit !== undefined)
         result.exactUnit = text(row.exactUnit, `${path}.exactUnit`, 80, true);
+      if (row.categoryId !== undefined)
+        result.categoryId = text(
+          row.categoryId,
+          `${path}.categoryId`,
+          160,
+          true,
+        );
       return result;
     },
   );
@@ -223,6 +314,11 @@ export function parseRecipeJson(
     };
     for (const key of ["calories", "protein", "fat", "carbs"])
       nutrition[key] = number(n[key], `nutrition.${key}`, 0, 100000);
+    if (n.basis === "100g" && recipe.yieldGrams === undefined)
+      fail(
+        "yieldGrams",
+        "для КБЖУ на 100 г укажите вес готового блюда, чтобы показать КБЖУ на порцию",
+      );
     recipe.nutrition = nutrition;
   }
   const generated = [
@@ -248,7 +344,7 @@ export function parseRecipeJson(
   ).map((value, index) => {
     const path = `dictionary[${index}]`;
     const row = object(value, path);
-    return {
+    const entry: Record<string, any> = {
       ...row,
       id: text(row.id, `${path}.id`, 160),
       name: text(row.name, `${path}.name`, 200),
@@ -261,6 +357,17 @@ export function parseRecipeJson(
       pantry: flag(row.pantry ?? false, `${path}.pantry`),
       common: flag(row.common ?? true, `${path}.common`),
     };
+    if (row.productCategoryId !== undefined)
+      entry.productCategoryId = text(
+        row.productCategoryId,
+        `${path}.productCategoryId`,
+        160,
+        true,
+      );
+    for (const key of ["gramsPerPiece", "gramsPerTablespoon", "density"])
+      if (row[key] !== undefined)
+        entry[key] = number(row[key], `${path}.${key}`, 0.001, 100000);
+    return entry;
   });
   const ids = new Set(ingredients.map((row) => row.id));
   if (ids.size !== ingredients.length)

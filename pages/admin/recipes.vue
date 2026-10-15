@@ -7,6 +7,7 @@ import {
   type Recipe,
   type RecipeIngredient,
 } from "~/shared/recipe/model";
+import { parseRecipeJson } from "~/shared/recipe/json-editor";
 import type { RecipeDocument } from "~/shared/recipe/editor";
 import { retailStores, type SearchResult } from "~/shared/yandex";
 interface RecordRow {
@@ -263,6 +264,12 @@ async function save(publish: boolean) {
       i.name ||= row.name;
       if (!i.searchTerms[0]) i.searchTerms = [row.searchQuery!];
     }
+    try {
+      parseRecipeJson(JSON.stringify(doc), recipeCategories.value);
+    } catch (e: any) {
+      error.value = e.message;
+      return;
+    }
     const result = await $fetch<{
       revision: number;
       document?: RecipeDocument;
@@ -374,6 +381,21 @@ async function uploadPhoto(event: Event) {
     uploading.value = false;
     input.value = "";
   }
+}
+function setList(target: object, key: string, event: Event) {
+  (target as Record<string, unknown>)[key] = (
+    event.target as HTMLTextAreaElement
+  ).value
+    .split("\n")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  dirty.value = true;
+}
+function setOptionalNumber(target: object, key: string, event: Event) {
+  const value = (event.target as HTMLInputElement).value;
+  if (value === "") delete (target as Record<string, unknown>)[key];
+  else (target as Record<string, unknown>)[key] = Number(value);
+  dirty.value = true;
 }
 function addNutrition() {
   draft.value!.recipe.nutrition = {
@@ -543,11 +565,13 @@ useHead({
                 required /></label
             ><label
               >Время, минут<input
-                v-model.number="draft.recipe.cookingTime"
+                :value="draft.recipe.cookingTime"
+                @input="setOptionalNumber(draft.recipe, 'cookingTime', $event)"
                 type="number"
                 min="1" /></label
             ><label
               >Сложность<select v-model="draft.recipe.difficulty">
+                <option :value="undefined">Не указана</option>
                 <option value="easy">Просто</option>
                 <option value="medium">Средне</option>
                 <option value="hard">Сложно</option>
@@ -618,6 +642,51 @@ useHead({
               />{{ collection.title }}</label
             >
           </div>
+          <label
+            >Вес готового блюда, г
+            <input
+              :value="draft.recipe.yieldGrams"
+              type="number"
+              min="1"
+              max="100000"
+              step="any"
+              @input="setOptionalNumber(draft.recipe, 'yieldGrams', $event)"
+            />
+          </label>
+          <details class="admin-preview">
+            <summary>Дополнительные данные рецепта</summary>
+            <p class="muted">
+              Служебные идентификаторы сохраняются при редактировании. Теги — по
+              одному в строке.
+            </p>
+            <label
+              >Идентификатор рецепта<input
+                v-model="draft.recipe.id"
+                maxlength="160"
+                placeholder="Создаётся автоматически"
+            /></label>
+            <label
+              >Идентификатор в источнике<input
+                v-model="draft.recipe.sourceId"
+                maxlength="200"
+                placeholder="По умолчанию совпадает с адресом рецепта"
+            /></label>
+            <label
+              >Все теги<textarea
+                :value="draft.recipe.tags.join('\n')"
+                rows="3"
+                @change="setList(draft.recipe, 'tags', $event)"
+              />
+            </label>
+            <label
+              >Оценка подбора продуктов, %<input
+                v-model.number="draft.recipe.shopabilityScore"
+                type="number"
+                min="0"
+                max="100"
+                step="any"
+            /></label>
+          </details>
           <h2>Ингредиенты</h2>
           <p class="muted">
             Название увидит читатель. Поисковый запрос уйдёт в магазины.
@@ -672,7 +741,7 @@ useHead({
                 maxlength="500"
                 placeholder="Подсказка для подбора бэкендом"
             /></label>
-            <label v-if="row.exactName"
+            <label
               >Фасовка выбранного товара
               <input
                 v-model="row.exactUnit"
@@ -680,6 +749,92 @@ useHead({
                 placeholder="Например, 10 шт или 500 г"
               />
             </label>
+            <details class="admin-preview">
+              <summary>Дополнительные данные ингредиента</summary>
+              <label
+                >Вес ингредиента, г<input
+                  :value="row.weightGrams"
+                  type="number"
+                  min="0.001"
+                  step="any"
+                  @input="setOptionalNumber(row, 'weightGrams', $event)"
+              /></label>
+              <label
+                >Категория ингредиента<input
+                  v-model="row.categoryId"
+                  maxlength="160"
+              /></label>
+              <label
+                >Связь со справочником<input :value="row.ingredientId" readonly
+              /></label>
+              <template
+                v-for="entry in draft.ingredients.filter(
+                  (i) => i.id === row.ingredientId,
+                )"
+                :key="entry.id"
+              >
+                <label
+                  >Название в справочнике<input
+                    v-model="entry.name"
+                    maxlength="200"
+                /></label>
+                <label
+                  >Другие названия — по одному в строке<textarea
+                    :value="entry.aliases.join('\n')"
+                    rows="2"
+                    @change="setList(entry, 'aliases', $event)"
+                  />
+                </label>
+                <label
+                  >Поисковые названия справочника — по одному в строке<textarea
+                    :value="entry.searchTerms.join('\n')"
+                    rows="2"
+                    @change="setList(entry, 'searchTerms', $event)"
+                  />
+                </label>
+                <label
+                  >Категория продукта в справочнике<input
+                    v-model="entry.productCategoryId"
+                    maxlength="160"
+                /></label>
+                <div class="admin-inline">
+                  <label
+                    ><input v-model="entry.pantry" type="checkbox" /> Обычно
+                    есть дома</label
+                  >
+                  <label
+                    ><input v-model="entry.common" type="checkbox" />
+                    Распространённый ингредиент</label
+                  >
+                </div>
+                <label
+                  >Граммов в одной штуке<input
+                    :value="entry.gramsPerPiece"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    @input="setOptionalNumber(entry, 'gramsPerPiece', $event)"
+                /></label>
+                <label
+                  >Граммов в столовой ложке<input
+                    :value="entry.gramsPerTablespoon"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    @input="
+                      setOptionalNumber(entry, 'gramsPerTablespoon', $event)
+                    "
+                /></label>
+                <label
+                  >Плотность, г/мл<input
+                    :value="entry.density"
+                    type="number"
+                    min="0.001"
+                    step="any"
+                    @input="setOptionalNumber(entry, 'density', $event)"
+                /></label>
+              </template>
+            </details>
             <div class="admin-inline">
               <label
                 ><input v-model="row.optional" type="checkbox" />
@@ -800,11 +955,13 @@ useHead({
                   step="any"
               /></label>
             </div>
-            <label v-if="draft.recipe.nutrition.basis === '100g'"
-              >Вес готового блюда, г<input
-                v-model.number="draft.recipe.yieldGrams"
-                type="number"
-                min="1" /></label
+            <label
+              >Как получены КБЖУ<select
+                v-model="draft.recipe.nutrition.calculationType"
+              >
+                <option value="source">Из источника</option>
+                <option value="calculated">Рассчитаны</option>
+              </select></label
             ><label
               >Источник КБЖУ<input
                 v-model="draft.recipe.nutrition.source" /></label

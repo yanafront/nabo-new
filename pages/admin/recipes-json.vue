@@ -241,10 +241,30 @@ useHead({
               <code>100g</code>.
             </p>
             <p>
+              В примере заполнены все поля рецепта, включая калории и БЖУ.
+              Значения КБЖУ иллюстративные — замените их проверенными данными.
+              При <code>basis: "100g"</code> обязателен
+              <code>yieldGrams</code> — вес всего готового блюда в граммах. При
+              <code>serving</code> значения указываются на одну порцию, при
+              <code>recipe</code> — на всё блюдо.
+            </p>
+            <p>
+              Поля <code>imageAttribution</code>, <code>source</code>,
+              <code>sourceId</code>, <code>sourceUrl</code> и
+              <code>license</code> сохраняют авторство и источник. В словаре
+              <code>ingredients</code> можно задать другие названия, признаки
+              <code>pantry</code>/<code>common</code>, категорию продукта и
+              коэффициенты <code>gramsPerPiece</code>,
+              <code>gramsPerTablespoon</code>, <code>density</code>. Общие
+              поисковые названия из справочника ингредиентов имеют приоритет.
+            </p>
+            <p>
               Также принимается полный документ
-              <code>{"recipe": {...}, "ingredients": [...]}</code>.
-              Идентификаторы и словарь для короткого формата создаются
-              автоматически.
+              <code>{"recipe": {...}, "ingredients": [...]}</code>. Можно
+              использовать и короткий формат без обёртки. Идентификаторы и
+              словарь для него создаются автоматически. Пустые <code>id</code> и
+              <code>sourceId</code> заполняются из <code>slug</code> и в полном
+              формате — их не нужно вручную менять при копировании шаблона.
             </p>
           </details>
         </fieldset>

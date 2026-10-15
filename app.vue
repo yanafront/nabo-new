@@ -86,6 +86,34 @@ onUnmounted(() => {
         <NuxtLink to="/legal/cookies">Cookies</NuxtLink>
         <button @click="cookieSettings = true">Настройки cookies</button>
       </nav>
+      <div class="footer-mobile">
+        <div class="footer-mobile-brand">
+          <BrandMark /><span>Цены в BYN<br />Покупка у магазина</span>
+        </div>
+        <div class="footer-mobile-links">
+          <button @click="info = true">
+            Как работает Nabo<AppIcon name="ArrowRight" :size="15" />
+          </button>
+          <NuxtLink to="/delivery"
+            >Готовые блюда с доставкой<AppIcon name="ArrowRight" :size="15"
+          /></NuxtLink>
+          <details class="footer-mobile-legal">
+            <summary>
+              Документы<AppIcon name="ChevronDown" :size="15" />
+            </summary>
+            <nav aria-label="Правовая информация">
+              <NuxtLink to="/legal/terms">Пользовательское соглашение</NuxtLink>
+              <NuxtLink to="/legal/privacy"
+                >Политика персональных данных</NuxtLink
+              >
+              <NuxtLink to="/legal/cookies">Cookies</NuxtLink>
+            </nav>
+          </details>
+        </div>
+        <button class="footer-cookie-settings" @click="cookieSettings = true">
+          Настройки cookies
+        </button>
+      </div>
     </footer>
     <nav class="mobile-nav" aria-label="Мобильная навигация">
       <NuxtLink to="/products"><AppIcon name="Search" />Товары</NuxtLink>
@@ -177,52 +205,97 @@ onUnmounted(() => {
 </style>
 
 <style scoped>
+.footer-mobile {
+  display: none;
+}
 @media (max-width: 760px) {
+  .footer > a,
+  .footer > span,
+  .footer > .footer-documents {
+    display: none;
+  }
   .footer {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: 8px;
-    padding: 20px 0 16px;
-    font-size: 12px;
+    display: block;
+    padding: 24px 0 12px;
   }
-  .footer > a {
-    color: var(--ink);
-    font-weight: 600;
-    line-height: 1.5;
-  }
-  .footer > span {
-    white-space: normal;
-    font-size: 11px;
-    line-height: 1.5;
-  }
-  .footer-documents {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-    justify-items: start;
-    gap: 0 16px;
+  .footer-mobile {
+    display: block;
     width: 100%;
-    padding-top: 12px;
-    margin-top: 4px;
+  }
+  .footer-mobile-brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .footer-mobile-brand :deep(.brand-mark) {
+    width: 84px;
+    height: 28px;
+  }
+  .footer-mobile-brand > span {
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: right;
+    color: var(--muted);
+  }
+  .footer-mobile-links {
     border-top: 1px solid var(--line);
-    font-size: 12px;
+    border-bottom: 1px solid var(--line);
   }
-  .footer-documents > :nth-child(-n + 3) {
-    grid-column: 1 / -1;
-  }
-  .footer-documents a,
-  .footer-documents button {
+  .footer-mobile-links > a,
+  .footer-mobile-links > button,
+  .footer-mobile-legal > summary {
     display: flex;
     align-items: center;
-    min-height: 40px;
-    max-width: 100%;
-    padding: 8px 0;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 0;
+    border: 0;
+    background: none;
     text-align: left;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .footer-mobile-links svg {
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+  .footer-mobile-legal > summary {
+    list-style: none;
+  }
+  .footer-mobile-legal > summary::-webkit-details-marker {
+    display: none;
+  }
+  .footer-mobile-legal[open] > summary :deep(svg) {
+    transform: rotate(180deg);
+  }
+  .footer-mobile-legal nav {
+    display: grid;
+    padding: 0 0 10px 12px;
+    border-left: 2px solid var(--line);
+    margin-bottom: 12px;
+  }
+  .footer-mobile-legal a {
+    padding: 10px 0 10px 4px;
     font-size: 12px;
     line-height: 1.5;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .footer .footer-cookie-settings {
+    display: block;
+    min-height: 44px;
+    padding: 12px 0;
+    margin-top: 4px;
+    text-align: left;
+    font-size: 11px;
+    color: var(--muted);
   }
 }
 </style>

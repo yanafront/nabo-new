@@ -212,10 +212,6 @@ useHead(() => ({
 .dining-offers li {
   min-width: 0;
 }
-.dining-card:focus-visible {
-  outline: 2px solid var(--brand-hover);
-  outline-offset: 3px;
-}
 .dining-image {
   position: relative;
   aspect-ratio: 4/3;

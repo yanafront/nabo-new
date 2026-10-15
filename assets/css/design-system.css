@@ -71,6 +71,11 @@ a:hover {
   outline: 3px solid #2f6bff;
   outline-offset: 4px;
 }
+button:focus, button:focus-visible, a:focus, a:focus-visible,
+[role="button"]:focus, [role="button"]:focus-visible,
+[role="link"]:focus, [role="link"]:focus-visible {
+  outline: none;
+}
 input:focus, input:focus-visible, textarea:focus, textarea:focus-visible, select:focus, select:focus-visible {
   outline: none;
   border-color: #2f6bff;

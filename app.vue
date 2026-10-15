@@ -116,7 +116,10 @@ onUnmounted(() => {
       </div>
     </footer>
     <nav class="mobile-nav" aria-label="Мобильная навигация">
-      <NuxtLink to="/products"><AppIcon name="Search" />Товары</NuxtLink>
+      <NuxtLink to="/products"
+        ><span class="mobile-nav-icon"><AppIcon name="Search" /></span
+        >Товары</NuxtLink
+      >
       <NuxtLink
         to="/recipes"
         :class="{ 'section-active': recipesActive }"
@@ -127,13 +130,17 @@ onUnmounted(() => {
               : 'location'
             : undefined
         "
-        ><AppIcon name="Leaf" />Рецепты</NuxtLink
+        ><span class="mobile-nav-icon"><AppIcon name="Leaf" /></span
+        >Рецепты</NuxtLink
       >
       <NuxtLink to="/basket"
-        ><AppIcon name="ShoppingBasket" />Корзина
-        <span v-if="items.length">{{ items.length }}</span></NuxtLink
+        ><span class="mobile-nav-icon"><AppIcon name="ShoppingBasket" /></span
+        >Корзина <span v-if="items.length">{{ items.length }}</span></NuxtLink
       >
-      <NuxtLink to="/saved"><AppIcon name="Heart" />Сохранённое</NuxtLink>
+      <NuxtLink to="/saved"
+        ><span class="mobile-nav-icon"><AppIcon name="Heart" /></span
+        >Сохранённое</NuxtLink
+      >
     </nav>
     <ToastHost />
     <LazyProductPreviewModal v-if="previewProduct" />

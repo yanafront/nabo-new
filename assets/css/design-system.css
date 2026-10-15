@@ -1990,17 +1990,7 @@ ol {
     color: var(--ink);
     font-weight: 700;
   }
-  .mobile-nav a.router-link-exact-active:before,
-  .mobile-nav a.section-active:before {
-    content: "";
-    position: absolute;
-    top: -8px;
-    width: 34px;
-    height: 3px;
-    background: var(--brand);
-    border-radius: 0 0 3px 3px;
-  }
-  .mobile-nav a > span {
+  .mobile-nav a > span:not(.mobile-nav-icon) {
     position: absolute;
     top: 0;
     left: calc(50% + 9px);
@@ -3060,15 +3050,6 @@ input[type="checkbox"] {
   .mobile-nav a.router-link-exact-active,
   .mobile-nav a.section-active {
     color: var(--ink);
-  }
-  .mobile-nav a.router-link-exact-active:before,
-  .mobile-nav a.section-active:before {
-    top: 0;
-    width: 52px;
-    height: 29px;
-    border-radius: 20px;
-    background: var(--brand-soft);
-    z-index: -1;
   }
   .mobile-nav a.router-link-exact-active svg,
   .mobile-nav a.section-active svg {
@@ -4707,4 +4688,20 @@ select, select option {
 
 @media (pointer: coarse) {
   html { touch-action: pan-x pan-y; }
+}
+
+@media (max-width: 760px) {
+  .mobile-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 10px;
+  }
+  .mobile-nav a.router-link-exact-active .mobile-nav-icon,
+  .mobile-nav a.section-active .mobile-nav-icon {
+    background: var(--brand-soft);
+  }
 }

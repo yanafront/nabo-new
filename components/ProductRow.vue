@@ -5,6 +5,7 @@ const props = defineProps<{
   product: Product;
   quantity: number;
   previewProduct?: RetailProduct;
+  eagerImage?: boolean;
 }>();
 const { open: preview } = useProductPreview();
 defineEmits<{
@@ -15,7 +16,12 @@ defineEmits<{
 </script>
 <template>
   <article class="product-row">
-    <ProductImage :src="product.image" :fallback="product.emoji" />
+    <ProductImage
+      :src="product.image"
+      :fallback="product.emoji"
+      :alt="product.name"
+      :eager="eagerImage"
+    />
     <div class="product-name">
       <h3>
         <button

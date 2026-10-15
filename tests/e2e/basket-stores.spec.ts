@@ -15,7 +15,11 @@ const source = (storeId: StoreId, id: string, name: string, price: number) => ({
   placeSlug: storeId,
   fetchedAt: new Date().toISOString(),
 });
-async function mockCart(page: import("@playwright/test").Page, stale = false) {
+async function mockCart(
+  page: import("@playwright/test").Page,
+  stale = false,
+  images = false,
+) {
   let cart = [
     { storeId: "green", id: "milk", name: longName, count: 1, unit: "1 л" },
     {
@@ -68,16 +72,21 @@ async function mockCart(page: import("@playwright/test").Page, stale = false) {
             selected:
               store.id === "evroopt" && index === 1
                 ? null
-                : source(
-                    store.id,
-                    `${store.id}-${item.id}`,
-                    item.query,
-                    store.id === "evroopt"
-                      ? 1
-                      : store.id === "sosedi"
-                        ? 3 + index
-                        : 5 + index,
-                  ),
+                : {
+                    ...source(
+                      store.id,
+                      `${store.id}-${item.id}`,
+                      item.query,
+                      store.id === "evroopt"
+                        ? 1
+                        : store.id === "sosedi"
+                          ? 3 + index
+                          : 5 + index,
+                    ),
+                    image: images
+                      ? `https://avatars.mds.yandex.net/get-eda/1/${store.id}-${index}/orig`
+                      : null,
+                  },
             alternatives: [
               source(
                 store.id,
@@ -288,4 +297,36 @@ test("opening a basket product and closing it keeps the store and does not reloa
   );
   expect(cartReads).toBe(reads);
   expect(compares).toBe(comparisons);
+});
+
+test("store switching replaces image nodes and does not retain another retailer photo", async ({
+  page,
+}) => {
+  await page.route("https://avatars.mds.yandex.net/**", (r) =>
+    r.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="lime"/></svg>',
+    }),
+  );
+  await mockCart(page, false, true);
+  await page.goto("/basket");
+  const first = page.locator(".store-product-line .product-image").first();
+  await expect(first).toHaveAttribute("src", /sosedi-0/);
+  await expect(first).toHaveAttribute("loading", "eager");
+  const old = await first.elementHandle();
+  await page.getByRole("tab", { name: /Green/ }).click();
+  await expect(first).toHaveAttribute("src", /green-0/);
+  expect(await old!.evaluate((node) => node.isConnected)).toBe(false);
+  await expect
+    .poll(() =>
+      first.evaluate((image) => (image as HTMLImageElement).naturalWidth),
+    )
+    .toBeGreaterThan(0);
+  await page.getByRole("tab", { name: /Соседи/ }).click();
+  await expect(first).toHaveAttribute("src", /sosedi-0/);
+  await expect
+    .poll(() =>
+      first.evaluate((image) => (image as HTMLImageElement).naturalWidth),
+    )
+    .toBeGreaterThan(0);
 });

@@ -303,14 +303,15 @@ onBeforeUnmount(() => {
             Сумма ниже — за найденные товары.
           </p>
           <div
-            v-for="line in shownLines"
-            :key="line.itemId"
+            v-for="(line, index) in shownLines"
+            :key="`${active}:${line.itemId}:${line.selected?.id || 'missing'}`"
             class="store-product-line"
           >
             <ProductRow
               v-if="available(line)"
               :product="retailProduct(line.selected!)"
               :preview-product="line.selected!"
+              :eager-image="index < 4"
               :quantity="line.quantity"
               @change="change(line.itemId, $event)"
               @remove="remove(line.itemId)"

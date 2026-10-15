@@ -11,6 +11,10 @@ const props = withDefaults(
 );
 const source = computed(() => productImageUrl(props.src));
 const failed = ref(false);
+const image = ref<HTMLImageElement>();
+function onError(event: Event) {
+  if (event.currentTarget === image.value) failed.value = true;
+}
 watch(source, () => {
   failed.value = false;
 });
@@ -18,6 +22,8 @@ watch(source, () => {
 <template>
   <img
     v-if="source && !failed"
+    :key="source"
+    ref="image"
     :src="source"
     class="product-image"
     :alt="alt || ''"
@@ -26,7 +32,7 @@ watch(source, () => {
     :loading="eager ? 'eager' : 'lazy'"
     :fetchpriority="eager ? 'high' : 'auto'"
     decoding="async"
-    @error="failed = true"
+    @error="onError"
   />
   <span v-else class="product-emoji" aria-hidden="true">{{ fallback }}</span>
 </template>

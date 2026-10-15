@@ -175,3 +175,54 @@ onUnmounted(() => {
   text-decoration: underline;
 }
 </style>
+
+<style scoped>
+@media (max-width: 760px) {
+  .footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    padding: 20px 0 16px;
+    font-size: 12px;
+  }
+  .footer > a {
+    color: var(--ink);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .footer > span {
+    white-space: normal;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .footer-documents {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    justify-items: start;
+    gap: 0 16px;
+    width: 100%;
+    padding-top: 12px;
+    margin-top: 4px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+  }
+  .footer-documents > :nth-child(-n + 3) {
+    grid-column: 1 / -1;
+  }
+  .footer-documents a,
+  .footer-documents button {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    max-width: 100%;
+    padding: 8px 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+}
+</style>

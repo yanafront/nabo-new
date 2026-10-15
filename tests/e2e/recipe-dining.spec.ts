@@ -139,7 +139,7 @@ test("restaurant offers show portions, prices and external links without changin
       const bounds = await drawer.boundingBox();
       return Math.round(bounds!.x + bounds!.width);
     })
-    .toBe(page.viewportSize()!.width);
+    .toBe(page.viewportSize()!.width - (test.info().project.name === "mobile" ? 12 : 0));
   await drawer.screenshot({
     path: `/tmp/nabo-ingredients-drawer-${test.info().project.name}.png`,
   });

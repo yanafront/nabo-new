@@ -5,6 +5,17 @@ const dialog = ref<HTMLDialogElement>();
 let previous: HTMLElement | null = null;
 let pressedOutside = false;
 let previousOverflow = "";
+function syncViewport() {
+  const viewport = window.visualViewport;
+  dialog.value?.style.setProperty(
+    "--modal-viewport-height",
+    `${viewport?.height || window.innerHeight}px`,
+  );
+  dialog.value?.style.setProperty(
+    "--modal-viewport-top",
+    `${viewport?.offsetTop || 0}px`,
+  );
+}
 function outsideDialog(event: MouseEvent) {
   const bounds = dialog.value?.getBoundingClientRect();
   return (
@@ -35,9 +46,16 @@ onMounted(() => {
     previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
   }
+  syncViewport();
+  window.visualViewport?.addEventListener("resize", syncViewport);
+  window.visualViewport?.addEventListener("scroll", syncViewport);
+  window.addEventListener("resize", syncViewport);
   dialog.value?.showModal();
 });
 onBeforeUnmount(() => {
+  window.visualViewport?.removeEventListener("resize", syncViewport);
+  window.visualViewport?.removeEventListener("scroll", syncViewport);
+  window.removeEventListener("resize", syncViewport);
   dialog.value?.close();
   if (props.variant === "drawer")
     document.body.style.overflow = previousOverflow;
@@ -115,6 +133,36 @@ onBeforeUnmount(() => {
 }
 @media (prefers-reduced-motion: reduce) {
   .modal-drawer[open] {
+    animation: none;
+  }
+}
+</style>
+
+<style scoped>
+@media (max-width: 760px) {
+  .modal[open] {
+    position: fixed;
+    inset: auto 0;
+    top: calc(
+      var(--modal-viewport-top, 0px) + var(--modal-viewport-height, 100dvh) / 2
+    );
+    bottom: auto;
+    margin: 0 auto;
+    translate: 0 -50%;
+    width: calc(100% - 24px);
+    max-width: calc(100% - 24px);
+    max-height: calc(
+      var(--modal-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) -
+        env(safe-area-inset-bottom)
+    );
+    border: 1px solid var(--line);
+    border-radius: 20px;
+  }
+  .modal.modal-drawer[open] {
+    height: calc(
+      var(--modal-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) -
+        env(safe-area-inset-bottom)
+    );
     animation: none;
   }
 }

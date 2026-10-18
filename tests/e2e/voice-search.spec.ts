@@ -101,6 +101,10 @@ test("recipe voice search updates the field and searches once", async ({
   });
   await page.goto("/products");
   await page.locator('a[href="/recipes"]:visible').first().click();
+  await expect(page).toHaveURL(/\/recipes$/);
+  await expect(
+    page.getByRole("textbox", { name: "Поиск рецептов", exact: true }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Ввести голосом", exact: true })
     .click();

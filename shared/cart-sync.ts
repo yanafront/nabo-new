@@ -32,9 +32,13 @@ export function createCartSync(options: {
   async function authenticate() {
     if (authChecked) return;
     try {
-      await options.request("/api/auth/me", { retry: 0, timeout: 15000 });
-      authenticated = true;
+      const user = await options.request("/api/auth/me", {
+        retry: 0,
+        timeout: 15000,
+      });
+      authenticated = Boolean(user && typeof user.id === "string" && user.id);
       authChecked = true;
+      if (!authenticated) options.write(options.readGuest?.() || []);
     } catch (error: any) {
       if ((error?.statusCode || error?.status) !== 401) throw error;
       authenticated = false;

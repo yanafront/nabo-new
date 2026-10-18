@@ -277,6 +277,10 @@ try {
   const privateResponse = await get("/basket");
   assert.match(privateResponse.headers.get("x-robots-tag"), /noindex/);
   assert.match(
+    privateResponse.headers.get("cache-control"),
+    /private, no-store/,
+  );
+  assert.match(
     await privateResponse.text(),
     /name="robots" content="noindex,follow"/,
   );

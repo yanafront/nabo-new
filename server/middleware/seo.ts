@@ -7,6 +7,15 @@ import { categoriesFor } from "../utils/recipe-categories";
 export default defineEventHandler(async (event) => {
   const url = getRequestURL(event),
     config = useRuntimeConfig(event);
+  const privatePage = /^\/(basket|saved|account|admin)(\/|$)/.test(
+    url.pathname,
+  );
+  const personalizedPage =
+    getCookie(event, "nabo-session") &&
+    !url.pathname.startsWith("/api/") &&
+    !/\.[a-z0-9]+$/i.test(url.pathname);
+  if (privatePage || personalizedPage)
+    setHeader(event, "Cache-Control", "private, no-store");
   if (
     !indexableHost(url.hostname, config.public.seoIndexable) ||
     !seoPolicy(url.pathname, Object.fromEntries(url.searchParams)).index ||

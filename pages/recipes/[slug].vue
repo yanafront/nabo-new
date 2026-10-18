@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
               ? "Не удалось подобрать"
               : "Нет продуктов к покупке"
           }}</strong>
-          <p class="muted price-caption">
+          <p v-if="!priceLoading" class="muted price-caption">
             {{
               estimate.complete
                 ? "Все продукты"

@@ -21,7 +21,11 @@ test("guest can add, reload, compare, edit and clear without backend cart or log
   let cartRequests = 0;
   let comparisons = 0;
   await page.route("**/api/auth/me", (route) =>
-    route.fulfill({ status: 401, json: {} }),
+    route.fulfill({
+      status: 200,
+      body: "null",
+      contentType: "application/json",
+    }),
   );
   await page.route("**/api/cart**", (route) => {
     cartRequests++;

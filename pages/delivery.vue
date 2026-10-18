@@ -4,7 +4,8 @@ import type { Recipe } from "~/shared/recipe/model";
 const route = useRoute();
 const origin = PRIMARY_SITE_ORIGIN;
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
-const { data } = await useAsyncData(
+const failedImages = ref(new Set<string>());
+const { data, error, refresh } = await useAsyncData(
   "delivery-recipes",
   () =>
     $fetch<{ recipes: Recipe[]; total: number }>("/api/recipes", {
@@ -46,26 +47,43 @@ usePageSeo(() => ({
         </p>
       </div>
     </div>
-    <div class="dish-grid">
+    <div v-if="error" class="info-note" role="status">
+      <p>Не удалось загрузить блюда. Попробуйте ещё раз.</p>
+      <button class="secondary" @click="refresh()">Повторить</button>
+    </div>
+    <p v-else-if="!data?.recipes.length" class="muted">
+      Пока нет доступных блюд.
+    </p>
+    <div v-else class="dish-grid">
       <NuxtLink
         v-for="(recipe, index) in data?.recipes"
         :key="recipe.slug"
         :to="`/recipes/${recipe.slug}#recipe-ready-offers`"
         class="delivery-dish"
-        ><img
-          v-if="recipe.image"
-          :src="recipe.image"
-          :alt="recipe.title"
-          :loading="index < 2 ? 'eager' : 'lazy'"
-          decoding="async"
-          width="400"
-          height="280"
-        />
+        ><div class="delivery-photo">
+          <img
+            v-if="recipe.image && !failedImages.has(recipe.slug)"
+            :src="recipe.image"
+            :alt="recipe.title"
+            :loading="index < 2 ? 'eager' : 'lazy'"
+            decoding="async"
+            width="400"
+            height="280"
+            @error="failedImages.add(recipe.slug)"
+          />
+          <div v-else class="delivery-placeholder" aria-hidden="true">
+            <AppIcon name="Utensils" :size="32" />
+          </div>
+        </div>
         <h2>{{ recipe.title }}</h2>
         <span class="muted">Предложения готового блюда</span></NuxtLink
       >
     </div>
-    <nav class="delivery-pagination" aria-label="Страницы блюд">
+    <nav
+      v-if="data?.recipes.length && !error"
+      class="delivery-pagination"
+      aria-label="Страницы блюд"
+    >
       <NuxtLink v-if="page > 1" :to="pageLink(page - 1)">Назад</NuxtLink
       ><span>Страница {{ page }}</span
       ><NuxtLink v-if="page * 24 < (data?.total || 0)" :to="pageLink(page + 1)"
@@ -79,11 +97,22 @@ usePageSeo(() => ({
   min-width: 0;
   display: block;
 }
-.delivery-dish img {
-  width: 100%;
+.delivery-photo {
   height: 180px;
-  object-fit: cover;
   border-radius: 16px;
+  overflow: hidden;
+  background: #f6f7f9;
+}
+.delivery-photo img,
+.delivery-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.delivery-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
 }
 .delivery-dish h2 {
   font-size: 17px;

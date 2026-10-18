@@ -203,7 +203,7 @@ it("restores guest session, merges it on login and keeps account data out of gue
   const request = vi.fn(async (url: string, options?: any) => {
     if (url === "/api/auth/me") {
       if (!loggedIn) throw { statusCode: 401 };
-      return {};
+      return { id: "user" };
     }
     if (options?.method === "POST") {
       stored = options.body.items;
@@ -235,4 +235,25 @@ it("restores guest session, merges it on login and keeps account data out of gue
   sync.logout();
   expect(items).toEqual([]);
   expect(sync.isGuest()).toBe(true);
+});
+
+it("a successful null session restores guest products without requesting the account cart", async () => {
+  let items: Item[] = [];
+  const guest = [row("guest", 2)];
+  const request = vi.fn(async () => null);
+  const sync = createCartSync({
+    read: () => items,
+    write: (rows) => {
+      items = rows;
+    },
+    readGuest: () => guest,
+    request,
+    status: vi.fn(),
+    location: () => ({ lat: 53.9, lon: 27.5667, label: "Минск" }),
+  });
+  expect(await sync.initialize()).toBe(true);
+  expect(items).toEqual(guest);
+  expect(sync.isGuest()).toBe(true);
+  expect(sync.comparisonItems()).toHaveLength(1);
+  expect(request.mock.calls).toHaveLength(1);
 });

@@ -241,10 +241,15 @@ onBeforeUnmount(() => {
           <span v-if="priceLoading" class="price-loading" role="status"
             ><span class="spinner" />Считаем стоимость…</span
           >
-          <strong v-else-if="estimate.items.length" class="cook-price"
-            >{{ !estimate.complete ? "от " : ""
-            }}{{ money(estimate.total) }} BYN</strong
-          >
+          <div v-else-if="estimate.items.length" class="cook-price-row">
+            <strong class="cook-price"
+              >{{ !estimate.complete ? "от " : ""
+              }}{{ money(estimate.total) }} BYN</strong
+            >
+            <span v-if="estimate.complete" class="portion-price"
+              >≈ {{ money(estimate.total / servings) }} BYN / порция</span
+            >
+          </div>
           <strong v-else class="cook-price">{{
             request?.items.length
               ? "Не удалось подобрать"
@@ -256,8 +261,13 @@ onBeforeUnmount(() => {
                 ? "Все продукты"
                 : `Найдено ${estimate.matched} из ${estimate.requested}`
             }}
-            · {{ quantityLabel(servings, "порция", "порции", "порций") }} · без
-            доставки
+            · на {{ quantityLabel(servings, "порцию", "порции", "порций") }}
+          </p>
+          <p
+            v-if="estimate.items.length && !priceLoading"
+            class="muted price-caption"
+          >
+            Целые упаковки · без доставки
           </p>
 
           <button
@@ -421,7 +431,15 @@ onBeforeUnmount(() => {
                 >{{ estimate.complete ? "Итого" : "За найденные товары"
                 }}<small>Без доставки</small></span
               >
-              <strong>{{ money(estimate.total) }} BYN</strong>
+              <div class="found-products-amount">
+                <strong>{{ money(estimate.total) }} BYN</strong>
+                <small v-if="estimate.complete"
+                  >≈ {{ money(estimate.total / servings) }} BYN / порция ·
+                  {{
+                    quantityLabel(servings, "порция", "порции", "порций")
+                  }}</small
+                >
+              </div>
             </div>
             <button
               class="primary"
@@ -861,6 +879,33 @@ h2 {
 .price-retry {
   font-size: 12px;
   padding: 4px 0 0;
+}
+.cook-price-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 4px;
+}
+.cook-price-row .cook-price {
+  margin: 0;
+  white-space: nowrap;
+}
+.portion-price {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.found-products-amount {
+  min-width: 0;
+  text-align: right;
+}
+.found-products-amount small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
 }
 .cook-price {
   display: block;

@@ -32,7 +32,7 @@ export function useCookieChoice() {
         gtag?: (...args: unknown[]) => void;
         "ga-disable-G-MREKXGH3TP"?: boolean;
       };
-      browser.ym?.(113355204, "destruct");
+      browser.ym?.(113666393, "destruct");
       browser["ga-disable-G-MREKXGH3TP"] = true;
       browser.gtag?.("consent", "update", {
         analytics_storage: "denied",

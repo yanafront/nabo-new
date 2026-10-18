@@ -63,10 +63,10 @@ it("loads once after opt-in, with recording disabled and no query parameters", a
   consent.value = true;
   changed(true);
   expect(scripts).toEqual([
-    { src: "https://mc.yandex.ru/metrika/tag.js?id=113355204", async: true },
+    { src: "https://mc.yandex.ru/metrika/tag.js?id=113666393", async: true },
   ]);
   expect(browser.ym.a[0]).toEqual([
-    113355204,
+    113666393,
     "init",
     expect.objectContaining({
       webvisor: false,
@@ -88,7 +88,7 @@ it("counts SPA transitions once and excludes account and admin pages", async () 
   navigate({}, {});
   await Promise.resolve();
   expect(browser.ym.a[2]).toEqual([
-    113355204,
+    113666393,
     "hit",
     "https://nabo-new.vercel.app/recipes",
     { referer: "https://nabo-new.vercel.app/", title: "Nabo" },
@@ -102,7 +102,7 @@ it("counts SPA transitions once and excludes account and admin pages", async () 
   expect(browser.ym.a).toHaveLength(3);
   consent.value = false;
   changed(false);
-  expect(browser.ym.a.at(-1)).toEqual([113355204, "destruct"]);
+  expect(browser.ym.a.at(-1)).toEqual([113666393, "destruct"]);
   navigate({}, {});
   await Promise.resolve();
   expect(browser.ym.a).toHaveLength(4);
@@ -115,7 +115,7 @@ it("keeps localhost visits out of analytics", async () => {
 });
 it("does not insert the same script twice", async () => {
   consent.value = true;
-  scripts.push({ src: "https://mc.yandex.ru/metrika/tag.js?id=113355204" });
+  scripts.push({ src: "https://mc.yandex.ru/metrika/tag.js?id=113666393" });
   await install();
   hooks["app:mounted"]!();
   expect(scripts).toHaveLength(1);

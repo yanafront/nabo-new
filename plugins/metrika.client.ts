@@ -7,7 +7,7 @@ export default defineNuxtPlugin((app) => {
     return;
   const { analytics } = useCookieChoice();
   const browser = window as Window & { ym?: Metrika; dataLayer?: unknown[] };
-  const counter = 113355204;
+  const counter = 113666393;
   let started = false;
   let previous = "";
   const safeUrl = () => window.location.origin + window.location.pathname;

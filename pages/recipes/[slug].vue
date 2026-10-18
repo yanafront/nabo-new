@@ -608,12 +608,8 @@ onBeforeUnmount(() => {
   font-size: 12px;
 }
 .found-products-modal[open] {
-  position: fixed;
-  inset: 0;
-  margin: auto;
   width: min(690px, calc(100vw - 24px));
   height: fit-content;
-  max-height: 88dvh;
   border: 1px solid var(--line);
   border-radius: 20px;
   display: flex;

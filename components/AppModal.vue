@@ -5,6 +5,7 @@ const dialog = ref<HTMLDialogElement>();
 let previous: HTMLElement | null = null;
 let pressedOutside = false;
 let previousOverflow = "";
+let viewportFrame: number | undefined;
 function syncViewport() {
   const viewport = window.visualViewport;
   dialog.value?.style.setProperty(
@@ -51,8 +52,11 @@ onMounted(() => {
   window.visualViewport?.addEventListener("scroll", syncViewport);
   window.addEventListener("resize", syncViewport);
   dialog.value?.showModal();
+  // Safari can adjust the visual viewport while focusing an opened dialog.
+  viewportFrame = window.requestAnimationFrame(syncViewport);
 });
 onBeforeUnmount(() => {
+  if (viewportFrame !== undefined) window.cancelAnimationFrame(viewportFrame);
   window.visualViewport?.removeEventListener("resize", syncViewport);
   window.visualViewport?.removeEventListener("scroll", syncViewport);
   window.removeEventListener("resize", syncViewport);
@@ -89,6 +93,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.modal[open] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+}
 .modal.modal-drawer {
   position: fixed;
   inset: 0 0 0 auto;
@@ -140,7 +149,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @media (max-width: 760px) {
-  .modal[open] {
+  dialog.modal[open] {
     position: fixed;
     inset: auto 0;
     top: calc(
@@ -148,7 +157,8 @@ onBeforeUnmount(() => {
     );
     bottom: auto;
     margin: 0 auto;
-    translate: 0 -50%;
+    translate: none;
+    transform: translateY(-50%);
     width: calc(100% - 24px);
     max-width: calc(100% - 24px);
     max-height: calc(

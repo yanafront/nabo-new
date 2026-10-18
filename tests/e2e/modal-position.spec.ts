@@ -23,7 +23,7 @@ async function centered(page: Page) {
 test("mobile dialogs stay centered after scroll and viewport resize", async ({
   page,
 }, info) => {
-  test.skip(info.project.name !== "mobile");
+  test.skip(!info.project.use.isMobile);
   await page.goto("/products");
   await page
     .getByRole("button", { name: "Только необходимые", exact: true })

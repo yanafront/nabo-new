@@ -2,7 +2,7 @@
 
 Основной адрес: https://www.nabo.by. В Vercel Production задайте `NUXT_PUBLIC_SITE_URL=https://www.nabo.by` и `NUXT_PUBLIC_SEO_INDEXABLE=true`, затем выполните redeploy. Старые значения с Vercel и nabo.by дополнительно нормализуются в коде.
 
-`nabo.by` перенаправляется 308 на www с сохранением пути и query. Vercel-домены и неизвестные хосты получают noindex в HTML и X-Robots-Tag, robots Disallow и 404 для sitemap. Preview также можно закрыть Vercel Deployment Protection. Основной домен не блокируется.
+`nabo.by` перенаправляется 308 на www с сохранением пути и query. Vercel-домены и неизвестные хосты получают noindex в HTML и X-Robots-Tag, robots без sitemap и 404 для sitemap. Обход страниц разрешён, чтобы робот мог увидеть noindex и удалить ранее проиндексированные Vercel URL (https://developers.google.com/search/docs/crawling-indexing/block-indexing). Preview также можно закрыть Vercel Deployment Protection. Основной домен не блокируется.
 
 После деплоя отправьте https://www.nabo.by/sitemap.xml в Google Search Console и Яндекс Вебмастер; индексация и замена старых URL происходят после переобхода.
 

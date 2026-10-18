@@ -5,6 +5,7 @@ export default defineEventHandler((event) => {
   setHeader(event, "Content-Type", "text/plain; charset=utf-8");
   setHeader(event, "Cache-Control", "public, max-age=300");
   if (!indexableHost(getRequestURL(event).hostname, config.public.seoIndexable))
-    return "User-agent: *\nDisallow: /\n";
+    // Crawlers must reach the noindex response to remove previously indexed aliases.
+    return "User-agent: *\nAllow: /\nDisallow: /api/\n";
   return `User-agent: *\nAllow: /\nDisallow: /api/\nAllow: /api/product-image\n\nUser-agent: Yandex\nAllow: /\nDisallow: /api/\nAllow: /api/product-image\nClean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term&gclid&yclid\n\nSitemap: ${origin}/sitemap.xml\n`;
 });

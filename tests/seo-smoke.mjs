@@ -191,7 +191,10 @@ try {
     "/robots.txt",
     "branch-preview.vercel.app",
   );
-  assert.match(await previewRobots.text(), /Disallow: \//);
+  const previewRules = await previewRobots.text();
+  assert.match(previewRules, /Allow: \//);
+  assert.doesNotMatch(previewRules, /Sitemap:/);
+  assert.doesNotMatch(previewRules, /^Disallow: \/$/m);
   assert.equal(
     (await hostPage("/sitemap.xml", "nabo-new.vercel.app")).status,
     404,
@@ -210,10 +213,7 @@ try {
     const response = await get(path);
     assert.equal(response.headers.get("x-powered-by"), null);
     assert.equal(response.headers.get("x-frame-options"), "DENY");
-    assert.equal(
-      response.headers.get("referrer-policy"),
-      "no-referrer",
-    );
+    assert.equal(response.headers.get("referrer-policy"), "no-referrer");
     assert.match(
       response.headers.get("permissions-policy"),
       /geolocation=\(self\)/,

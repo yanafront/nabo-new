@@ -1,9 +1,9 @@
-import { createServer } from "node:http";
+import { createServer, request } from "node:http";
 import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 const fixturePort = 3121,
   appPort = 3120,
-  origin = "https://nabo.example";
+  origin = "https://www.nabo.by";
 const recipe = {
   id: "seo-test",
   slug: "seo-test",
@@ -146,7 +146,7 @@ const child = spawn(process.execPath, [".output/server/index.mjs"], {
     NUXT_RETAIL_API_BASE: `http://127.0.0.1:${fixturePort}`,
     NUXT_DINING_API_BASE: `http://127.0.0.1:${fixturePort}`,
     NUXT_SEO_INGEST_KEY: "fixture-key",
-    NUXT_PUBLIC_SITE_URL: origin,
+    NUXT_PUBLIC_SITE_URL: "https://nabo-new.vercel.app", // Intentionally stale deployment variable.
     NUXT_PUBLIC_SEO_INDEXABLE: "true",
   },
   stdio: ["ignore", "pipe", "pipe"],
@@ -155,9 +155,26 @@ let logs = "";
 child.stdout.on("data", (b) => (logs += b));
 child.stderr.on("data", (b) => (logs += b));
 const base = `http://127.0.0.1:${appPort}`;
-async function get(path) {
-  return fetch(base + path, { redirect: "manual" });
+function hostPage(path, host = "www.nabo.by") {
+  return new Promise((resolve, reject) => {
+    const req = request(base + path, { headers: { host } }, (res) => {
+      const chunks = [];
+      res.on("data", (chunk) => chunks.push(chunk));
+      res.on("end", () =>
+        resolve(
+          new Response(Buffer.concat(chunks), {
+            status: res.statusCode,
+            headers: res.headers,
+          }),
+        ),
+      );
+    });
+    req.on("error", reject);
+    req.end();
+  });
 }
+const get = hostPage;
+
 try {
   for (let i = 0; i < 50; i++) {
     try {
@@ -167,14 +184,55 @@ try {
       await new Promise((r) => setTimeout(r, 100));
     }
   }
+  const preview = await hostPage("/recipes/seo-test", "nabo-new.vercel.app");
+  assert.match(preview.headers.get("x-robots-tag"), /noindex/);
+  assert.match(await preview.text(), /name="robots" content="noindex,follow"/);
+  const previewRobots = await hostPage(
+    "/robots.txt",
+    "branch-preview.vercel.app",
+  );
+  assert.match(await previewRobots.text(), /Disallow: \//);
+  assert.equal(
+    (await hostPage("/sitemap.xml", "nabo-new.vercel.app")).status,
+    404,
+  );
+  const apex = await hostPage("/recipes/seo-test?utm_source=test", "nabo.by");
+  assert.equal(apex.status, 308);
+  assert.equal(
+    apex.headers.get("location"),
+    "https://www.nabo.by/recipes/seo-test?utm_source=test",
+  );
+  for (const path of [
+    "/",
+    "/does-not-exist",
+    "/api/product-image?url=" + encodeURIComponent("https://127.0.0.1/private"),
+  ]) {
+    const response = await get(path);
+    assert.equal(response.headers.get("x-powered-by"), null);
+    assert.equal(response.headers.get("x-frame-options"), "DENY");
+    assert.equal(
+      response.headers.get("referrer-policy"),
+      "no-referrer",
+    );
+    assert.match(
+      response.headers.get("permissions-policy"),
+      /geolocation=\(self\)/,
+    );
+    assert.match(
+      response.headers.get("content-security-policy"),
+      /frame-ancestors 'none'/,
+    );
+    if (path.startsWith("/api/product-image"))
+      assert.equal(response.status, 400);
+  }
   const robots = await (await get("/robots.txt")).text();
   assert.match(robots, /Allow: \/api\/product-image/);
-  assert.match(robots, /Sitemap: https:\/\/nabo.example\/sitemap.xml/);
+  assert.match(robots, /Sitemap: https:\/\/www\.nabo\.by\/sitemap.xml/);
   const index = await (await get("/sitemap.xml")).text();
   assert.match(index, /recipes-3.xml/);
   assert.match(index, /products-2.xml/);
   const xml = await (await get("/sitemaps/recipes-1.xml")).text();
-  assert.match(xml, /<loc>https:\/\/nabo.example\/recipes\/seo-test<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/www\.nabo\.by\/recipes\/seo-test<\/loc>/);
   assert.equal((await get("/sitemaps/recipes-4.xml")).status, 404);
   const redirect = await get("/recipes?category=soups");
   assert.equal(redirect.status, 301);
@@ -182,7 +240,7 @@ try {
   const category = await (await get("/recipes/category/soups?page=2")).text();
   assert.match(
     category,
-    /canonical[^>]+https:\/\/nabo.example\/recipes\/category\/soups\?page=2/,
+    /canonical[^>]+https:\/\/www\.nabo\.by\/recipes\/category\/soups\?page=2/,
   );
   assert.match(category, /page=1|\/recipes\/category\/soups/);
   assert.match(category, /ItemList/);
@@ -194,7 +252,7 @@ try {
   assert.match(recipeHtml, /"@type":"Recipe"/);
   assert.match(
     recipeHtml,
-    /canonical[^>]+https:\/\/nabo.example\/recipes\/seo-test"/,
+    /canonical[^>]+https:\/\/www\.nabo\.by\/recipes\/seo-test"/,
   );
   assert.match(recipeHtml, /Суп готовый/);
   assert.match(recipeHtml, /Проверочное кафе/);
@@ -207,7 +265,7 @@ try {
   assert.match(html, /"price":4.25/);
   assert.match(
     html,
-    /canonical[^>]+https:\/\/nabo.example\/product\/green\/sku-1"/,
+    /canonical[^>]+https:\/\/www\.nabo\.by\/product\/green\/sku-1"/,
   );
   assert.equal(
     (await get("/product/green/sku%2F2%263")).status,

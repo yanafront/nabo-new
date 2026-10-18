@@ -7,10 +7,27 @@ import {
 } from "../recipe/model";
 import { providerName, type RetailProduct } from "../yandex";
 export const SEO_PAGE_SIZE = 2000;
+export const PRIMARY_SITE_ORIGIN = "https://www.nabo.by";
+export function indexableHost(hostname: string, enabled: unknown) {
+  return (
+    enabled !== false &&
+    enabled !== "false" &&
+    ["www.nabo.by", "localhost", "127.0.0.1", "[::1]"].includes(
+      hostname.toLowerCase(),
+    )
+  );
+}
 export function siteOrigin(value: string) {
   const url = new URL(value);
   if (!["https:", "http:"].includes(url.protocol))
     throw new Error("Invalid public site URL");
+  // A stale deployment variable must never make a Vercel alias canonical.
+  if (
+    url.hostname === "nabo.by" ||
+    url.hostname === "www.nabo.by" ||
+    url.hostname.endsWith(".vercel.app")
+  )
+    return PRIMARY_SITE_ORIGIN;
   return url.origin;
 }
 export function productPath(storeId: string, id: string) {

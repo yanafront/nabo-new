@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   seoPolicy,
+  indexableHost,
   siteOrigin,
   jsonLd,
   sitemapUrls,
@@ -9,6 +10,25 @@ import {
 } from "../shared/seo/core";
 import type { Recipe } from "../shared/recipe/model";
 describe("SEO architecture", () => {
+  it("keeps stale Vercel configuration and apex aliases on the primary domain", () => {
+    for (const url of [
+      "https://nabo-new.vercel.app",
+      "https://branch-preview.vercel.app",
+      "https://nabo.by",
+      "https://www.nabo.by",
+    ])
+      expect(siteOrigin(url)).toBe("https://www.nabo.by");
+    expect(indexableHost("www.nabo.by", true)).toBe(true);
+    for (const host of [
+      "nabo-new.vercel.app",
+      "branch.vercel.app",
+      "nabo.by",
+      "evil.example",
+    ])
+      expect(indexableHost(host, true)).toBe(false);
+    expect(indexableHost("www.nabo.by", false)).toBe(false);
+    expect(indexableHost("www.nabo.by", "false")).toBe(false);
+  });
   it("canonicalises product names and campaign parameters without trusting request hosts", () => {
     expect(siteOrigin("https://nabo.example/base")).toBe(
       "https://nabo.example",

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PRIMARY_SITE_ORIGIN } from "~/shared/seo/core";
 import { jsonLd, productPath } from "~/shared/seo/core";
 import { providerName, type StoreId } from "~/shared/yandex";
 import type { SeoProductReference } from "~/server/utils/seo-service";
@@ -16,7 +17,7 @@ const { data } = await useAsyncData(
 );
 if (page.value > 1 && data.value && (page.value - 1) * 24 >= data.value.total)
   throw createError({ statusCode: 404, statusMessage: "Страница не найдена" });
-const origin = useRuntimeConfig().public.siteUrl;
+const origin = PRIMARY_SITE_ORIGIN;
 useHead(() => ({
   script: data.value?.items.length
     ? [

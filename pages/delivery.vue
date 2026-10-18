@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { PRIMARY_SITE_ORIGIN } from "~/shared/seo/core";
 import type { Recipe } from "~/shared/recipe/model";
 const route = useRoute();
-const origin = useRuntimeConfig().public.siteUrl;
+const origin = PRIMARY_SITE_ORIGIN;
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 const { data } = await useAsyncData(
   "delivery-recipes",

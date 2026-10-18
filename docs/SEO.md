@@ -1,6 +1,6 @@
 # SEO Nabo: аудит, архитектура и запуск
 
-Дата аудита: 12–13 октября 2026. Основной адрес: https://nabo-new.vercel.app.
+Дата аудита: 12–13 октября 2026. Основной адрес: https://www.nabo.by.
 
 ## Что мешало индексации
 
@@ -41,7 +41,7 @@
 2. Создайте случайный ключ, например `openssl rand -hex 32`. На Railway **сервиса nabo-recipes** задайте `SEO_INGEST_KEY`. На Vercel задайте **тот же ключ** в `NUXT_SEO_INGEST_KEY`. Это приватные переменные, без `PUBLIC`, не помещайте ключ в Git или браузер.
 3. На Vercel Production задайте:
    - `NUXT_RECIPES_API_BASE=https://nabo-recipes-production.up.railway.app`;
-   - `NUXT_PUBLIC_SITE_URL=https://nabo-new.vercel.app` (при смене домена заменить и сделать 301 со старого домена);
+   - `NUXT_PUBLIC_SITE_URL=https://www.nabo.by` (при смене домена заменить и сделать 301 со старого домена);
    - `NUXT_PUBLIC_SEO_INDEXABLE=true`.
 4. Перезапустите сервис Railway и сделайте redeploy Vercel после изменения переменных. До назначения ключа рецепты и sitemap работают, но **автоматическое наполнение индекса товаров отключено**. После поиска реальные SKU появятся в `/api/seo/products` и product-sitemap. На момент проверки фид содержал 41 рецепт и 0 товаров: это ожидаемо до подключения ключа.
 5. Добавьте сайт в Google Search Console и Яндекс Вебмастер, подтвердите владение и отправьте `/sitemap.xml`. Для HTML-подтверждения поддерживаются `NUXT_PUBLIC_GOOGLE_SITE_VERIFICATION` и `NUXT_PUBLIC_YANDEX_VERIFICATION`: только значение выданного сервиса токена.

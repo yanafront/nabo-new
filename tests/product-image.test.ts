@@ -4,9 +4,9 @@ const base =
   "https://avatars.mds.yandex.net/get-eda/17770654/ff0a38050ac85e256f0a22eea7aa9ec5";
 describe("Yandex product image renditions", () => {
   it("allows product images from the Sosedi storefront", () => {
-    expect(productImageUrl("https://sosedi-dostavka.by/images/840994.jpg")).toBe(
-      "https://sosedi-dostavka.by/images/840994.jpg",
-    );
+    expect(
+      productImageUrl("https://sosedi-dostavka.by/images/840994.jpg"),
+    ).toBe("https://sosedi-dostavka.by/images/840994.jpg");
   });
   it("allows product images from the Edostavka catalog CDN", () => {
     expect(
@@ -27,6 +27,14 @@ describe("Yandex product image renditions", () => {
     (suffix) => expect(productImageUrl(base + suffix)).toBe(base + "/orig"),
   );
   it.each([
+    "https://127.0.0.1/private.png",
+    "https://[::1]/private.png",
+    "https://169.254.169.254/latest/meta-data",
+    "https://cdn.ime.by.evil.example/UserFiles/images/catalog/Goods/a.png",
+    "https://cdn.ime.by@evil.example/UserFiles/images/catalog/Goods/a.png",
+    "https://cdn.ime.by:444/UserFiles/images/catalog/Goods/a.png",
+    "https://cdn.ime.by/UserFiles/images/catalog/Goods/a.svg",
+    "https://cdn.ime.by/UserFiles/images/catalog/Goods/../../../../private.png",
     null,
     "broken",
     "https://evil.example/get-eda/1/id",

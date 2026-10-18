@@ -1,8 +1,14 @@
-import { siteOrigin, xml, SEO_PAGE_SIZE } from "../../shared/seo/core";
+import {
+  siteOrigin,
+  xml,
+  SEO_PAGE_SIZE,
+  indexableHost,
+} from "../../shared/seo/core";
 import { sitemapManifest } from "../utils/sitemap-data";
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
-  if (!config.public.seoIndexable) throw createError({ statusCode: 404 });
+  if (!indexableHost(getRequestURL(event).hostname, config.public.seoIndexable))
+    throw createError({ statusCode: 404 });
   const origin = siteOrigin(config.public.siteUrl),
     manifest = await sitemapManifest(event);
   const urls = [

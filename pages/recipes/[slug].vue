@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PRIMARY_SITE_ORIGIN } from "~/shared/seo/core";
 import {
   perServing,
   scaledIngredients,
@@ -12,7 +13,7 @@ import { retailStores } from "~/shared/yandex";
 import { recipePurchaseRequest } from "~/shared/recipe/purchasing";
 const { categories: currentCategories } = await useRecipeCategories();
 const route = useRoute();
-const recipeSeoOrigin = useRuntimeConfig().public.siteUrl;
+const recipeSeoOrigin = PRIMARY_SITE_ORIGIN;
 const slug = String(route.params.slug);
 const { data, error, refresh } = await useAsyncData(`recipe:${slug}`, () =>
   $fetch<{ recipe: Recipe; ingredients: Ingredient[] }>(

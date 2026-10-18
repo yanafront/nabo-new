@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PRIMARY_SITE_ORIGIN } from "~/shared/seo/core";
 import { type Recipe } from "~/shared/recipe/model";
 const { categories: recipeCategories } = await useRecipeCategories();
 const route = useRoute();
@@ -135,7 +136,7 @@ if (data.value && page.value > 1 && (page.value - 1) * 24 >= data.value.total)
   throw createError({ statusCode: 404, statusMessage: "Страница не найдена" });
 if (import.meta.server && error.value)
   setResponseStatus(useRequestEvent()!, error.value.statusCode || 503);
-const origin = useRuntimeConfig().public.siteUrl;
+const origin = PRIMARY_SITE_ORIGIN;
 usePageSeo(() => ({
   title: `${activeCategoryTitle.value || "Рецепты"}${page.value > 1 ? ` — страница ${page.value}` : ""} — Nabo`,
   description: `${activeCategoryTitle.value || "Каталог рецептов"}: ингредиенты, пошаговое приготовление и КБЖУ. Сравните покупку продуктов с заказом готового блюда.`,

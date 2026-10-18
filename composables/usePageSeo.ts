@@ -1,4 +1,9 @@
-import { siteOrigin, seoPolicy, jsonLd } from "~/shared/seo/core";
+import {
+  siteOrigin,
+  seoPolicy,
+  jsonLd,
+  indexableHost,
+} from "~/shared/seo/core";
 export interface PageSeo {
   title: string;
   description: string;
@@ -10,6 +15,10 @@ export function usePageSeo(input: MaybeRefOrGetter<PageSeo>) {
   const route = useRoute(),
     config = useRuntimeConfig();
   const origin = siteOrigin(config.public.siteUrl);
+  const indexable = indexableHost(
+    useRequestURL().hostname,
+    config.public.seoIndexable,
+  );
   const data = computed(() => toValue(input));
   const policy = computed(() => seoPolicy(route.path, route.query));
   const canonical = computed(() => origin + policy.value.canonicalPath);
@@ -17,7 +26,7 @@ export function usePageSeo(input: MaybeRefOrGetter<PageSeo>) {
     title: () => data.value.title,
     description: () => data.value.description,
     robots: () =>
-      !config.public.seoIndexable || !policy.value.index || data.value.noindex
+      !indexable || !policy.value.index || data.value.noindex
         ? "noindex,follow"
         : "index,follow,max-image-preview:large",
     ogTitle: () => data.value.title,

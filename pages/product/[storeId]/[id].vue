@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PRIMARY_SITE_ORIGIN } from "~/shared/seo/core";
 import { retailStores, type StoreId } from "~/shared/yandex";
 import { productSchema, breadcrumb } from "~/shared/seo/core";
 definePageMeta({ key: (route) => route.path });
@@ -26,7 +27,7 @@ if (error.value)
         ? "Товар не найден"
         : "Товар временно недоступен",
   });
-const origin = useRuntimeConfig().public.siteUrl;
+const origin = PRIMARY_SITE_ORIGIN;
 usePageSeo(() => ({
   title: `${data.value?.product.name} — цена в ${retailStores.find((s) => s.id === storeId)?.name} | Nabo`,
   description: `${data.value?.product.name}, ${data.value?.product.unit}. Посмотрите цену, наличие и похожие товары в магазинах Беларуси.`,

@@ -1,14 +1,24 @@
-import { seoPolicy } from "../../shared/seo/core";
+import {
+  seoPolicy,
+  indexableHost,
+  PRIMARY_SITE_ORIGIN,
+} from "../../shared/seo/core";
 import { categoriesFor } from "../utils/recipe-categories";
 export default defineEventHandler(async (event) => {
   const url = getRequestURL(event),
     config = useRuntimeConfig(event);
   if (
-    !config.public.seoIndexable ||
+    !indexableHost(url.hostname, config.public.seoIndexable) ||
     !seoPolicy(url.pathname, Object.fromEntries(url.searchParams)).index ||
     (url.pathname.startsWith("/api/") && url.pathname !== "/api/product-image")
   )
     setHeader(event, "X-Robots-Tag", "noindex, follow");
+  if (["GET", "HEAD"].includes(event.method) && url.hostname === "nabo.by")
+    return sendRedirect(
+      event,
+      PRIMARY_SITE_ORIGIN + url.pathname + url.search,
+      308,
+    );
   if (
     event.method === "GET" &&
     url.pathname === "/recipes" &&

@@ -892,8 +892,10 @@ h2 {
   white-space: nowrap;
 }
 .portion-price {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
   white-space: nowrap;
 }
 .found-products-amount {
@@ -903,8 +905,9 @@ h2 {
 .found-products-amount small {
   display: block;
   margin-top: 4px;
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1.5;
 }
 .cook-price {

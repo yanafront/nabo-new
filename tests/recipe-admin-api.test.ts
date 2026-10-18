@@ -84,6 +84,11 @@ beforeAll(async () => {
     "/api/admin/recipes/:slug",
     (await import("../server/api/admin/recipes/[slug].put")).default,
   );
+  router.patch(
+    "/api/admin/recipes/:slug/classification",
+    (await import("../server/api/admin/recipes/[slug]/classification.patch"))
+      .default,
+  );
   router.delete(
     "/api/admin/recipes/:slug",
     (await import("../server/api/admin/recipes/[slug].delete")).default,
@@ -237,6 +242,73 @@ it("deletes only an authorized version and forwards conflicts", async () => {
       await fetch(url, {
         method: "DELETE",
         headers: { origin: "https://evil.test" },
+      })
+    ).status,
+  ).toBe(403);
+});
+
+it("forwards only explicit classification changes, without a recipe document", async () => {
+  const payload = {
+    revision: 4,
+    collections: { add: ["family"], remove: ["easy"] },
+  };
+  const response = await fetch(
+    base + "/api/admin/recipes/test/classification",
+    {
+      method: "PATCH",
+      headers: {
+        cookie: "nabo-session=admin-token",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  expect(response.status).toBe(200);
+  expect(last.method).toBe("PATCH");
+  expect(last.url).toBe("/api/admin/recipes/test/classification");
+  expect(JSON.parse(last.body)).toEqual(payload);
+});
+it("classification rejects invalid, overlapping or empty flag changes", async () => {
+  for (const collections of [
+    { add: ["unknown"], remove: [] },
+    { add: ["family"], remove: ["family"] },
+    { add: [], remove: [] },
+  ]) {
+    const response = await fetch(
+      base + "/api/admin/recipes/test/classification",
+      {
+        method: "PATCH",
+        headers: {
+          cookie: "nabo-session=admin-token",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ revision: 3, collections }),
+      },
+    );
+    expect(response.status).toBe(400);
+  }
+});
+it("classification requires authentication and same-origin writes", async () => {
+  const body = JSON.stringify({ revision: 3, categoryId: "salads" });
+  expect(
+    (
+      await fetch(base + "/api/admin/recipes/test/classification", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body,
+      })
+    ).status,
+  ).toBe(401);
+  expect(
+    (
+      await fetch(base + "/api/admin/recipes/test/classification", {
+        method: "PATCH",
+        headers: {
+          origin: "https://evil.test",
+          cookie: "nabo-session=admin-token",
+          "content-type": "application/json",
+        },
+        body,
       })
     ).status,
   ).toBe(403);

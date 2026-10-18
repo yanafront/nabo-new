@@ -458,7 +458,12 @@ useHead({
         <NuxtLink to="/admin/ingredients" class="secondary"
           >Ингредиенты</NuxtLink
         >
-        <NuxtLink to="/admin/categories" class="secondary">Категории</NuxtLink>
+        <NuxtLink to="/admin/recipe-classification" class="secondary"
+          >Категории и подборки</NuxtLink
+        >
+        <NuxtLink to="/admin/categories" class="secondary"
+          >Справочник категорий</NuxtLink
+        >
         <button class="primary" :disabled="deleting" @click="select()">
           Новый рецепт
         </button>

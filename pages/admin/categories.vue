@@ -113,6 +113,9 @@ useHead({
     >
     <div class="page-heading">
       <h1>Категории рецептов</h1>
+      <NuxtLink to="/admin/recipe-classification" class="secondary"
+        >Распределить рецепты</NuxtLink
+      >
       <button class="secondary" :disabled="pending || saving" @click="load">
         Обновить список
       </button>

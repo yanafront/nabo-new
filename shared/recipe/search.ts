@@ -104,7 +104,7 @@ export function listRecipes(
         case "budget":
           return r.tags.includes("budget");
         case "family":
-          return r.servings >= 4;
+          return r.tags.includes("family");
         case "easy":
           return r.difficulty === "easy" || r.tags.includes("easy");
         default:

@@ -136,7 +136,6 @@ useHead(() => ({
             :href="offer.url"
             target="_blank"
             rel="noopener noreferrer"
-            :aria-label="`Открыть ${offer.restaurant} в Delivio`"
             :title="`${offer.name} · ${offer.restaurant}`"
           >
             <div class="dining-image">
@@ -144,6 +143,8 @@ useHead(() => ({
                 v-if="offer.image && !failedImages.has(offer.id)"
                 :src="offer.image"
                 :alt="offer.name"
+                width="640"
+                height="480"
                 loading="lazy"
                 decoding="async"
                 referrerpolicy="no-referrer"

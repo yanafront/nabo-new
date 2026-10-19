@@ -115,9 +115,13 @@ test("restaurant offers show portions, prices and external links without changin
   await expect(block.getByText("от 9,00 BYN")).toBeVisible();
   await expect(block.getByText("Кафе", { exact: true }).first()).toBeVisible();
   await expect(block.getByText("180 г", { exact: true }).first()).toBeVisible();
-  await expect(
-    block.getByRole("link", { name: "Открыть Кафе в Delivio" }),
-  ).toHaveAttribute("href", "https://delivio.by/restaurant/cafe?utm_source=nabo&utm_medium=referral&utm_campaign=outbound");
+  await expect(block.locator(".dining-card").first()).toHaveAttribute(
+    "href",
+    "https://delivio.by/restaurant/cafe?utm_source=nabo&utm_medium=referral&utm_campaign=outbound",
+  );
+  await expect(block.locator(".dining-card").first()).toHaveAccessibleName(
+    /Сырники.*Кафе/,
+  );
   const assemble = page.getByRole("button", {
     name: "Собрать корзину",
     exact: true,
@@ -139,7 +143,10 @@ test("restaurant offers show portions, prices and external links without changin
       const bounds = await drawer.boundingBox();
       return Math.round(bounds!.x + bounds!.width);
     })
-    .toBe(page.viewportSize()!.width - (test.info().project.name === "mobile" ? 12 : 0));
+    .toBe(
+      page.viewportSize()!.width -
+        (test.info().project.name === "mobile" ? 12 : 0),
+    );
   await drawer.screenshot({
     path: `/tmp/nabo-ingredients-drawer-${test.info().project.name}.png`,
   });

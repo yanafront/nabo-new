@@ -1,0 +1,374 @@
+{
+  "checkedAt": "2026-10-19T20:32:39.788Z",
+  "origin": "https://nabo.by",
+  "pages": [
+    {
+      "path": "/",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/",
+      "title": "Nabo — что приготовить, где купить продукты или заказать еду",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/recipes",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/recipes",
+      "title": "Рецепты — Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/recipes",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "ItemList",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/recipes/syrniki",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/recipes/syrniki",
+      "title": "Сырники : рецепт, ингредиенты и стоимость приготовления | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/recipes/syrniki",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "Recipe",
+        "BreadcrumbList",
+        "BreadcrumbList",
+        "ItemList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/recipes/quick",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/recipes/quick",
+      "title": "Быстрые рецепты до 20 минут | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/recipes/quick",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "ItemList",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/recipes/budget",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/recipes/budget",
+      "title": "Недорогие рецепты | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/recipes/budget",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "ItemList",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/products",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/products",
+      "title": "Продукты и цены в магазинах Беларуси — Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/products",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "ItemList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/products/moloko",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/products/moloko",
+      "title": "Молоко: варианты в магазинах Беларуси | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/products/moloko",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "ItemList",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/stores/evroopt",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/stores/evroopt",
+      "title": "Евроопт — продукты, доставка и сравнение | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/stores/evroopt",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList",
+        "ItemList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/cook-or-order",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/cook-or-order",
+      "title": "Приготовить дома или заказать готовое | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/cook-or-order",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "ItemList",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/cook-or-order/syrniki",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/cook-or-order/syrniki",
+      "title": "Сырники: приготовить дома или заказать? | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/cook-or-order/syrniki",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/robots.txt",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "xRobots": null,
+      "h1Count": 0,
+      "schemas": [],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/sitemap.xml",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "xRobots": null,
+      "h1Count": 0,
+      "schemas": [],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/sitemaps/static.xml",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "xRobots": null,
+      "h1Count": 0,
+      "schemas": [],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/this-page-does-not-exist",
+      "userAgent": "Googlebot",
+      "status": 404,
+      "location": null,
+      "title": "Страница не найдена · Nabo",
+      "robots": "noindex,nofollow",
+      "xRobots": "noindex, follow",
+      "h1Count": 1,
+      "schemas": [],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/recipes/this-recipe-does-not-exist",
+      "userAgent": "Googlebot",
+      "status": 404,
+      "location": null,
+      "title": "Страница не найдена · Nabo",
+      "robots": "noindex,nofollow",
+      "xRobots": "noindex, follow",
+      "h1Count": 1,
+      "schemas": [],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/products/this-product-does-not-exist",
+      "userAgent": "Googlebot",
+      "status": 404,
+      "location": null,
+      "title": "Страница не найдена · Nabo",
+      "robots": "noindex,nofollow",
+      "xRobots": "noindex, follow",
+      "h1Count": 1,
+      "schemas": [],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/products?q=milk",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/products",
+      "title": "Продукты и цены в магазинах Беларуси — Nabo",
+      "robots": "noindex,follow",
+      "xRobots": "noindex, follow",
+      "ogUrl": "https://nabo.by/products",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/recipes/syrniki",
+      "userAgent": "Mozilla/5.0",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/recipes/syrniki",
+      "title": "Сырники : рецепт, ингредиенты и стоимость приготовления | Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/recipes/syrniki",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "Recipe",
+        "BreadcrumbList",
+        "BreadcrumbList",
+        "ItemList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/sitemaps/static.xml",
+      "status": 200,
+      "urlCount": 32,
+      "foreignLoc": false
+    },
+    {
+      "path": "/sitemaps/recipes-1.xml",
+      "status": 200,
+      "urlCount": 42,
+      "foreignLoc": false
+    },
+    {
+      "path": "/sitemaps/cook-or-order-1.xml",
+      "status": 200,
+      "urlCount": 42,
+      "foreignLoc": false
+    },
+    {
+      "path": "/sitemaps/products-1.xml",
+      "status": 200,
+      "urlCount": 1645,
+      "foreignLoc": false
+    }
+  ],
+  "redirects": [
+    {
+      "url": "https://www.nabo.by/recipes/syrniki?utm_source=audit",
+      "status": 301,
+      "location": "https://nabo.by/recipes/syrniki?utm_source=audit",
+      "platformError": null
+    },
+    {
+      "url": "https://nabo-new.vercel.app/recipes/syrniki",
+      "status": 404,
+      "location": null,
+      "platformError": "DEPLOYMENT_NOT_FOUND"
+    }
+  ],
+  "sitemaps": [
+    "https://nabo.by/sitemaps/static.xml",
+    "https://nabo.by/sitemaps/recipes-1.xml",
+    "https://nabo.by/sitemaps/cook-or-order-1.xml",
+    "https://nabo.by/sitemaps/products-1.xml"
+  ]
+}

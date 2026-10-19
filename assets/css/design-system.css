@@ -19,6 +19,7 @@
   --surface: #fff;
   --ink: #0f0f10;
   --muted: #686b75;
+  --link: #245ce7;
   --brand: #c7ff3b;
   --brand-hover: #b7ef26;
   --brand-soft: #f3ffda;
@@ -4795,6 +4796,6 @@ select, select option {
 /* Shared, visible content for finite editorial SEO landing pages. */
 .seo-intro { max-width: 780px; margin: 12px 0 24px; line-height: 1.6; }
 .seo-links, .seo-pagination { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 18px 0; }
-.seo-links a { color: var(--blue); }
+.seo-links a { color: var(--link); }
 .seo-section { margin: 32px 0; }
 .seo-section h2 { font-size: 22px; margin-bottom: 14px; }

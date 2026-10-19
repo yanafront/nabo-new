@@ -58,7 +58,10 @@ usePageSeo(() => ({
       ]
     : [],
 }));
-const initialDining = ref<DiningResult | null>(null);
+const initialDining = useState<DiningResult | null>(
+  `recipe-initial-dining:${slug}`,
+  () => null,
+);
 if (import.meta.server && recipe.value) {
   try {
     initialDining.value = await $fetch<DiningResult>("/api/dining/search", {

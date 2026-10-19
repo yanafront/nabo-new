@@ -390,11 +390,16 @@ try {
           viewport: { width, height: 900 },
         });
         const errors = [];
+        page.on("console", (message) => {
+          if (message.type() === "error" && /hydration/i.test(message.text()))
+            errors.push(message.text());
+        });
         page.on("pageerror", (error) => errors.push(error.message));
         for (const path of [
           "/cook-or-order/seo-test",
           "/products/moloko",
           "/recipes/quick",
+          "/recipes/seo-test",
         ]) {
           await page.goto(base + path, { waitUntil: "networkidle" });
           assert.equal(await page.locator("h1").count(), 1);

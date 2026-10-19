@@ -265,6 +265,11 @@ try {
     if (path.startsWith("/api/product-image"))
       assert.equal(response.status, 400);
   }
+  for (const path of ["/robots.txt", "/sitemap.xml", "/sitemaps/static.xml"]) {
+    const head = await fetch(base + path, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(await head.text(), "");
+  }
   const robots = await (await get("/robots.txt")).text();
   assert.match(robots, /Allow: \/api\/product-image/);
   assert.match(robots, /Sitemap: https:\/\/nabo\.by\/sitemap.xml/);

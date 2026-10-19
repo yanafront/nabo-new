@@ -29,7 +29,7 @@ const report = {
 async function inspect(path, userAgent = "Googlebot") {
   const response = await fetch(origin + path, {
     redirect: "manual",
-    headers: { "user-agent": userAgent },
+    headers: { "user-agent": userAgent, accept: "text/html" },
     signal: AbortSignal.timeout(45000),
   });
   const html = await response.text();

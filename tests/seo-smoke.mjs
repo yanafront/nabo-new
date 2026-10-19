@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 const fixturePort = 3121,
   appPort = 3120,
-  origin = "https://www.nabo.by";
+  origin = "https://nabo.by";
 const recipe = {
   id: "seo-test",
   slug: "seo-test",
@@ -85,11 +85,42 @@ const fixture = createServer(async (req, res) => {
         },
       ],
     };
-  else if (url.pathname === "/api/recipe-catalog/page") {
-    const category = url.searchParams.get("category");
+  else if (url.pathname === "/api/yandex/search/batch")
     data = {
-      total: category && category !== "soups" ? 0 : 36,
-      documents: category && category !== "soups" ? [] : [document],
+      items: body.queries.map((query) => ({
+        query,
+        result: {
+          storeId: "evroopt",
+          placeSlug: "evroopt",
+          status: "ok",
+          products: [
+            {
+              ...product,
+              id: "water",
+              storeId: "evroopt",
+              name: "Вода питьевая",
+              unit: "1 л",
+              price: 1.2,
+            },
+          ],
+          fetchedAt: product.fetchedAt,
+          currency: "BYN",
+        },
+      })),
+    };
+  else if (url.pathname === "/api/products/resolve")
+    data = {
+      items: body.items.map((item) => ({ ...item, status: "ok", product })),
+    };
+  else if (url.pathname === "/api/recipe-catalog/page") {
+    const category = url.searchParams.get("category"),
+      collection = url.searchParams.get("collection");
+    const empty =
+      !!(category && category !== "soups") ||
+      ["budget", "protein"].includes(collection);
+    data = {
+      total: empty ? 0 : 36,
+      documents: empty ? [] : [document],
     };
   } else if (url.pathname === "/api/recipe-catalog/seo-test")
     data = { document };
@@ -155,20 +186,24 @@ let logs = "";
 child.stdout.on("data", (b) => (logs += b));
 child.stderr.on("data", (b) => (logs += b));
 const base = `http://127.0.0.1:${appPort}`;
-function hostPage(path, host = "www.nabo.by") {
+function hostPage(path, host = "nabo.by") {
   return new Promise((resolve, reject) => {
-    const req = request(base + path, { headers: { host } }, (res) => {
-      const chunks = [];
-      res.on("data", (chunk) => chunks.push(chunk));
-      res.on("end", () =>
-        resolve(
-          new Response(Buffer.concat(chunks), {
-            status: res.statusCode,
-            headers: res.headers,
-          }),
-        ),
-      );
-    });
+    const req = request(
+      base + path,
+      { headers: { host, "user-agent": "Googlebot" } },
+      (res) => {
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () =>
+          resolve(
+            new Response(Buffer.concat(chunks), {
+              status: res.statusCode,
+              headers: res.headers,
+            }),
+          ),
+        );
+      },
+    );
     req.on("error", reject);
     req.end();
   });
@@ -185,8 +220,17 @@ try {
     }
   }
   const preview = await hostPage("/recipes/seo-test", "nabo-new.vercel.app");
-  assert.match(preview.headers.get("x-robots-tag"), /noindex/);
-  assert.match(await preview.text(), /name="robots" content="noindex,follow"/);
+  assert.equal(preview.status, 301);
+  assert.equal(
+    preview.headers.get("location"),
+    "https://nabo.by/recipes/seo-test",
+  );
+  const branch = await hostPage(
+    "/recipes/seo-test",
+    "branch-preview.vercel.app",
+  );
+  assert.match(branch.headers.get("x-robots-tag"), /noindex/);
+  assert.match(await branch.text(), /name="robots" content="noindex,follow"/);
   const previewRobots = await hostPage(
     "/robots.txt",
     "branch-preview.vercel.app",
@@ -196,15 +240,11 @@ try {
   assert.doesNotMatch(previewRules, /Sitemap:/);
   assert.doesNotMatch(previewRules, /^Disallow: \/$/m);
   assert.equal(
-    (await hostPage("/sitemap.xml", "nabo-new.vercel.app")).status,
+    (await hostPage("/sitemap.xml", "branch-preview.vercel.app")).status,
     404,
   );
   const apex = await hostPage("/recipes/seo-test?utm_source=test", "nabo.by");
-  assert.equal(apex.status, 308);
-  assert.equal(
-    apex.headers.get("location"),
-    "https://www.nabo.by/recipes/seo-test?utm_source=test",
-  );
+  assert.equal(apex.status, 200);
   for (const path of [
     "/",
     "/does-not-exist",
@@ -227,12 +267,12 @@ try {
   }
   const robots = await (await get("/robots.txt")).text();
   assert.match(robots, /Allow: \/api\/product-image/);
-  assert.match(robots, /Sitemap: https:\/\/www\.nabo\.by\/sitemap.xml/);
+  assert.match(robots, /Sitemap: https:\/\/nabo\.by\/sitemap.xml/);
   const index = await (await get("/sitemap.xml")).text();
   assert.match(index, /recipes-3.xml/);
   assert.match(index, /products-2.xml/);
   const xml = await (await get("/sitemaps/recipes-1.xml")).text();
-  assert.match(xml, /<loc>https:\/\/www\.nabo\.by\/recipes\/seo-test<\/loc>/);
+  assert.match(xml, /<loc>https:\/\/nabo\.by\/recipes\/seo-test<\/loc>/);
   assert.equal((await get("/sitemaps/recipes-4.xml")).status, 404);
   const redirect = await get("/recipes?category=soups");
   assert.equal(redirect.status, 301);
@@ -240,7 +280,7 @@ try {
   const category = await (await get("/recipes/category/soups?page=2")).text();
   assert.match(
     category,
-    /canonical[^>]+https:\/\/www\.nabo\.by\/recipes\/category\/soups\?page=2/,
+    /canonical[^>]+https:\/\/nabo\.by\/recipes\/category\/soups\?page=2/,
   );
   assert.match(category, /page=1|\/recipes\/category\/soups/);
   assert.match(category, /ItemList/);
@@ -252,11 +292,46 @@ try {
   assert.match(recipeHtml, /"@type":"Recipe"/);
   assert.match(
     recipeHtml,
-    /canonical[^>]+https:\/\/www\.nabo\.by\/recipes\/seo-test"/,
+    /canonical[^>]+https:\/\/nabo\.by\/recipes\/seo-test"/,
   );
   assert.match(recipeHtml, /Суп готовый/);
   assert.match(recipeHtml, /Проверочное кафе/);
   assert.match(recipeHtml, /dining-offers-schema/);
+  const homeHtml = await (await get("/")).text();
+  assert.match(homeHtml, /Что сегодня/);
+  assert.match(homeHtml, /href="\/recipes\/seo-test"/);
+  const comparison = await get("/cook-or-order/seo-test");
+  assert.equal(comparison.status, 200);
+  const comparisonHtml = await comparison.text();
+  assert.match(
+    comparisonHtml,
+    /Проверочный суп: приготовить дома или заказать/,
+  );
+  assert.match(comparisonHtml, /Проверочное кафе/);
+  assert.match(comparisonHtml, /1,20/);
+  assert.match(comparisonHtml, /0,60/);
+  const topicHtml = await (await get("/products/moloko")).text();
+  assert.match(topicHtml, /Молоко тестовое/);
+  assert.match(topicHtml, /href="\/product\/green\/sku-1"/);
+  const staticMap = await (await get("/sitemaps/static.xml")).text();
+  assert.match(staticMap, /\/products\/moloko/);
+  assert.doesNotMatch(staticMap, /\/products\/tvorog/);
+  assert.doesNotMatch(staticMap, /\/recipes\/budget/);
+  const emptyTopic = await get("/recipes/budget");
+  assert.match(emptyTopic.headers.get("x-robots-tag"), /noindex/);
+  assert.match(await emptyTopic.text(), /noindex,follow/);
+  const compareMap = await (await get("/sitemaps/cook-or-order-1.xml")).text();
+  assert.match(compareMap, /\/cook-or-order\/seo-test/);
+  assert.equal((await get("/recipes/soups")).status, 301);
+  assert.equal((await get("/products/not-a-product")).status, 404);
+  assert.equal((await get("/cook-or-order/missing")).status, 404);
+  for (const source of [homeHtml, recipeHtml, comparisonHtml, topicHtml]) {
+    for (const match of source.matchAll(
+      /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g,
+    ))
+      JSON.parse(match[1]);
+    assert.doesNotMatch(source, /https:\/\/www\.nabo\.by|http:\/\/localhost/);
+  }
   const productResponse = await get("/product/green/sku-1");
   assert.equal(productResponse.status, 200);
   const html = await productResponse.text();
@@ -265,7 +340,7 @@ try {
   assert.match(html, /"price":4.25/);
   assert.match(
     html,
-    /canonical[^>]+https:\/\/www\.nabo\.by\/product\/green\/sku-1"/,
+    /canonical[^>]+https:\/\/nabo\.by\/product\/green\/sku-1"/,
   );
   assert.equal(
     (await get("/product/green/sku%2F2%263")).status,
@@ -298,6 +373,48 @@ try {
   });
   await new Promise((r) => setTimeout(r, 200));
   assert.ok(ingestion > 0);
+  if (process.argv.includes("--browser")) {
+    const { chromium } = await import("@playwright/test");
+    const browser = await chromium.launch({
+      channel: "chrome",
+      headless: true,
+    });
+    try {
+      for (const width of [390, 1440]) {
+        const page = await browser.newPage({
+          viewport: { width, height: 900 },
+        });
+        const errors = [];
+        page.on("pageerror", (error) => errors.push(error.message));
+        for (const path of [
+          "/cook-or-order/seo-test",
+          "/products/moloko",
+          "/recipes/quick",
+        ]) {
+          await page.goto(base + path, { waitUntil: "networkidle" });
+          assert.equal(await page.locator("h1").count(), 1);
+          assert.ok(
+            await page.evaluate(
+              () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+            path + " must fit viewport",
+          );
+          assert.equal(
+            await page.locator('nav[aria-label="Хлебные крошки"]').count(),
+            1,
+          );
+          await page.screenshot({
+            path: `/tmp/nabo-seo-${width}-${path.split("/")[1]}.png`,
+            fullPage: true,
+          });
+        }
+        assert.deepEqual(errors, []);
+        await page.close();
+      }
+    } finally {
+      await browser.close();
+    }
+  }
   console.log(
     "PASS: raw server HTML, recipe/product/dining schemas, metadata, 404, robots, category redirect, pagination, split sitemaps and background discovery",
   );

@@ -31,7 +31,7 @@ export function discoveredProducts(data: unknown): SeoProductReference[] {
       let image: string | undefined;
       if (typeof value.image === "string" && value.image.length <= 2048) {
         try {
-          const url = new URL(value.image, "https://www.nabo.by");
+          const url = new URL(value.image, "https://nabo.by");
           if (
             value.image.startsWith("/api/product-image?url=") ||
             (url.protocol === "https:" &&

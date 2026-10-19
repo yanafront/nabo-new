@@ -45,13 +45,31 @@ usePageSeo(() => ({
 }));
 </script>
 <template>
-  <ProductDetails
-    :snapshot="data?.product"
-    :store-id="storeId"
-    :product-id="String(route.params.id)"
-    :initial-name="typeof route.query.name === 'string' ? route.query.name : ''"
-    :replace-id="
-      typeof route.query.replace === 'string' ? route.query.replace : undefined
-    "
-  />
+  <div>
+    <SeoBreadcrumbs
+      v-if="data"
+      :entries="[
+        { name: 'Главная', path: '/' },
+        { name: 'Продукты', path: '/products' },
+        { name: data.product.name, path: route.path },
+      ]"
+    />
+    <ProductDetails
+      :snapshot="data?.product"
+      :store-id="storeId"
+      :product-id="String(route.params.id)"
+      :initial-name="
+        typeof route.query.name === 'string' ? route.query.name : ''
+      "
+      :replace-id="
+        typeof route.query.replace === 'string'
+          ? route.query.replace
+          : undefined
+      "
+    />
+    <nav class="seo-links">
+      <NuxtLink :to="`/stores/${storeId}`">Другие товары магазина</NuxtLink
+      ><NuxtLink to="/recipes">Подобрать рецепт</NuxtLink>
+    </nav>
+  </div>
 </template>

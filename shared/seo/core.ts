@@ -7,28 +7,20 @@ import {
 } from "../recipe/model";
 import { providerName, type RetailProduct } from "../yandex";
 export const SEO_PAGE_SIZE = 2000;
-export const PRIMARY_SITE_ORIGIN = "https://www.nabo.by";
+export const PRIMARY_SITE_ORIGIN = "https://nabo.by";
 export function indexableHost(hostname: string, enabled: unknown) {
   return (
     enabled !== false &&
     enabled !== "false" &&
-    ["www.nabo.by", "localhost", "127.0.0.1", "[::1]"].includes(
+    ["nabo.by", "www.nabo.by", "localhost", "127.0.0.1", "[::1]"].includes(
       hostname.toLowerCase(),
     )
   );
 }
-export function siteOrigin(value: string) {
-  const url = new URL(value);
-  if (!["https:", "http:"].includes(url.protocol))
-    throw new Error("Invalid public site URL");
-  // A stale deployment variable must never make a Vercel alias canonical.
-  if (
-    url.hostname === "nabo.by" ||
-    url.hostname === "www.nabo.by" ||
-    url.hostname.endsWith(".vercel.app")
-  )
-    return PRIMARY_SITE_ORIGIN;
-  return url.origin;
+// Nabo has one public canonical origin. Deployment aliases and stale runtime
+// configuration (including localhost) must never leak into SEO URLs.
+export function siteOrigin(_configuredOrigin: string) {
+  return PRIMARY_SITE_ORIGIN;
 }
 export function productPath(storeId: string, id: string) {
   return `/product/${encodeURIComponent(storeId)}/${encodeURIComponent(id)}`;
@@ -40,7 +32,10 @@ export function seoPolicy(path: string, query: Record<string, unknown> = {}) {
     /^\/recipes\/category\//.test(path) ||
     /^\/stores\//.test(path) ||
     path === "/products" ||
-    path === "/delivery";
+    path === "/delivery" ||
+    path === "/cook-or-order" ||
+    /^\/products\//.test(path) ||
+    /^\/recipes\/(quick|budget|high-protein|lunch|dinner)$/.test(path);
   const page = Number(query.page || 1);
   const ignored = [
     "name",
@@ -88,6 +83,12 @@ export function recipeSchema(
     "@type": "Recipe",
     "@id": url + "#recipe",
     url,
+    mainEntityOfPage: { "@id": url + "#webpage" },
+    inLanguage: "ru-BY",
+    keywords: recipe.tags?.length ? recipe.tags.join(", ") : undefined,
+    recipeCuisine: recipe.tags?.includes("belarusian")
+      ? "Белорусская"
+      : undefined,
     name: recipe.title,
     description: recipe.description,
     image: recipe.image ? [new URL(recipe.image, origin).href] : undefined,

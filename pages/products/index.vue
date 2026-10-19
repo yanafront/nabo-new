@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { productTopics } from "~/shared/seo/topics";
 import {
   retailStores,
   type RetailProduct,
@@ -162,6 +163,24 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="inner-page products-page">
+    <SeoBreadcrumbs
+      :entries="[
+        { name: 'Главная', path: '/' },
+        { name: 'Продукты', path: '/products' },
+      ]"
+    />
+    <nav
+      v-if="!replaceId && !query"
+      class="seo-links"
+      aria-label="Популярные продукты"
+    >
+      <NuxtLink
+        v-for="topic in productTopics"
+        :key="topic.slug"
+        :to="`/products/${topic.slug}`"
+        >{{ topic.name }}</NuxtLink
+      >
+    </nav>
     <div class="page-heading">
       <div>
         <h1>{{ replaceId ? "Выберите замену" : "Товары" }}</h1>

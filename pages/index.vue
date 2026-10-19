@@ -1,39 +1,17 @@
 <script setup lang="ts">
 import type { Recipe } from "~/shared/recipe/model";
-const inspiration = ref<HTMLElement>();
-const {
-  data: ideas,
-  pending: ideasPending,
-  error: ideasError,
-  execute: loadIdeas,
-} = await useAsyncData(
+const { data: ideas, error: ideasError } = await useAsyncData(
   "home-recipe-ideas",
   () =>
     $fetch<{ recipes: Recipe[] }>("/api/recipes", {
       query: { limit: 3 },
-      timeout: 15000,
+      timeout: 1500,
       retry: 0,
-    }),
-  { server: false, immediate: false, default: () => ({ recipes: [] }) },
+    }).catch(() => ({ recipes: [] })),
+  { default: () => ({ recipes: [] }) },
 );
-let ideasObserver: IntersectionObserver | undefined;
-onMounted(() => {
-  if (!inspiration.value) return;
-  if (!("IntersectionObserver" in window)) {
-    void loadIdeas();
-    return;
-  }
-  ideasObserver = new IntersectionObserver(
-    (entries) => {
-      if (!entries.some((entry) => entry.isIntersecting)) return;
-      ideasObserver?.disconnect();
-      void loadIdeas();
-    },
-    { rootMargin: "240px" },
-  );
-  ideasObserver.observe(inspiration.value);
-});
-onBeforeUnmount(() => ideasObserver?.disconnect());
+const ideasPending = computed(() => false);
+import { productTopics } from "~/shared/seo/topics";
 import { retailStores } from "~/shared/yandex";
 const { items } = useBasket();
 useHead({
@@ -54,7 +32,7 @@ useHead({
     <section class="home-start">
       <div class="home-hero">
         <div class="hero-copy">
-          <h1>Что хотите<br /><span>приготовить или купить?</span></h1>
+          <h1>Что сегодня<br /><span>поесть?</span></h1>
           <p class="home-intro">
             Выберите продукты сами или начните с рецепта. Затем сравним готовую
             корзину по магазинам.
@@ -143,7 +121,7 @@ useHead({
         }}<AppIcon name="ArrowRight" :size="18" />
       </NuxtLink>
     </section>
-    <section ref="inspiration" class="inspiration">
+    <section class="inspiration">
       <div class="section-head">
         <h2>Начните с блюда</h2>
         <NuxtLink to="/recipes" class="text-button">Что приготовить</NuxtLink>
@@ -153,9 +131,10 @@ useHead({
           v-for="recipe in ideas?.recipes || []"
           :key="recipe.id"
           :recipe="recipe"
+          defer-image
         />
       </div>
-      <div v-else-if="!ideasError" class="dish-grid" aria-hidden="true">
+      <div v-else-if="ideasPending" class="dish-grid" aria-hidden="true">
         <div v-for="n in 3" :key="n" class="home-idea-placeholder" />
       </div>
       <p v-if="ideasPending" class="sr-only" role="status">
@@ -167,6 +146,41 @@ useHead({
       <NuxtLink to="/recipes" class="text-button"
         >Все рецепты <AppIcon name="ArrowRight" :size="16"
       /></NuxtLink>
+    </section>
+    <section
+      class="seo-section home-seo-paths"
+      aria-labelledby="home-next-title"
+    >
+      <h2 id="home-next-title">От идеи блюда до покупки</h2>
+      <nav class="home-seo-grid" aria-label="Возможности Nabo">
+        <NuxtLink to="/recipes"
+          ><strong>Что приготовить</strong
+          ><span>Рецепты, ингредиенты и шаги приготовления.</span></NuxtLink
+        >
+        <NuxtLink to="/stores"
+          ><strong>Сравнить магазины и собрать корзину</strong
+          ><span
+            >Проверьте цены и наличие, измените продукты и перейдите к покупке у
+            магазина.</span
+          ></NuxtLink
+        >
+        <NuxtLink to="/cook-or-order"
+          ><strong>Приготовить или заказать</strong
+          ><span
+            >Сопоставьте покупку продуктов с готовыми блюдами. Доставка зависит
+            от адреса.</span
+          ></NuxtLink
+        >
+      </nav>
+      <h2>Популярные продукты</h2>
+      <nav class="seo-links" aria-label="Продукты">
+        <NuxtLink
+          v-for="topic in productTopics"
+          :key="topic.slug"
+          :to="`/products/${topic.slug}`"
+          >{{ topic.name }}</NuxtLink
+        >
+      </nav>
     </section>
   </div>
 </template>
@@ -213,6 +227,37 @@ useHead({
   }
   .one-basket-stores li {
     padding: 4px;
+  }
+}
+</style>
+
+<style scoped>
+.home-seo-paths {
+  padding: 0 0 12px;
+}
+.home-seo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 20px 0 28px;
+}
+.home-seo-grid a {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.home-seo-grid strong {
+  font-size: 17px;
+}
+.home-seo-grid span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+@media (max-width: 650px) {
+  .home-seo-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
   }
 }
 </style>

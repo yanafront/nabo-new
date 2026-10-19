@@ -4791,3 +4791,10 @@ select, select option {
   height: 26px;
   padding: 3px 5px;
 }
+
+/* Shared, visible content for finite editorial SEO landing pages. */
+.seo-intro { max-width: 780px; margin: 12px 0 24px; line-height: 1.6; }
+.seo-links, .seo-pagination { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 18px 0; }
+.seo-links a { color: var(--blue); }
+.seo-section { margin: 32px 0; }
+.seo-section h2 { font-size: 22px; margin-bottom: 14px; }

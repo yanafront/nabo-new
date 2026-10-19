@@ -13,11 +13,14 @@ export default defineEventHandler(async (event) => {
     manifest = await sitemapManifest(event);
   const urls = [
     `${origin}/sitemaps/static.xml`,
-    ...["recipes", "products"].flatMap((type) =>
+    ...["recipes", "cook-or-order", "products"].flatMap((type) =>
       Array.from(
         {
           length: Math.ceil(
-            manifest[type as "recipes" | "products"] / SEO_PAGE_SIZE,
+            manifest[
+              (type === "cook-or-order" ? "recipes" : type) as
+                "recipes" | "products"
+            ] / SEO_PAGE_SIZE,
           ),
         },
         (_, i) => `${origin}/sitemaps/${type}-${i + 1}.xml`,

@@ -9,7 +9,7 @@ if (!store.value)
   throw createError({ statusCode: 404, statusMessage: "Магазин не найден" });
 
 usePageSeo(() => ({
-  title: `${store.value?.name} — продукты и цены | Nabo`,
+  title: `${store.value?.name} — продукты, доставка и сравнение | Nabo`,
   description: `Товары ${store.value?.name}: найдите продукты, проверьте цены и сравните корзину с другими магазинами Беларуси.`,
 }));
 const { location } = useRetail();
@@ -59,6 +59,13 @@ onBeforeUnmount(() => controller?.abort());
 
 <template>
   <div class="inner-page catalog-page">
+    <SeoBreadcrumbs
+      :entries="[
+        { name: 'Главная', path: '/' },
+        { name: 'Магазины', path: '/stores' },
+        { name: store!.name, path: `/stores/${store!.id}` },
+      ]"
+    />
     <NuxtLink to="/stores" class="back-link"
       ><AppIcon name="ArrowLeft" :size="16" /> Все магазины</NuxtLink
     >
@@ -86,6 +93,15 @@ onBeforeUnmount(() => controller?.abort());
       />
       <button class="primary" type="submit" :disabled="pending">Найти</button>
     </form>
+    <p class="seo-intro muted">
+      Проверьте продукты и наличие по адресу доставки. Минимальную сумму заказа,
+      стоимость и зону доставки уточняйте на сайте магазина — Nabo не оформляет
+      заказ.
+    </p>
+    <nav class="seo-links">
+      <NuxtLink to="/stores">Сравнить с другими магазинами</NuxtLink
+      ><NuxtLink to="/recipes">Подобрать блюдо и продукты</NuxtLink>
+    </nav>
     <KnownProducts :store-id="store!.id" />
     <div class="catalog-chips" aria-label="Популярные категории">
       <button

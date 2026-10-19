@@ -159,6 +159,21 @@ usePageSeo(() => ({
 </script>
 <template>
   <div class="inner-page recipe-catalog">
+    <SeoBreadcrumbs
+      :entries="[
+        { name: 'Главная', path: '/' },
+        { name: 'Рецепты', path: '/recipes' },
+        ...(activeCategoryTitle
+          ? [{ name: activeCategoryTitle, path: route.path }]
+          : []),
+      ]"
+    />
+    <nav class="seo-links" aria-label="Подборки рецептов">
+      <NuxtLink to="/recipes/quick">До 20 минут</NuxtLink
+      ><NuxtLink to="/recipes/budget">Недорогие блюда</NuxtLink
+      ><NuxtLink to="/recipes/high-protein">Больше белка</NuxtLink
+      ><NuxtLink to="/cook-or-order">Приготовить или заказать</NuxtLink>
+    </nav>
     <div class="page-heading">
       <div>
         <h1>{{ activeCategoryTitle || "Что приготовить" }}</h1>

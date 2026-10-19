@@ -24,7 +24,7 @@ export default defineNuxtConfig({
     geocoderBase: "https://photon.komoot.io",
     yandexGeocoderApiKey: "",
     public: {
-      siteUrl: "https://www.nabo.by",
+      siteUrl: "https://nabo.by",
       googleSiteVerification: "",
       yandexVerification: "",
       seoIndexable: process.env.VERCEL_ENV !== "preview",

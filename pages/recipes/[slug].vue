@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ingredientTopic } from "~/shared/seo/topics";
 import { PRIMARY_SITE_ORIGIN } from "~/shared/seo/core";
 import {
   perServing,
@@ -35,9 +36,9 @@ const servings = ref(
 );
 usePageSeo(() => ({
   noindex: !recipe.value,
-  title: `${recipe.value?.title || "Рецепт недоступен"} — рецепт и продукты для корзины | Nabo`,
+  title: `${recipe.value?.title || "Рецепт недоступен"} : рецепт, ингредиенты и стоимость приготовления | Nabo`,
   description:
-    recipe.value?.description ||
+    (recipe.value?.description ? recipe.value.description + " " : "") +
     `Как приготовить ${recipe.value?.title}: ингредиенты, пошаговый рецепт, стоимость продуктов и предложения готового блюда.`,
   image: recipe.value?.image,
   schemas: recipe.value
@@ -158,6 +159,14 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div class="inner-page recipe-detail">
+    <SeoBreadcrumbs
+      v-if="recipe"
+      :entries="[
+        { name: 'Главная', path: '/' },
+        { name: 'Рецепты', path: '/recipes' },
+        { name: recipe.title, path: `/recipes/${recipe.slug}` },
+      ]"
+    />
     <NuxtLink class="back-link" to="/recipes"
       ><AppIcon name="ArrowLeft" :size="16" />Что приготовить</NuxtLink
     >
@@ -304,8 +313,12 @@ onBeforeUnmount(() => {
               <ul class="composition-list">
                 <li v-for="row in rows" :key="row.key">
                   <span
-                    >{{ row.i.name
-                    }}<small v-if="row.i.optional"> · по желанию</small></span
+                    ><NuxtLink
+                      v-if="ingredientTopic(row.i.name)"
+                      :to="`/products/${ingredientTopic(row.i.name)!.slug}`"
+                      >{{ row.i.name }}</NuxtLink
+                    ><template v-else>{{ row.i.name }}</template
+                    ><small v-if="row.i.optional"> · по желанию</small></span
                   ><span class="muted">{{ ingredientAmount(row.i) }}</span>
                 </li>
               </ul>
@@ -357,6 +370,7 @@ onBeforeUnmount(() => {
           </div>
         </template>
       </RecipeDining>
+      <RecipeConnections :recipe="recipe" />
       <AppModal
         v-if="foundProductsOpen"
         class="found-products-modal"

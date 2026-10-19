@@ -38,6 +38,12 @@ usePageSeo(() => ({
 </script>
 <template>
   <div class="inner-page">
+    <SeoBreadcrumbs
+      :entries="[
+        { name: 'Главная', path: '/' },
+        { name: 'Готовая еда с доставкой', path: '/delivery' },
+      ]"
+    />
     <div class="page-heading">
       <div>
         <h1>Готовые блюда с доставкой</h1>

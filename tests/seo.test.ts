@@ -16,13 +16,15 @@ describe("SEO architecture", () => {
       "https://branch-preview.vercel.app",
       "https://nabo.by",
       "https://www.nabo.by",
+      "http://localhost:3000",
+      "https://dev.example",
     ])
-      expect(siteOrigin(url)).toBe("https://www.nabo.by");
+      expect(siteOrigin(url)).toBe("https://nabo.by");
+    expect(indexableHost("nabo.by", true)).toBe(true);
     expect(indexableHost("www.nabo.by", true)).toBe(true);
     for (const host of [
       "nabo-new.vercel.app",
       "branch.vercel.app",
-      "nabo.by",
       "evil.example",
     ])
       expect(indexableHost(host, true)).toBe(false);
@@ -30,9 +32,7 @@ describe("SEO architecture", () => {
     expect(indexableHost("www.nabo.by", "false")).toBe(false);
   });
   it("canonicalises product names and campaign parameters without trusting request hosts", () => {
-    expect(siteOrigin("https://nabo.example/base")).toBe(
-      "https://nabo.example",
-    );
+    expect(siteOrigin("https://nabo.example/base")).toBe("https://nabo.by");
     expect(
       seoPolicy("/product/evroopt/123", { name: "Молоко", utm_source: "blog" }),
     ).toEqual({ index: true, canonicalPath: "/product/evroopt/123" });

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import catalog from "../fixtures/recipes.json" with { type: "json" };
-test("home renders without the recipe API or hero download and loads suggestions when needed", async ({
+test("home stays usable during recipe API outage and reserves hero geometry", async ({
   page,
 }, info) => {
   test.skip(!info.project.use.isMobile);
@@ -51,10 +51,12 @@ test("home renders without the recipe API or hero download and loads suggestions
     .getByRole("button", { name: "Только необходимые", exact: true })
     .click();
   await page.locator(".inspiration").scrollIntoViewIfNeeded();
-  await expect(page.locator(".inspiration .dish-card")).toHaveCount(3);
-  expect(searches).toBe(1);
+  await expect(
+    page.locator(".inspiration").getByRole("link", { name: /Все рецепты/ }),
+  ).toBeVisible();
+  expect(searches).toBe(0);
   await page.evaluate(() => scrollTo(0, 0));
   await page.locator(".inspiration").scrollIntoViewIfNeeded();
-  expect(searches).toBe(1);
+  expect(searches).toBe(0);
   expect(errors).toEqual([]);
 });

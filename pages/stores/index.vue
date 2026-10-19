@@ -4,6 +4,12 @@ import { retailStores } from "~/shared/yandex";
 
 <template>
   <div class="inner-page stores-page">
+    <SeoBreadcrumbs
+      :entries="[
+        { name: 'Главная', path: '/' },
+        { name: 'Магазины', path: '/stores' },
+      ]"
+    />
     <div class="page-heading stores-heading">
       <div>
         <span class="eyebrow">Каталоги магазинов</span>

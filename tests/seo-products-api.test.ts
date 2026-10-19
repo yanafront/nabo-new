@@ -95,7 +95,7 @@ beforeAll(async () => {
     recipesApiBase: upstreamBase,
     retailApiBase: upstreamBase,
     seoIngestKey: key,
-    public: { seoIndexable: true, siteUrl: "https://www.nabo.by" },
+    public: { seoIndexable: true, siteUrl: "https://nabo.by" },
   }));
   vi.stubGlobal("defineCachedFunction", (fn: any) => fn);
   for (const [name, value] of Object.entries({
@@ -220,11 +220,11 @@ it("imports only real selected-store results, deduplicates and exposes partial s
     connection: "ready",
   });
   expect(await (await fetch(base + "/sitemap.xml")).text()).toContain(
-    "https://www.nabo.by/sitemaps/products-1.xml",
+    "https://nabo.by/sitemaps/products-1.xml",
   );
   expect(
     await (await fetch(base + "/sitemaps/products-1.xml")).text(),
-  ).toContain("<loc>https://www.nabo.by/product/green/milk</loc>");
+  ).toContain("<loc>https://nabo.by/product/green/milk</loc>");
 });
 it("rejects arbitrary product payloads and unbounded queries before calling retail", async () => {
   const before = retailCalls;

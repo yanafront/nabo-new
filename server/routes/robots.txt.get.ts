@@ -7,5 +7,5 @@ export default defineEventHandler((event) => {
   if (!indexableHost(getRequestURL(event).hostname, config.public.seoIndexable))
     // Crawlers must reach the noindex response to remove previously indexed aliases.
     return "User-agent: *\nAllow: /\nDisallow: /api/\n";
-  return `User-agent: *\nAllow: /\nDisallow: /api/\nAllow: /api/product-image\n\nUser-agent: Yandex\nAllow: /\nDisallow: /api/\nAllow: /api/product-image\nClean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term&gclid&yclid\n\nSitemap: ${origin}/sitemap.xml\n`;
+  return `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /admin/\nDisallow: /auth/\nDisallow: /__nuxt_error\nAllow: /api/product-image\n\nUser-agent: Yandex\nAllow: /\nDisallow: /api/\nDisallow: /admin/\nDisallow: /auth/\nDisallow: /__nuxt_error\nAllow: /api/product-image\nClean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term&gclid&yclid\n\nSitemap: ${origin}/sitemap.xml\n`;
 });

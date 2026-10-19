@@ -7,21 +7,43 @@ import {
 const props = defineProps<{
   recipe: Recipe;
   eager?: boolean;
+  deferImage?: boolean;
   categoryTitle?: string;
   contextQuery?: Record<string, string | number>;
 }>();
 const nutrition = computed(() => perServing(props.recipe));
 const grams = (value: number) => Math.round(value).toLocaleString("ru-RU");
 const failed = ref(false);
+const photo = ref<HTMLElement>();
+const showImage = ref(!props.deferImage);
+let observer: IntersectionObserver | undefined;
+onMounted(() => {
+  if (!props.deferImage || !photo.value) return;
+  if (!("IntersectionObserver" in window)) {
+    showImage.value = true;
+    return;
+  }
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        showImage.value = true;
+        observer?.disconnect();
+      }
+    },
+    { rootMargin: "0px" },
+  );
+  observer.observe(photo.value);
+});
+onBeforeUnmount(() => observer?.disconnect());
 </script>
 <template>
   <NuxtLink
     :to="{ path: `/recipes/${recipe.slug}`, query: contextQuery || {} }"
     class="dish-card"
   >
-    <div class="dish-photo">
+    <div ref="photo" class="dish-photo">
       <img
-        v-if="recipe.image && !failed"
+        v-if="recipe.image && !failed && showImage"
         :src="recipe.image"
         :alt="recipe.title"
         width="640"

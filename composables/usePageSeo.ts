@@ -20,6 +20,8 @@ export function usePageSeo(input: MaybeRefOrGetter<PageSeo>) {
     config.public.seoIndexable,
   );
   const data = computed(() => toValue(input));
+  if (import.meta.server && data.value.noindex)
+    useResponseHeader("X-Robots-Tag").value = "noindex, follow";
   const policy = computed(() => seoPolicy(route.path, route.query));
   const canonical = computed(() => origin + policy.value.canonicalPath);
   useSeoMeta({
@@ -52,11 +54,27 @@ export function usePageSeo(input: MaybeRefOrGetter<PageSeo>) {
           "@context": "https://schema.org",
           "@graph": [
             {
+              "@type": "Organization",
+              "@id": origin + "/#organization",
+              name: "Nabo",
+              url: origin,
+              logo: origin + "/brand/nabo-logo-small.webp",
+            },
+            {
               "@type": "WebSite",
               "@id": origin + "/#website",
               url: origin,
               name: "Nabo",
               inLanguage: "ru-BY",
+              publisher: { "@id": origin + "/#organization" },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: origin + "/recipes?q={search_term_string}",
+                },
+                "query-input": "required name=search_term_string",
+              },
             },
             {
               "@type": "WebPage",

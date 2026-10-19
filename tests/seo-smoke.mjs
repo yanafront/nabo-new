@@ -297,6 +297,10 @@ try {
   assert.match(recipeHtml, /"@type":"Recipe"/);
   assert.match(
     recipeHtml,
+    /rel="preload"[^>]*as="image"[^>]*href="https:\/\/example.com\/recipe.jpg"/,
+  );
+  assert.match(
+    recipeHtml,
     /canonical[^>]+https:\/\/nabo\.by\/recipes\/seo-test"/,
   );
   assert.match(recipeHtml, /Суп готовый/);

@@ -27,6 +27,18 @@ if (error.value?.statusCode === 404)
 if (import.meta.server && error.value)
   setResponseStatus(useRequestEvent()!, error.value.statusCode || 503);
 
+useHead(() => ({
+  link: recipe.value?.image
+    ? [
+        {
+          rel: "preload",
+          as: "image",
+          href: recipe.value.image,
+          fetchpriority: "high",
+        },
+      ]
+    : [],
+}));
 const dictionary = computed(() => data.value?.ingredients || []);
 const servings = ref(
   Math.min(

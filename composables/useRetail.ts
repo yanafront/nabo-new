@@ -3,6 +3,7 @@ import type {
   DeliveryLocation,
   CompareItem,
   StoreComparison,
+  StoreId,
 } from "~/shared/yandex";
 import { retailStores } from "~/shared/yandex";
 const requests = new WeakMap<object, AbortController>();
@@ -17,6 +18,9 @@ export function useRetail() {
     "retail-comparisons",
     () => [],
   );
+  const storeStates = useState<
+    Partial<Record<StoreId, "loading" | "ready" | "error">>
+  >("retail-store-states", () => ({}));
   const pending = useState("retail-pending", () => false);
   const error = useState("retail-error", () => "");
   const fingerprint = useState("retail-fingerprint", () => "");
@@ -37,6 +41,9 @@ export function useRetail() {
     const requestId = crypto.randomUUID();
     currentKey.value = requestId;
     pending.value = true;
+    storeStates.value = Object.fromEntries(
+      retailStores.map((store) => [store.id, "loading"]),
+    );
     error.value = "";
     fingerprint.value = "";
     try {
@@ -50,28 +57,98 @@ export function useRetail() {
       }
       if (!items.length) return;
       const key = keyFor(items);
-      const result = await $fetch<{ offers: StoreComparison[] }>(
-        "/api/yandex/compare",
-        {
-          method: "POST",
-          body: { items, location: location.value },
-          signal: controller.signal,
-          timeout: 120000,
-          retry: 0,
-        },
-      );
+      const { perStore } = await $fetch<{ perStore: boolean }>(
+        "/api/yandex/compare-capabilities",
+        { signal: controller.signal, retry: 0 },
+      ).catch(() => ({ perStore: false }));
+      if (currentKey.value !== requestId || controller.signal.aborted) return;
+      const address = { ...location.value };
+      if (perStore) {
+        await Promise.allSettled(
+          retailStores.map(async (store) => {
+            try {
+              const result = await $fetch<{ offers: StoreComparison[] }>(
+                "/api/yandex/compare",
+                {
+                  method: "POST",
+                  body: { items, location: address, storeId: store.id },
+                  signal: controller.signal,
+                  timeout: 120000,
+                  retry: 0,
+                },
+              );
+              if (currentKey.value !== requestId) return;
+              const offer = result.offers.find(
+                (offer) => offer.storeId === store.id,
+              );
+              if (!offer) throw new Error("Missing store result");
+              comparisons.value = [
+                ...comparisons.value.filter(
+                  (offer) => offer.storeId !== store.id,
+                ),
+                offer,
+              ];
+              storeStates.value = { ...storeStates.value, [store.id]: "ready" };
+            } catch {
+              if (currentKey.value !== requestId) return;
+              comparisons.value = comparisons.value.filter(
+                (offer) => offer.storeId !== store.id,
+              );
+              storeStates.value = { ...storeStates.value, [store.id]: "error" };
+            }
+          }),
+        );
+      } else {
+        // Compatibility until the retail backend publishes the storeId contract.
+        const result = await $fetch<{ offers: StoreComparison[] }>(
+          "/api/yandex/compare",
+          {
+            method: "POST",
+            body: { items, location: address },
+            signal: controller.signal,
+            timeout: 120000,
+            retry: 0,
+          },
+        );
+        if (currentKey.value !== requestId) return;
+        comparisons.value = result.offers;
+        storeStates.value = Object.fromEntries(
+          retailStores.map((store) => [
+            store.id,
+            result.offers.some((offer) => offer.storeId === store.id)
+              ? "ready"
+              : "error",
+          ]),
+        );
+      }
       if (currentKey.value !== requestId) return;
-      comparisons.value = result.offers;
-      fingerprint.value = key;
-    } catch {
-      if (currentKey.value === requestId)
+      if (!comparisons.value.length)
         error.value =
           "Не удалось получить сравнение. Проверьте соединение и повторите.";
+      fingerprint.value = key;
+    } catch {
+      if (currentKey.value === requestId) {
+        storeStates.value = Object.fromEntries(
+          retailStores.map((store) => [store.id, "error"]),
+        );
+        error.value =
+          "Не удалось получить сравнение. Проверьте соединение и повторите.";
+      }
     } finally {
       if (currentKey.value === requestId) pending.value = false;
     }
   }
+  function stopPending() {
+    requests.get(app)?.abort();
+    requests.delete(app);
+    currentKey.value = "";
+    pending.value = false;
+    storeStates.value = Object.fromEntries(
+      comparisons.value.map((offer) => [offer.storeId, "ready"]),
+    );
+  }
   function updateDraft(rows: import("~/data/catalog").Item[]) {
+    if (pending.value) stopPending();
     if (!comparisons.value.length) return;
     comparisons.value = comparisons.value.map((offer) => {
       const lines = offer.lines.map((line) => ({
@@ -124,7 +201,9 @@ export function useRetail() {
     fingerprint.value = "";
   }
   function updateQuantities(items: CompareItem[]) {
-    if (!comparisons.value.length || pending.value) {
+    const interrupted = pending.value;
+    if (interrupted) stopPending();
+    if (!comparisons.value.length) {
       invalidate();
       return;
     }
@@ -137,19 +216,24 @@ export function useRetail() {
           line.quantity,
       })),
     }));
-    fingerprint.value = keyFor(items);
+    fingerprint.value =
+      interrupted || comparisons.value.length < retailStores.length
+        ? ""
+        : keyFor(items);
   }
   function invalidate() {
     requests.get(app)?.abort();
     requests.delete(app);
     currentKey.value = "";
     comparisons.value = [];
+    storeStates.value = {};
     fingerprint.value = "";
     pending.value = false;
   }
   return {
     location,
     comparisons,
+    storeStates,
     offers,
     pending,
     error,

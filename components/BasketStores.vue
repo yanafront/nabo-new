@@ -38,6 +38,7 @@ onBeforeUnmount(() => {
 
 const {
   comparisons,
+  storeStates,
   location,
   compare,
   pending,
@@ -73,6 +74,12 @@ const busy = computed(
 );
 const refreshing = computed(
   () => (pending.value || busy.value) && !comparisons.value.length,
+);
+const selectedLoading = computed(
+  () =>
+    pending.value &&
+    !selected.value &&
+    storeStates.value[active.value] !== "error",
 );
 const status = (id: StoreId) =>
   offers.value.find((offer) => offer.storeId === id);
@@ -207,11 +214,15 @@ onBeforeUnmount(() => {
             · {{ money(best.subtotal) }} BYN</strong
           ><AppIcon name="ArrowRight" :size="16" />
         </button>
-        <small>Вся корзина в наличии</small>
+        <small>{{
+          pending
+            ? "Лучший результат среди проверенных · проверяем остальные…"
+            : "Вся корзина в наличии"
+        }}</small>
       </template>
       <template v-else
         ><span>{{
-          refreshing
+          pending
             ? "Проверяем цены и наличие в магазинах…"
             : "Полной корзины в наличии пока нет"
         }}</span
@@ -245,7 +256,7 @@ onBeforeUnmount(() => {
         <small
           :class="{ available: !refreshing && status(store.id)?.complete }"
           >{{
-            refreshing
+            storeStates[store.id] === "loading"
               ? "Проверяем…"
               : !status(store.id)
                 ? "Нет ответа"
@@ -262,25 +273,33 @@ onBeforeUnmount(() => {
         class="basket-list panel store-basket-panel"
         role="tabpanel"
         :aria-labelledby="`basket-tab-${active}`"
-        :aria-busy="refreshing"
+        :aria-busy="selectedLoading"
       >
         <div class="store-basket-heading">
           <div>
             <h2><StoreBrand :store-id="active" /></h2>
             <NearbyStoresLink :store-id="active" />
           </div>
-          <button class="text-button" :disabled="refreshing" @click="compare()">
+          <button
+            class="text-button"
+            :disabled="pending || busy"
+            @click="compare()"
+          >
             <AppIcon name="RefreshCw" :size="14" />Обновить
           </button>
         </div>
-        <p v-if="refreshing" class="store-basket-status" role="status">
+        <p
+          v-if="selectedLoading || refreshing"
+          class="store-basket-status"
+          role="status"
+        >
           <span class="spinner" />{{
             cart.state.value === "saving"
               ? "Сохраняем корзину…"
               : "Сравниваем цены и наличие…"
           }}
         </p>
-        <div v-else-if="error" class="store-basket-status">
+        <div v-else-if="error && !selected" class="store-basket-status">
           <AppFeedback :message="error" /><button
             class="text-button"
             @click="compare()"
@@ -289,7 +308,10 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <p v-else-if="!selected" class="store-basket-status">
-          Магазин не вернул данные. Попробуйте обновить сравнение.
+          Магазин не вернул данные. Другие магазины остаются доступны.
+          <button class="text-button" :disabled="pending" @click="compare()">
+            Повторить
+          </button>
         </p>
         <template v-else>
           <p v-if="!selected.complete" class="basket-price-note" role="status">
@@ -411,7 +433,9 @@ onBeforeUnmount(() => {
           {{
             selected?.complete
               ? "Вся корзина в наличии"
-              : "Проверьте недостающие товары в списке."
+              : selectedLoading
+                ? "Проверяем цены и наличие…"
+                : "Проверьте недостающие товары в списке."
           }}
         </p>
         <div class="basket-actions">
@@ -424,7 +448,7 @@ onBeforeUnmount(() => {
             >Перейти в {{ identity.name
             }}<AppIcon name="ExternalLink" :size="16" /></a
           ><button v-else class="primary full" disabled>
-            {{ refreshing ? "Проверяем…" : "Нет товаров" }}
+            {{ selectedLoading || refreshing ? "Проверяем…" : "Нет товаров" }}
           </button>
         </div>
         <p class="basket-next-step">

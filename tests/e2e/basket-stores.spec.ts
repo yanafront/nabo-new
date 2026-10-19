@@ -19,7 +19,11 @@ async function mockCart(
   page: import("@playwright/test").Page,
   stale = false,
   images = false,
+  perStore = false,
 ) {
+  await page.route("**/api/yandex/compare-capabilities", (route) =>
+    route.fulfill({ json: { perStore } }),
+  );
   let cart = [
     { storeId: "green", id: "milk", name: longName, count: 1, unit: "1 л" },
     {
@@ -56,47 +60,50 @@ async function mockCart(
     });
   });
   await page.route("**/api/yandex/compare", (route) => {
-    const input = route.request().postDataJSON().items;
+    const body = route.request().postDataJSON();
+    const input = body.items;
     return route.fulfill({
       json: {
-        offers: retailStores.map((store) => ({
-          storeId: store.id,
-          placeSlug: store.slug,
-          fetchedAt: stale
-            ? "2020-01-01T00:00:00.000Z"
-            : new Date().toISOString(),
-          lines: input.map((item: any, index: number) => ({
-            itemId: item.id,
-            query: item.query,
-            quantity: item.quantity,
-            selected:
-              store.id === "evroopt" && index === 1
-                ? null
-                : {
-                    ...source(
-                      store.id,
-                      `${store.id}-${item.id}`,
-                      item.query,
-                      store.id === "evroopt"
-                        ? 1
-                        : store.id === "sosedi"
-                          ? 3 + index
-                          : 5 + index,
-                    ),
-                    image: images
-                      ? `https://avatars.mds.yandex.net/get-eda/1/${store.id}-${index}/orig`
-                      : null,
-                  },
-            alternatives: [
-              source(
-                store.id,
-                "alternative",
-                longName + " · другой производитель",
-                6,
-              ),
-            ],
+        offers: retailStores
+          .filter((store) => !body.storeId || store.id === body.storeId)
+          .map((store) => ({
+            storeId: store.id,
+            placeSlug: store.slug,
+            fetchedAt: stale
+              ? "2020-01-01T00:00:00.000Z"
+              : new Date().toISOString(),
+            lines: input.map((item: any, index: number) => ({
+              itemId: item.id,
+              query: item.query,
+              quantity: item.quantity,
+              selected:
+                store.id === "evroopt" && index === 1
+                  ? null
+                  : {
+                      ...source(
+                        store.id,
+                        `${store.id}-${item.id}`,
+                        item.query,
+                        store.id === "evroopt"
+                          ? 1
+                          : store.id === "sosedi"
+                            ? 3 + index
+                            : 5 + index,
+                      ),
+                      image: images
+                        ? `https://avatars.mds.yandex.net/get-eda/1/${store.id}-${index}/orig`
+                        : null,
+                    },
+              alternatives: [
+                source(
+                  store.id,
+                  "alternative",
+                  longName + " · другой производитель",
+                  6,
+                ),
+              ],
+            })),
           })),
-        })),
       },
     });
   });
@@ -329,4 +336,100 @@ test("store switching replaces image nodes and does not retain another retailer 
       first.evaluate((image) => (image as HTMLImageElement).naturalWidth),
     )
     .toBeGreaterThan(0);
+});
+
+test("store comparisons render the first completed result while other stores are still loading", async ({
+  page,
+}) => {
+  await mockCart(page, false, false, true);
+  const releases = new Map<string, () => void>();
+  const requests: any[] = [];
+  await page.route("**/api/yandex/compare", async (route) => {
+    const body = route.request().postDataJSON();
+    requests.push(body);
+    await new Promise<void>((resolve) => releases.set(body.storeId, resolve));
+    if (body.storeId === "evroopt")
+      return route.fulfill({ status: 502, json: { message: "Unavailable" } });
+    await route.fallback();
+  });
+  await page.goto("/basket");
+  await expect.poll(() => requests.length).toBe(6);
+  expect(new Set(requests.map((request) => request.storeId)).size).toBe(6);
+  expect(requests.every((request) => request.items.length === 2)).toBe(true);
+  releases.get("green")!();
+  await expect(page.getByRole("tab", { name: /Green/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.locator(".product-row")).toHaveCount(2);
+  await expect(page.locator(".basket-summary")).toContainText("11,00");
+  await expect(page.locator(".basket-benefit")).toContainText(
+    "проверяем остальные",
+  );
+  await expect(page.getByRole("tab", { name: /Соседи/ })).toContainText(
+    "Проверяем",
+  );
+  await page.getByRole("tab", { name: /Соседи/ }).click();
+  await expect(page.locator(".store-basket-status")).toContainText(
+    "Сравниваем",
+  );
+  releases.get("sosedi")!();
+  await expect(page.locator(".basket-summary")).toContainText("7,00");
+  await expect(page.getByRole("tab", { name: /Соседи/ })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  for (const id of ["evroopt", "gippo", "belmarket", "santa"])
+    releases.get(id)!();
+  await expect(page.getByRole("tab", { name: /Евроопт/ })).toContainText(
+    "Нет ответа",
+  );
+  await expect(page.locator(".basket-benefit")).not.toContainText(
+    "проверяем остальные",
+  );
+  await expect(page.locator(".basket-summary")).toContainText("7,00");
+  await page.waitForTimeout(1000);
+  expect(requests).toHaveLength(6);
+});
+
+test("quantity edits during partial comparison remain optimistic and ignore old responses", async ({
+  page,
+}) => {
+  await mockCart(page, false, false, true);
+  let releaseComparisons!: () => void;
+  let releaseSave!: () => void;
+  const comparisonsGate = new Promise<void>((resolve) => {
+    releaseComparisons = resolve;
+  });
+  const saveGate = new Promise<void>((resolve) => {
+    releaseSave = resolve;
+  });
+  let writes = 0;
+  await page.route("**/api/cart**", async (route) => {
+    if (route.request().method() === "POST") {
+      writes++;
+      await saveGate;
+    }
+    await route.fallback();
+  });
+  await page.route("**/api/yandex/compare", async (route) => {
+    if (route.request().postDataJSON().storeId !== "green")
+      await comparisonsGate;
+    await route.fallback();
+  });
+  await page.goto("/basket");
+  await expect(page.locator(".basket-summary")).toContainText("11,00");
+  await page
+    .getByRole("button", { name: `Увеличить количество: ${longName}` })
+    .click();
+  await expect(page.locator(".basket-summary")).toContainText("16,00");
+  await expect(page.locator(".product-row")).toHaveCount(2);
+  await expect(page.locator(".spinner")).toHaveCount(0);
+  await expect.poll(() => writes).toBe(1);
+  releaseComparisons();
+  releaseSave();
+  await expect(page.locator(".basket-benefit")).toContainText(
+    "Соседи · 10,00 BYN",
+  );
+  await expect(page.locator(".basket-summary")).toContainText("16,00");
 });

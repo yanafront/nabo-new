@@ -1,12 +1,10 @@
 import type { H3Event } from "h3";
-export interface SeoProductReference {
-  storeId: string;
-  id: string;
-  name: string;
-  unit?: string;
-  image?: string;
-  updatedAt?: string;
-}
+import {
+  discoveredProducts,
+  type SeoProductReference,
+} from "../../shared/seo/products";
+export type { SeoProductReference } from "../../shared/seo/products";
+import { indexableHost } from "../../shared/seo/core";
 let cachedRequest: ReturnType<typeof createSeoCache> | undefined;
 function createSeoCache() {
   return defineCachedFunction(
@@ -42,70 +40,69 @@ export function seoService(
   cachedRequest ||= createSeoCache();
   return cachedRequest(base, path, query);
 }
-export async function rememberProducts(event: H3Event, data: any) {
+export async function saveDiscoveredProducts(
+  event: H3Event,
+  records: SeoProductReference[],
+) {
+  const config = useRuntimeConfig(event);
+  if (!config.seoIngestKey || !config.recipesApiBase)
+    throw createError({
+      statusCode: 503,
+      message:
+        "Настройте NUXT_SEO_INGEST_KEY в Vercel и такой же SEO_INGEST_KEY в Railway сервиса nabo-recipes.",
+    });
+  let saved = 0;
+  for (let offset = 0; offset < records.length; offset += 50) {
+    const chunk = records.slice(offset, offset + 50);
+    const result = await $fetch<{ saved: number }>(
+      config.recipesApiBase.replace(/\/+$/, "") + "/api/seo/products",
+      {
+        method: "POST",
+        body: { items: chunk },
+        headers: { "X-Nabo-Seo-Key": config.seoIngestKey },
+        timeout: 15000,
+        retry: 0,
+      },
+    );
+    if (result.saved !== chunk.length)
+      throw createError({
+        statusCode: 502,
+        message: "Некорректный ответ SEO API.",
+      });
+    saved += result.saved;
+  }
+  return saved;
+}
+export async function checkSeoConnection(event: H3Event) {
+  const config = useRuntimeConfig(event);
+  return $fetch<{ saved: number }>(
+    config.recipesApiBase.replace(/\/+$/, "") + "/api/seo/products",
+    {
+      method: "POST",
+      body: { items: [] },
+      headers: { "X-Nabo-Seo-Key": config.seoIngestKey },
+      timeout: 10000,
+      retry: 0,
+    },
+  );
+}
+export async function rememberProducts(event: H3Event, data: unknown) {
   const config = useRuntimeConfig(event);
   if (
     !config.seoIngestKey ||
     !config.recipesApiBase ||
-    !config.public.seoIndexable
+    !indexableHost(getRequestURL(event).hostname, config.public.seoIndexable)
   )
     return;
-  const found = new Map<string, SeoProductReference>();
-  function visit(value: any, depth = 0) {
-    if (!value || typeof value !== "object" || depth > 8) return;
-    if (Array.isArray(value)) {
-      value.forEach((v) => visit(v, depth + 1));
-      return;
-    }
-    if (
-      typeof value.id === "string" &&
-      typeof value.storeId === "string" &&
-      typeof value.name === "string" &&
-      typeof value.available === "boolean"
-    )
-      found.set(value.storeId + ":" + value.id, {
-        storeId: value.storeId,
-        id: value.id,
-        name: value.name,
-        unit: value.unit || "",
-        image:
-          typeof value.image === "string" &&
-          (value.image.startsWith("https://") ||
-            value.image.startsWith("/api/product-image?")) &&
-          value.image.length <= 2048
-            ? value.image
-            : undefined,
-      });
-    for (const key of ["products", "product", "stores", "items", "result"])
-      visit(value[key], depth + 1);
+  const records = discoveredProducts(data);
+  if (!records.length) return;
+  try {
+    await saveDiscoveredProducts(event, records);
+  } catch (error: any) {
+    // Log only a status, never keys, provider payloads or personal data.
+    console.warn(
+      "SEO product index update unavailable",
+      error.statusCode || error.response?.status || 502,
+    );
   }
-  visit(data);
-  if (!found.size) return;
-  const records = [...found.values()];
-  let cursor = 0;
-  await Promise.all(
-    Array.from(
-      { length: Math.min(2, Math.ceil(records.length / 50)) },
-      async () => {
-        while (cursor < records.length) {
-          const chunk = records.slice(cursor, cursor + 50);
-          cursor += 50;
-          try {
-            await $fetch(
-              config.recipesApiBase.replace(/\/+$/, "") + "/api/seo/products",
-              {
-                method: "POST",
-                body: { items: chunk },
-                headers: { "X-Nabo-Seo-Key": config.seoIngestKey },
-                timeout: 5000,
-                retry: 0,
-              },
-            );
-          } catch {
-            console.warn("SEO product index update unavailable");
-          }
-        }
-      },
-    ),
-  );
 }

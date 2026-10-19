@@ -71,9 +71,15 @@ export async function proxyBackend(
       "/api/yandex/search/batch",
       "/api/product",
       "/api/products/resolve",
-    ].includes(path)
+    ].includes(path.split("?")[0])
   ) {
-    event.waitUntil(response.clone().json().then(data=>rememberProducts(event,data)).catch(()=>{}));
+    event.waitUntil(
+      response
+        .clone()
+        .json()
+        .then((data) => rememberProducts(event, data))
+        .catch(() => {}),
+    );
   }
   // Preserve backend status, validation bodies, Retry-After and image headers.
   return sendWebResponse(event, response);

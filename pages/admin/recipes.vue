@@ -455,6 +455,9 @@ useHead({
         <p class="muted">Служебный раздел Nabo</p>
       </div>
       <div v-if="authStatus === 200" class="admin-create-actions">
+        <NuxtLink to="/admin/seo-products" class="secondary"
+          >SEO товаров</NuxtLink
+        >
         <NuxtLink to="/admin/ingredients" class="secondary"
           >Ингредиенты</NuxtLink
         >

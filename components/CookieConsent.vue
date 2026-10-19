@@ -2,29 +2,27 @@
 const { valid, open, choose } = useCookieChoice();
 </script>
 <template>
-  <ClientOnly>
-    <section
-      v-if="!valid || open"
-      class="cookie-consent"
-      aria-label="Настройки cookies"
-    >
-      <div>
-        <strong>Настройки cookies</strong>
-        <p>
-          Необходимые cookies обеспечивают вход. Яндекс Метрика и Google Analytics —
-          только с вашего разрешения.
-          <NuxtLink to="/legal/cookies">Подробнее</NuxtLink>
-        </p>
-      </div>
-      <div class="cookie-actions">
-        <button class="secondary" @click="choose(false)">
-          Только необходимые</button
-        ><button class="primary" @click="choose(true)">
-          Разрешить аналитику
-        </button>
-      </div>
-    </section>
-  </ClientOnly>
+  <section
+    v-if="!valid || open"
+    class="cookie-consent"
+    aria-label="Настройки cookies"
+  >
+    <div>
+      <strong>Настройки cookies</strong>
+      <p>
+        Необходимые cookies обеспечивают вход. Яндекс Метрика и Google Analytics
+        — только с вашего разрешения.
+        <NuxtLink to="/legal/cookies">Подробнее</NuxtLink>
+      </p>
+    </div>
+    <div class="cookie-actions">
+      <button class="secondary" @click="choose(false)">
+        Только необходимые</button
+      ><button class="primary" @click="choose(true)">
+        Разрешить аналитику
+      </button>
+    </div>
+  </section>
 </template>
 <style scoped>
 .cookie-consent {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { data: user, status } = await useAccount();
+const { data: user } = await useAccount();
 const cartSync = useCartSync();
 const { reset } = useFavorites();
 const open = ref(false);
@@ -51,14 +51,8 @@ async function logout() {
 </script>
 <template>
   <div ref="root" class="account-menu">
-    <span
-      v-if="status === 'pending' && !user"
-      class="account-placeholder"
-      aria-label="Проверяем аккаунт"
-      ><span class="spinner"
-    /></span>
     <NuxtLink
-      v-else-if="!user"
+      v-if="!user"
       to="/account"
       class="account-signin"
       aria-label="Войти в аккаунт"

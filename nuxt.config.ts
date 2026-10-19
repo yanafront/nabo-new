@@ -2,6 +2,12 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
   devtools: { enabled: false },
   routeRules: { "/compare": { redirect: { to: "/basket", statusCode: 301 } } },
+  experimental: {
+    defaults: {
+      nuxtLink: { prefetchOn: { visibility: false, interaction: true } },
+    },
+  },
+  nitro: { compressPublicAssets: true },
   css: ["~/assets/css/design-system.css"],
   runtimeConfig: {
     recipesApiBase: "",
@@ -33,7 +39,7 @@ export default defineNuxtConfig({
       link: [
         {
           rel: "preload",
-          href: "/fonts/InterVariable.woff2",
+          href: "/fonts/Inter-latin-cyrillic.woff2",
           as: "font",
           type: "font/woff2",
           crossorigin: "anonymous",
@@ -52,8 +58,7 @@ export default defineNuxtConfig({
           href: "/apple-touch-icon.png",
         },
       ],
-      viewport:
-        "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+      viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
       meta: [
         {
           name: "description",

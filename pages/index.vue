@@ -1,8 +1,39 @@
 <script setup lang="ts">
 import type { Recipe } from "~/shared/recipe/model";
-const { data: ideas } = await useAsyncData("home-recipe-ideas", () =>
-  $fetch<{ recipes: Recipe[] }>("/api/recipes", { query: { limit: 3 } }),
+const inspiration = ref<HTMLElement>();
+const {
+  data: ideas,
+  pending: ideasPending,
+  error: ideasError,
+  execute: loadIdeas,
+} = await useAsyncData(
+  "home-recipe-ideas",
+  () =>
+    $fetch<{ recipes: Recipe[] }>("/api/recipes", {
+      query: { limit: 3 },
+      timeout: 15000,
+      retry: 0,
+    }),
+  { server: false, immediate: false, default: () => ({ recipes: [] }) },
 );
+let ideasObserver: IntersectionObserver | undefined;
+onMounted(() => {
+  if (!inspiration.value) return;
+  if (!("IntersectionObserver" in window)) {
+    void loadIdeas();
+    return;
+  }
+  ideasObserver = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      ideasObserver?.disconnect();
+      void loadIdeas();
+    },
+    { rootMargin: "240px" },
+  );
+  ideasObserver.observe(inspiration.value);
+});
+onBeforeUnmount(() => ideasObserver?.disconnect());
 import { retailStores } from "~/shared/yandex";
 const { items } = useBasket();
 useHead({
@@ -112,18 +143,27 @@ useHead({
         }}<AppIcon name="ArrowRight" :size="18" />
       </NuxtLink>
     </section>
-    <section class="inspiration">
+    <section ref="inspiration" class="inspiration">
       <div class="section-head">
         <h2>Начните с блюда</h2>
         <NuxtLink to="/recipes" class="text-button">Что приготовить</NuxtLink>
       </div>
-      <div class="dish-grid">
+      <div v-if="ideas?.recipes.length" class="dish-grid">
         <RecipeCard
           v-for="recipe in ideas?.recipes || []"
           :key="recipe.id"
           :recipe="recipe"
         />
       </div>
+      <div v-else-if="!ideasError" class="dish-grid" aria-hidden="true">
+        <div v-for="n in 3" :key="n" class="home-idea-placeholder" />
+      </div>
+      <p v-if="ideasPending" class="sr-only" role="status">
+        Загружаем рецепты…
+      </p>
+      <p v-if="ideasError" class="muted">
+        Подборка сейчас недоступна. Рецепты можно посмотреть в каталоге.
+      </p>
       <NuxtLink to="/recipes" class="text-button"
         >Все рецепты <AppIcon name="ArrowRight" :size="16"
       /></NuxtLink>
@@ -132,6 +172,17 @@ useHead({
 </template>
 
 <style scoped>
+.home-idea-placeholder {
+  min-height: 280px;
+  border-radius: 18px;
+  background: #f6f7f9;
+}
+@media (max-width: 760px) {
+  .home-idea-placeholder {
+    min-height: 230px;
+  }
+}
+
 .one-basket-stores {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

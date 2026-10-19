@@ -18,6 +18,14 @@ const extensions: Record<StoreId, string> = {
   belmarket: "svg",
   santa: "webp",
 };
+const dimensions: Record<StoreId, [number, number]> = {
+  evroopt: [280, 72],
+  green: [360, 120],
+  gippo: [260, 60],
+  sosedi: [142, 41],
+  belmarket: [4200, 1067],
+  santa: [260, 123],
+};
 const failed = ref(false);
 </script>
 <template>
@@ -29,77 +37,11 @@ const failed = ref(false);
       v-if="!failed"
       :src="`/brand/stores/${storeId}.${extensions[storeId]}`"
       :alt="store.name"
+      :width="dimensions[storeId][0]"
+      :height="dimensions[storeId][1]"
       decoding="async"
       @error="failed = true"
     />
     <span v-else>{{ store.name }}</span>
   </span>
 </template>
-<style scoped>
-.store-brand {
-  display: inline-flex;
-  width: 100px;
-  height: 30px;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  vertical-align: middle;
-}
-.store-brand img {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-}
-.store-brand--inline {
-  width: 58px;
-  height: 15px;
-}
-.store-brand--compact {
-  width: 82px;
-  height: 22px;
-}
-.store-brand--large {
-  width: 130px;
-  height: 40px;
-}
-.store-brand--green img {
-  max-width: 88%;
-}
-.store-brand--santa img {
-  max-width: 90%;
-}
-.store-brand--belmarket {
-  padding: 3px 5px;
-  border-radius: 4px;
-  background: #27ae60;
-}
-.store-brand--belmarket img {
-  max-width: 100%;
-}
-</style>
-
-<style scoped>
-.store-brand--home {
-  width: 96px;
-  height: 38px;
-  max-width: 100%;
-}
-.store-brand--home img {
-  max-width: min(82px, 100%);
-  max-height: 28px;
-}
-.store-brand--home.store-brand--green img { max-width: min(78px, 100%); }
-.store-brand--home.store-brand--santa img {
-  width: 96px;
-  max-width: 100%;
-  max-height: 38px;
-}
-.store-brand--home.store-brand--belmarket {
-  width: 82px;
-  height: 26px;
-  padding: 3px 5px;
-}
-</style>

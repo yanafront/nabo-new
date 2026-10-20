@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-10-19T20:32:39.788Z",
+  "checkedAt": "2026-10-20T06:10:18.842Z",
   "origin": "https://nabo.by",
   "pages": [
     {
@@ -150,6 +150,26 @@
       "staleSeoHost": false
     },
     {
+      "path": "/stores",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/stores",
+      "title": "Продуктовые магазины Беларуси — Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/stores",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
       "path": "/stores/evroopt",
       "userAgent": "Googlebot",
       "status": 200,
@@ -166,6 +186,105 @@
         "WebPage",
         "BreadcrumbList",
         "ItemList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/delivery",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/delivery",
+      "title": "Готовые блюда с доставкой — Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/delivery",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "ItemList",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/recipes/category/salads",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/recipes/category/salads",
+      "title": "Салаты — Nabo",
+      "robots": "index,follow,max-image-preview:large",
+      "xRobots": null,
+      "ogUrl": "https://nabo.by/recipes/category/salads",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage",
+        "ItemList",
+        "BreadcrumbList"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/account",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/account",
+      "title": "Nabo — продукты и рецепты",
+      "robots": "noindex,follow",
+      "xRobots": "noindex, follow",
+      "ogUrl": "https://nabo.by/account",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/saved",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/saved",
+      "title": "Nabo — продукты и рецепты",
+      "robots": "noindex,follow",
+      "xRobots": "noindex, follow",
+      "ogUrl": "https://nabo.by/saved",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage"
+      ],
+      "schemaErrors": [],
+      "staleSeoHost": false
+    },
+    {
+      "path": "/basket",
+      "userAgent": "Googlebot",
+      "status": 200,
+      "location": null,
+      "canonical": "https://nabo.by/basket",
+      "title": "Nabo — продукты и рецепты",
+      "robots": "noindex,follow",
+      "xRobots": "noindex, follow",
+      "ogUrl": "https://nabo.by/basket",
+      "h1Count": 1,
+      "schemas": [
+        "Organization",
+        "WebSite",
+        "WebPage"
       ],
       "schemaErrors": [],
       "staleSeoHost": false
@@ -329,25 +448,31 @@
     {
       "path": "/sitemaps/static.xml",
       "status": 200,
-      "urlCount": 32,
+      "urlCount": 33,
       "foreignLoc": false
     },
     {
       "path": "/sitemaps/recipes-1.xml",
       "status": 200,
-      "urlCount": 42,
+      "urlCount": 43,
       "foreignLoc": false
     },
     {
       "path": "/sitemaps/cook-or-order-1.xml",
       "status": 200,
-      "urlCount": 42,
+      "urlCount": 43,
       "foreignLoc": false
     },
     {
       "path": "/sitemaps/products-1.xml",
       "status": 200,
-      "urlCount": 1645,
+      "urlCount": 2000,
+      "foreignLoc": false
+    },
+    {
+      "path": "/sitemaps/products-2.xml",
+      "status": 200,
+      "urlCount": 246,
       "foreignLoc": false
     }
   ],
@@ -369,6 +494,7 @@
     "https://nabo.by/sitemaps/static.xml",
     "https://nabo.by/sitemaps/recipes-1.xml",
     "https://nabo.by/sitemaps/cook-or-order-1.xml",
-    "https://nabo.by/sitemaps/products-1.xml"
+    "https://nabo.by/sitemaps/products-1.xml",
+    "https://nabo.by/sitemaps/products-2.xml"
   ]
 }

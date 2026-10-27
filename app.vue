@@ -11,6 +11,10 @@ const info = ref(false);
 const cookieSettings = useState("cookie-settings-open", () => false);
 const showLocation = ref(false);
 const offline = ref(false);
+const headerScrolled = ref(false);
+const updateHeaderScroll = () => {
+  headerScrolled.value = window.scrollY > 8;
+};
 const { show: showToast } = useToast();
 watch(offline, (value) => {
   showToast(
@@ -25,6 +29,8 @@ const updateConnection = () => {
 };
 onMounted(() => {
   updateConnection();
+  updateHeaderScroll();
+  window.addEventListener("scroll", updateHeaderScroll, { passive: true });
   window.addEventListener("online", updateConnection);
   window.addEventListener("offline", updateConnection);
 });
@@ -37,6 +43,7 @@ watch(notice, (message) => {
   notice.value = "";
 });
 onUnmounted(() => {
+  window.removeEventListener("scroll", updateHeaderScroll);
   window.removeEventListener("online", updateConnection);
   window.removeEventListener("offline", updateConnection);
 });
@@ -44,7 +51,7 @@ onUnmounted(() => {
 <template>
   <div class="app-shell">
     <a class="skip" href="#main">К содержимому</a>
-    <header class="header">
+    <header class="header" :class="{ 'header--scrolled': headerScrolled }">
       <NuxtLink to="/" class="logo" aria-label="Nabo — главная"
         ><BrandMark
       /></NuxtLink>

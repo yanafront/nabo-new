@@ -4814,6 +4814,19 @@ html {
   flex-shrink: 0;
   height: var(--header-height);
   background: var(--bg);
+  border: 0;
+}
+.header--scrolled::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  z-index: -1;
+  pointer-events: none;
+  background: var(--bg);
+  box-shadow: 0 4px 16px rgb(15 15 16 / 8%);
 }
 @media (min-width: 761px) {
   .basket-page .basket-summary {

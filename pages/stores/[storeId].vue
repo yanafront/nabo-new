@@ -9,7 +9,7 @@ if (!store.value)
   throw createError({ statusCode: 404, statusMessage: "Магазин не найден" });
 
 usePageSeo(() => ({
-  title: `${store.value?.name} — продукты, доставка и сравнение | Nabo`,
+  title: `${store.value?.name} — поиск продуктов и цены | Nabo`,
   description: `Товары ${store.value?.name}: найдите продукты, проверьте цены и сравните корзину с другими магазинами Беларуси.`,
 }));
 const { location } = useRetail();
@@ -72,9 +72,10 @@ onBeforeUnmount(() => controller?.abort());
     <div class="catalog-store-head">
       <div>
         <h1><StoreBrand :store-id="store!.id" size="large" /></h1>
-        <p>Каталог · {{ location.label }}</p>
+        <p>Поиск продуктов и цены · {{ location.label }}</p>
       </div>
     </div>
+    <NearbyStoresLink :store-id="store!.id" />
     <form class="catalog-search" @submit.prevent="search()">
       <AppIcon name="Search" />
       <input

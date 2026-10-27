@@ -372,6 +372,18 @@ try {
   assert.match(search.headers.get("x-robots-tag"), /noindex/);
   const hub = await (await get("/products")).text();
   assert.match(hub, /href="\/product\/green\/sku-1"/);
+  assert.match(hub, /<title>Поиск продуктов и товаров в магазинах Беларуси/);
+  assert.match(hub, /Поиск продуктов в магазинах/);
+  assert.match(hub, /Как купить продукты через Nabo/);
+  const storesHtml = await (await get("/stores")).text();
+  assert.match(storesHtml, /Продуктовые магазины рядом: карта и каталоги/);
+  assert.match(storesHtml, /Как найти продуктовый магазин рядом/);
+  assert.equal(
+    (storesHtml.match(/class="nearby-stores-link"/g) || []).length,
+    6,
+  );
+  assert.match(storesHtml, /"@type":"ItemList"/);
+  assert.match(storesHtml, /href="\/products"/);
   await fetch(base + "/api/search", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -404,6 +416,8 @@ try {
           "/products/moloko",
           "/recipes/quick",
           "/recipes/seo-test",
+          "/products",
+          "/stores",
         ]) {
           await page.goto(base + path, { waitUntil: "networkidle" });
           assert.equal(await page.locator("h1").count(), 1);

@@ -34,8 +34,8 @@ useHead({
         <div class="hero-copy">
           <h1>Что сегодня<br /><span>поесть?</span></h1>
           <p class="home-intro">
-            Выберите продукты сами или начните с рецепта. Затем сравним готовую
-            корзину по магазинам.
+            Найдите продукты в магазинах Беларуси или начните с рецепта.
+            Сравните цены на готовую корзину и выберите, где купить.
           </p>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -157,11 +157,17 @@ useHead({
           ><strong>Что приготовить</strong
           ><span>Рецепты, ингредиенты и шаги приготовления.</span></NuxtLink
         >
-        <NuxtLink to="/stores"
-          ><strong>Сравнить магазины и собрать корзину</strong
+        <NuxtLink to="/products"
+          ><strong>Поиск продуктов и сравнение цен</strong
           ><span
-            >Проверьте цены и наличие, измените продукты и перейдите к покупке у
-            магазина.</span
+            >Найдите товары, выберите упаковки и соберите корзину.</span
+          ></NuxtLink
+        >
+        <NuxtLink to="/stores"
+          ><strong>Продуктовые магазины рядом</strong
+          ><span
+            >Каталоги сетей и поиск магазинов на карте рядом с выбранной
+            точкой.</span
           ></NuxtLink
         >
         <NuxtLink to="/cook-or-order"
@@ -237,7 +243,7 @@ useHead({
 }
 .home-seo-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin: 20px 0 28px;
 }

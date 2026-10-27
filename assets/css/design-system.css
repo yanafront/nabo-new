@@ -4799,3 +4799,29 @@ select, select option {
 .seo-links a { color: var(--link); }
 .seo-section { margin: 32px 0; }
 .seo-section h2 { font-size: 22px; margin-bottom: 14px; }
+
+/* Keep navigation available without removing the header from document flow. */
+:root {
+  --header-height: 96px;
+}
+html {
+  scroll-padding-top: calc(var(--header-height) + 16px);
+}
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+  height: var(--header-height);
+  background: var(--bg);
+}
+@media (min-width: 761px) {
+  .basket-page .basket-summary {
+    top: calc(var(--header-height) + 16px);
+  }
+}
+@media (max-width: 760px) {
+  :root {
+    --header-height: 76px;
+  }
+}

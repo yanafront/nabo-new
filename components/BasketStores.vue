@@ -487,7 +487,7 @@ onBeforeUnmount(() => {
 }
 .basket-store-tabs {
   position: sticky;
-  top: 0;
+  top: var(--header-height, 96px);
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

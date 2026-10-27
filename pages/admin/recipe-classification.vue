@@ -435,7 +435,7 @@ useHead({
   background: var(--surface, #fff);
   padding: 14px 0;
   position: sticky;
-  top: 72px;
+  top: var(--header-height, 96px);
   z-index: 5;
 }
 .classification-toolbar label {

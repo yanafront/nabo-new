@@ -170,7 +170,9 @@ test("toast from a modal stays above the backdrop and can be dismissed", async (
   const toast = dialog.locator(".nabo-toast--error");
   await expect(toast).toBeVisible();
   await expect(toast).toBeInViewport();
-  await expect.poll(() => toast.evaluate(node => getComputedStyle(node).opacity)).toBe("1");
+  await expect
+    .poll(() => toast.evaluate((node) => getComputedStyle(node).opacity))
+    .toBe("1");
   const popup = await toast.boundingBox();
   const bounds = await dialog.boundingBox();
   expect(popup!.y).toBeGreaterThanOrEqual(bounds!.y);
@@ -178,4 +180,79 @@ test("toast from a modal stays above the backdrop and can be dismissed", async (
   await toast.getByRole("button", { name: "Закрыть уведомление" }).click();
   await expect(toast).toHaveCount(0);
   await expect(dialog).toBeVisible();
+});
+
+test("long product searches fit mobile with a separate count and compact help", async ({
+  page,
+}, info) => {
+  const query = "advent calendar " + "длинное-название-товара-".repeat(6);
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({ status: 401, json: {} }),
+  );
+  await page.route("**/api/search", (route) =>
+    route.fulfill({
+      json: {
+        stores: [
+          {
+            storeId: "evroopt",
+            status: "ok",
+            products: Array.from({ length: 35 }, (_, i) => ({
+              id: String(i),
+              storeId: "evroopt",
+              name: `Advent calendar ${i + 1}`,
+              unit: "1 шт.",
+              price: 10,
+              available: true,
+              image: null,
+              oldPrice: null,
+              stock: null,
+              placeSlug: "evroopt",
+              fetchedAt: "",
+            })),
+            total: 35,
+          },
+          ...["green", "gippo", "sosedi", "belmarket", "santa"].map(
+            (storeId) => ({ storeId, status: "ok", products: [], total: 0 }),
+          ),
+        ],
+        fetchedAt: new Date().toISOString(),
+      },
+    }),
+  );
+  await page.goto(`/products?q=${encodeURIComponent(query)}&store=evroopt`);
+  const head = page.locator(".catalog-results-head");
+  await expect(head).toContainText("35 товаров во всех магазинах");
+  await expect(head.locator("h2")).toHaveText(`«${query}»`);
+  if (info.project.name === "mobile") {
+    await expect(page.locator(".products-intro")).toBeHidden();
+    const help = page.getByLabel("Как работает поиск товаров", { exact: true });
+    await expect(help).toBeVisible();
+    await help.click();
+    await expect(page.locator(".products-help p")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".products-help p")).toBeHidden();
+    const title = await head.locator("h2").boundingBox();
+    const count = await head.locator("span").boundingBox();
+    expect(count!.y).toBeGreaterThanOrEqual(title!.y + title!.height);
+    expect(title!.height).toBeLessThanOrEqual(50);
+    await page.setViewportSize({ width: 320, height: 780 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.setViewportSize({ width: 390, height: 844 });
+  } else {
+    await expect(page.locator(".products-intro")).toBeVisible();
+    await expect(page.locator(".products-help")).toBeHidden();
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: `/tmp/nabo-products-compact-${info.project.name}.png`,
+    fullPage: true,
+  });
 });

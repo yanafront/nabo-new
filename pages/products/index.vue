@@ -182,11 +182,27 @@ onBeforeUnmount(() => {
       >
     </nav>
     <div class="page-heading">
-      <div>
-        <h1>
-          {{ replaceId ? "Выберите замену" : "Поиск продуктов в магазинах" }}
-        </h1>
-        <p class="muted">
+      <div class="products-heading-copy">
+        <div class="products-title-row">
+          <h1>
+            {{ replaceId ? "Выберите замену" : "Поиск продуктов в магазинах" }}
+          </h1>
+          <details
+            class="products-help"
+            @keydown.esc="
+              ($event.currentTarget as HTMLDetailsElement).open = false
+            "
+          >
+            <summary aria-label="Как работает поиск товаров">
+              <AppIcon name="Info" :size="20" />
+            </summary>
+            <p>
+              Найдите товар и сравните предложения во вкладках магазинов.
+              Добавляем только то, что выберете вы.
+            </p>
+          </details>
+        </div>
+        <p class="muted products-intro">
           Найдите продукты по названию или бренду, сравните цены и наличие в
           магазинах Беларуси. В корзину попадёт только то, что выберете вы.
         </p>
@@ -244,7 +260,7 @@ onBeforeUnmount(() => {
 
     <template v-if="searched">
       <div class="catalog-results-head">
-        <h2>«{{ searched }}»</h2>
+        <h2 :title="searched">«{{ searched }}»</h2>
         <span>{{
           pending
             ? "Ищем…"
@@ -390,3 +406,178 @@ onBeforeUnmount(() => {
     </section>
   </div>
 </template>
+
+<style scoped>
+.products-help {
+  display: none;
+}
+@media (max-width: 760px) {
+  .products-page {
+    margin-top: 16px;
+  }
+  .products-page :deep(.seo-breadcrumbs) {
+    margin-bottom: 10px;
+  }
+  .products-page > .seo-links {
+    gap: 8px 16px;
+    margin: 10px 0 16px;
+    font-size: 12px;
+  }
+  .products-page .page-heading {
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .products-heading-copy {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+  .products-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    position: relative;
+  }
+  .products-title-row h1 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font-size: 23px;
+    line-height: 1.2;
+  }
+  .products-intro {
+    display: none;
+  }
+  .products-help {
+    display: block;
+    flex-shrink: 0;
+  }
+  .products-help summary {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    min-height: 44px;
+    margin: -7px -8px 0 0;
+    color: var(--muted);
+    list-style: none;
+    border-radius: 50%;
+  }
+  .products-help summary::-webkit-details-marker {
+    display: none;
+  }
+  .products-help[open] summary {
+    color: var(--ink);
+  }
+  .products-help p {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 30;
+    width: min(320px, calc(100vw - 40px));
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 6px 24px rgb(15 15 16 / 10%);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .page-heading > .secondary {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .products-search {
+    gap: 6px;
+    padding: 4px 6px;
+    margin-bottom: 8px;
+    border-radius: 16px;
+  }
+  .products-search > svg {
+    width: 18px;
+    height: 18px;
+    margin-left: 4px;
+  }
+  .products-search > input {
+    font-size: 16px;
+    padding: 8px 0;
+  }
+  .products-search > .primary {
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+  .catalog-chips {
+    gap: 6px;
+    margin: 8px 0 12px;
+  }
+  .catalog-chips button {
+    min-height: 40px;
+    padding: 7px 12px;
+  }
+  .products-progress {
+    min-height: 32px;
+    font-size: 12px;
+  }
+  .catalog-results-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin: 14px 0 10px;
+  }
+  .catalog-results-head h2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .catalog-results-head > span {
+    width: 100%;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .product-store-tabs {
+    gap: 6px;
+    padding-bottom: 8px;
+    margin-bottom: 0;
+  }
+  .product-store-tabs button {
+    min-height: 44px;
+    padding: 8px 10px;
+    gap: 6px;
+  }
+  .product-store-results {
+    margin-top: 10px;
+  }
+  .product-store-results > .muted {
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .catalog-product-grid {
+    gap: 8px;
+  }
+  .catalog-product-grid :deep(.catalog-product-card) {
+    padding: 10px;
+  }
+  .catalog-product-grid :deep(.catalog-product-link > .product-image),
+  .catalog-product-grid :deep(.catalog-product-link > .product-emoji) {
+    height: 112px;
+    min-height: 112px;
+    max-height: 112px;
+    margin-bottom: 8px;
+  }
+  .catalog-product-grid :deep(.catalog-product-copy h3) {
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+  .catalog-product-grid :deep(.catalog-product-copy p) {
+    margin-bottom: 8px;
+  }
+}
+</style>

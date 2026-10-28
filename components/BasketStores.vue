@@ -250,7 +250,7 @@ onBeforeUnmount(() => {
       <template v-else
         ><span>{{
           pending
-            ? "Проверяем цены и наличие в магазинах…"
+            ? "Проверяем все магазины — это может занять немного времени 💚"
             : "Полной корзины в наличии пока нет"
         }}</span
         ><small v-if="!refreshing && offers.length"
@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
           <span class="spinner" />{{
             cart.state.value === "saving"
               ? "Сохраняем корзину…"
-              : "Сравниваем цены и наличие…"
+              : "Сравниваем цены и наличие… Некоторые магазины отвечают чуть дольше 💚"
           }}
         </p>
         <div v-else-if="error && !selected" class="store-basket-status">

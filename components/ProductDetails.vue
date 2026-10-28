@@ -345,7 +345,8 @@ onBeforeUnmount(() => controller?.abort());
             <span>{{ location.label }}</span>
           </div>
           <p v-if="relatedPending" role="status">
-            <span class="spinner" /> Проверяем похожие товары…
+            <span class="spinner" /> Ищем варианты в других магазинах… Это может
+            занять немного времени 💚
           </p>
           <div v-if="exactRelated.length" class="similar-store-groups">
             <div

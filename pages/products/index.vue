@@ -255,7 +255,8 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="pending" class="products-progress" role="status">
-      <span class="spinner" /> Ищем во всех магазинах…
+      <span class="spinner" /> Ищем во всех магазинах… Иногда нужно чуть больше
+      времени 💚
     </div>
 
     <template v-if="searched">

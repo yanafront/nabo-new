@@ -27,6 +27,7 @@ defineEmits<{
         <button
           v-if="product.storeId && product.sourceId"
           class="row-preview-link"
+          :title="product.name"
           @click="
             preview({
               storeId: product.storeId,

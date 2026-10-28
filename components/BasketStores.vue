@@ -48,6 +48,26 @@ const {
   invalidate,
 } = useRetail();
 const active = ref<StoreId>(retailStores[0].id);
+const storeTabs = ref<HTMLElement>();
+watch(
+  [active, storeTabs],
+  () => {
+    const tabs = storeTabs.value;
+    const tab = tabs?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!tabs || !tab) return;
+    const bounds = tabs.getBoundingClientRect();
+    const selectedBounds = tab.getBoundingClientRect();
+    if (
+      selectedBounds.left < bounds.left ||
+      selectedBounds.right > bounds.right
+    )
+      tabs.scrollLeft +=
+        selectedBounds.left -
+        bounds.left -
+        (tabs.clientWidth - selectedBounds.width) / 2;
+  },
+  { flush: "post" },
+);
 const userSelected = ref(false);
 const autoSelected = ref(false);
 const expanded = ref<string | null>(null);
@@ -203,7 +223,14 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <section class="basket-stores" aria-label="Корзина по магазинам">
-    <div class="basket-benefit" aria-live="polite">
+    <div
+      class="basket-benefit"
+      :class="{
+        'basket-benefit--complete': best && !refreshing,
+        'is-pending': pending,
+      }"
+      aria-live="polite"
+    >
       <template v-if="best && !refreshing">
         <span>Где выгоднее</span>
         <button class="text-button" @click="select(best.storeId)">
@@ -216,7 +243,7 @@ onBeforeUnmount(() => {
         </button>
         <small>{{
           pending
-            ? "Лучший результат среди проверенных · проверяем остальные…"
+            ? "Среди проверенных · проверяем остальные…"
             : "Вся корзина в наличии"
         }}</small>
       </template>
@@ -232,7 +259,12 @@ onBeforeUnmount(() => {
         ></template
       >
     </div>
-    <div class="basket-store-tabs" role="tablist" aria-label="Магазины корзины">
+    <div
+      ref="storeTabs"
+      class="basket-store-tabs"
+      role="tablist"
+      aria-label="Магазины корзины"
+    >
       <button
         v-for="(store, index) in retailStores"
         :id="`basket-tab-${store.id}`"
@@ -277,7 +309,9 @@ onBeforeUnmount(() => {
       >
         <div class="store-basket-heading">
           <div>
-            <h2><StoreBrand :store-id="active" /></h2>
+            <h2 class="selected-store-brand">
+              <StoreBrand :store-id="active" />
+            </h2>
             <NearbyStoresLink :store-id="active" />
           </div>
           <button
@@ -445,12 +479,19 @@ onBeforeUnmount(() => {
             target="_blank"
             rel="noopener noreferrer"
             class="primary full"
-            >Перейти в {{ identity.name
-            }}<AppIcon name="ExternalLink" :size="16" /></a
+            :aria-label="`Перейти в ${identity.name} для оформления покупки`"
+            ><span class="checkout-desktop-label"
+              >Перейти в {{ identity.name }}</span
+            >
+            <span class="checkout-mobile-label">В магазин</span>
+            <AppIcon name="ExternalLink" :size="16" /></a
           ><button v-else class="primary full" disabled>
             {{ selectedLoading || refreshing ? "Проверяем…" : "Нет товаров" }}
           </button>
         </div>
+        <p class="checkout-mobile-note">
+          Список добавляется вручную · доставка отдельно
+        </p>
         <p class="basket-next-step">
           Список нужно добавить на сайте магазина. Доставка и сборы отдельно.
         </p>
@@ -459,6 +500,10 @@ onBeforeUnmount(() => {
   </section>
 </template>
 <style scoped>
+.checkout-mobile-label,
+.checkout-mobile-note {
+  display: none;
+}
 .basket-stores {
   min-width: 0;
 }
@@ -658,12 +703,86 @@ onBeforeUnmount(() => {
     scrollbar-width: thin;
   }
   .basket-store-tabs > button {
-    flex: 0 0 128px;
-    padding: 10px;
+    flex: 0 0 112px;
+    padding: 8px;
+    gap: 3px;
+  }
+  .basket-store-tabs {
+    padding: 6px 0 10px;
+    scrollbar-width: none;
+  }
+  .basket-store-tabs::-webkit-scrollbar {
+    display: none;
   }
   .basket-store-tabs strong {
     font-size: 15px;
+    line-height: 1.25;
   }
+  .basket-store-tabs small {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .tab-store-name :deep(.store-brand) {
+    height: 24px;
+    max-width: 88px;
+  }
+  .selected-store-brand {
+    display: none;
+  }
+  .store-basket-heading {
+    padding: 4px 0;
+    border: 0;
+  }
+  .store-basket-heading :deep(.nearby-stores-link),
+  .store-basket-heading .text-button {
+    min-height: 40px;
+    font-size: 11px;
+  }
+  .checkout-desktop-label {
+    display: none;
+  }
+  .checkout-mobile-label {
+    display: inline;
+  }
+  .checkout-mobile-note {
+    display: block;
+    grid-column: 1 / -1;
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.4;
+    text-align: center;
+  }
+  .basket-benefit--complete:not(.is-pending) > small {
+    display: none;
+  }
+  .basket-benefit .text-button {
+    font-size: 12px;
+  }
+  .store-list-footer {
+    padding: 8px 0;
+  }
+  .store-list-footer a {
+    display: none;
+  }
+  .store-list-footer button {
+    min-height: 44px;
+  }
+  .store-missing-row {
+    grid-template-columns: 32px minmax(0, 1fr) 40px;
+  }
+  .store-missing-row > .text-button {
+    grid-column: 2;
+    min-height: 40px;
+    justify-self: start;
+  }
+  .store-missing-row > .icon-button {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    width: 40px;
+    min-height: 44px;
+  }
+
   .basket-benefit {
     padding: 10px 12px;
     gap: 4px 8px;
@@ -672,7 +791,6 @@ onBeforeUnmount(() => {
     width: 100%;
   }
   .store-missing-row {
-    grid-template-columns: 32px minmax(0, 1fr) auto auto;
     gap: 6px;
   }
   .store-replacement {

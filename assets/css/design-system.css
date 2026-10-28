@@ -4838,3 +4838,38 @@ html {
     --header-height: 76px;
   }
 }
+
+/* The filled mobile basket uses one purchase bar instead of stacked bottom bars. */
+@media (max-width: 760px) {
+  .app-shell--basket { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+  .app-shell--basket .mobile-nav { display: none; }
+  .app-shell--basket .footer { margin-bottom: 0; }
+  .app-shell.app-shell--basket .cookie-consent { position: static; width: 100%; margin: 16px 0 0; padding: 14px; box-shadow: none; }
+  .app-shell--basket .basket-page { padding-bottom: 0; }
+  .app-shell--basket .basket-heading { position: relative; z-index: 20; margin-bottom: 8px; }
+  .app-shell--basket .basket-heading-actions { min-height: 44px; gap: 8px; }
+  .app-shell--basket .basket-heading-actions > .text-button { grid-column: auto; min-height: 44px; }
+  .app-shell--basket .basket-tools > summary { min-height: 44px; }
+  .app-shell--basket .store-product-line { scroll-margin-top: calc(var(--header-height) + 100px); }
+  .app-shell--basket .basket-list { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+  .app-shell--basket .product-row { position: relative; grid-template-columns: 40px minmax(0, 1fr); gap: 6px 10px; padding: 12px 0; }
+  .app-shell--basket .product-name { padding-right: 42px; min-width: 0; }
+  .app-shell--basket .product-name h3 { font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+  .app-shell--basket .product-name .row-preview-link { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%; }
+  .app-shell--basket .row-edit { position: static; grid-template-columns: auto 104px minmax(0, 1fr); gap: 8px; }
+  .app-shell--basket .row-edit > .row-replace { grid-column: 1; grid-row: 1; min-height: 44px; font-size: 12px; }
+  .app-shell--basket .row-edit > .quantity { grid-column: 2; grid-row: 1; width: 104px; }
+  .app-shell--basket .quantity button { width: 40px; min-height: 44px; height: 44px; }
+  .app-shell--basket .row-edit > .row-price { grid-column: 3; grid-row: 1; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+  .app-shell--basket .row-price small { font-size: 10px; }
+  .app-shell--basket .row-unit-price { font-size: 10px; line-height: 1.35; }
+  .app-shell--basket .row-edit > .delete { position: absolute; top: 4px; right: -4px; width: 40px; height: 44px; min-height: 44px; }
+  .app-shell--basket .basket-summary { top: auto; right: 0; bottom: 0; left: 0; grid-template-columns: minmax(0, 1fr) minmax(120px, 45%); gap: 6px 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); border: 0; box-shadow: 0 -4px 20px rgb(15 15 16 / 8%); }
+  .app-shell--basket .summary-total { min-width: 0; }
+  .app-shell--basket .summary-total strong { font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+  .app-shell--basket .summary-total > span { max-width: 100%; font-size: 10px; line-height: 1.35; }
+  .app-shell--basket .summary-partial { font-size: 10px; }
+  .app-shell--basket .basket-actions { min-width: 0; }
+  .app-shell--basket .basket-actions .primary { width: 100%; min-height: 48px; padding: 10px 12px; font-size: 14px; }
+  .app-shell--basket .basket-actions .primary svg { display: block; width: 15px; height: 15px; }
+}

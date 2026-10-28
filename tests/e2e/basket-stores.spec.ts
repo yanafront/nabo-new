@@ -20,6 +20,7 @@ async function mockCart(
   stale = false,
   images = false,
   perStore = false,
+  rowCount = 2,
 ) {
   await page.route("**/api/yandex/compare-capabilities", (route) =>
     route.fulfill({ json: { perStore } }),
@@ -34,6 +35,15 @@ async function mockCart(
       unit: "1 уп.",
     },
   ];
+  cart.push(
+    ...Array.from({ length: Math.max(0, rowCount - 2) }, (_, index) => ({
+      storeId: "green",
+      id: `extra-${index}`,
+      name: `${longName} · вариант ${index + 1}`,
+      count: 1,
+      unit: "1 л",
+    })),
+  );
   const writes: any[] = [];
   await page.route("**/api/auth/me", (route) =>
     route.fulfill({ json: { id: "user" } }),
@@ -432,4 +442,76 @@ test("quantity edits during partial comparison remain optimistic and ignore old 
     "Соседи · 10,00 BYN",
   );
   await expect(page.locator(".basket-summary")).toContainText("16,00");
+});
+
+test("mobile purchase bar and long basket rows never overlap at narrow widths", async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== "mobile", "Mobile checkout layout");
+  await mockCart(page, false, false, false, 14);
+  await page.goto("/basket");
+  await expect(page.locator(".basket-summary")).toContainText("133,00");
+  await expect(page.locator(".mobile-nav")).toBeHidden();
+  await expect(page.locator(".cookie-consent")).toHaveCSS("position", "static");
+  for (const width of [320, 390, 430]) {
+    await page.setViewportSize({ width, height: 780 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    const summary = await page.locator(".basket-summary").boundingBox();
+    expect(summary!.y + summary!.height).toBeLessThanOrEqual(780);
+    expect(summary!.height).toBeLessThanOrEqual(112);
+    const cta = page.locator(".basket-actions a");
+    await expect(cta).toBeVisible();
+    expect(
+      await cta.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return el.contains(
+          document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2),
+        );
+      }),
+    ).toBe(true);
+    for (const row of await page.locator(".product-row").all()) {
+      const quantity = await row.locator(".quantity").boundingBox();
+      const price = await row.locator(".row-price").boundingBox();
+      const replace = await row.locator(".row-replace").boundingBox();
+      expect(replace!.x + replace!.width).toBeLessThanOrEqual(quantity!.x);
+      expect(quantity!.x + quantity!.width).toBeLessThanOrEqual(price!.x);
+      const name = await row.locator(".product-name h3").boundingBox();
+      const remove = await row.locator(".delete").boundingBox();
+      expect(name!.x + name!.width).toBeLessThanOrEqual(remove!.x);
+      expect(name!.height).toBeLessThanOrEqual(56);
+    }
+    await page.screenshot({
+      path: `/tmp/nabo-basket-checkout-${width}.png`,
+      fullPage: false,
+    });
+    await page
+      .locator(".product-row")
+      .last()
+      .evaluate((el) => el.scrollIntoView({ block: "center" }));
+    const lastRow = await page.locator(".product-row").last().boundingBox();
+    const bottomBar = await page.locator(".basket-summary").boundingBox();
+    const tabs = await page.locator(".basket-store-tabs").boundingBox();
+    const header = await page.locator(".header").boundingBox();
+    expect(lastRow!.y + lastRow!.height).toBeLessThanOrEqual(bottomBar!.y);
+    expect(tabs!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+    await expect(cta).toBeInViewport();
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.getByRole("tab", { name: /Евроопт/ }).click();
+  await expect(page.locator(".summary-partial")).toBeVisible();
+  await expect(page.locator(".store-missing-row").first()).toBeVisible();
+  await page.getByRole("tab", { name: /Green/ }).click();
+  await page
+    .getByRole("button", {
+      name: `Увеличить количество: ${longName}`,
+      exact: true,
+    })
+    .click();
+  await expect(page.locator(".row-unit-price").first()).toContainText("5,00");
+  await expect(page.locator(".basket-summary")).toContainText("166,00");
 });

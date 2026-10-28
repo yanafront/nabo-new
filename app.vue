@@ -49,7 +49,12 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <div class="app-shell">
+  <div
+    class="app-shell"
+    :class="{
+      'app-shell--basket': route.path === '/basket' && items.length > 0,
+    }"
+  >
     <a class="skip" href="#main">К содержимому</a>
     <header class="header" :class="{ 'header--scrolled': headerScrolled }">
       <NuxtLink to="/" class="logo" aria-label="Nabo — главная"

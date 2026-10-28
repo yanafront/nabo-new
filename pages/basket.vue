@@ -23,24 +23,27 @@ async function clearBasket() {
 <template>
   <div class="inner-page basket-page">
     <div class="page-heading basket-heading">
-      <div>
-        <h1>Корзина</h1>
-        <p v-if="hasContent" class="muted basket-context">
-          {{ items.length }} позиций · {{ title }}
-        </p>
+      <div class="basket-heading-main">
+        <div>
+          <h1>Корзина</h1>
+          <p v-if="hasContent" class="muted basket-context" :title="title">
+            {{ items.length }} позиций · {{ title }}
+          </p>
+        </div>
+        <button
+          v-if="hasContent"
+          class="basket-clear-button"
+          aria-label="Очистить корзину"
+          :disabled="resolving || cartSync.state.value === 'saving'"
+          @click="confirmClear = true"
+        >
+          <AppIcon name="Trash2" :size="16" /><span>Очистить</span>
+        </button>
       </div>
       <div v-if="hasContent" class="basket-heading-actions">
         <NuxtLink to="/products" class="text-button"
           ><AppIcon name="Plus" :size="16" /> Добавить товары</NuxtLink
         >
-        <button
-          class="basket-clear-button"
-          :disabled="resolving || cartSync.state.value === 'saving'"
-          @click="confirmClear = true"
-        >
-          <AppIcon name="Trash2" :size="16" />
-          Очистить корзину
-        </button>
         <details class="basket-tools">
           <summary>Ещё <AppIcon name="ChevronDown" :size="16" /></summary>
           <div class="basket-tools-menu">
@@ -115,12 +118,6 @@ async function clearBasket() {
         >Найти товары <AppIcon name="ArrowRight" /></NuxtLink
       ><NuxtLink to="/recipes" class="text-button"> Выбрать рецепт</NuxtLink>
     </div>
-    <p
-      v-if="cartSync.state.value === 'guest' && hasContent"
-      class="muted guest-cart-note"
-    >
-      Корзина сохранена в этой вкладке. Войдите, чтобы перенести её в аккаунт.
-    </p>
     <details class="basket-account-tools">
       <summary>
         Сохранение и восстановление в аккаунте
@@ -160,6 +157,16 @@ async function clearBasket() {
 </template>
 
 <style scoped>
+.basket-heading-main {
+  min-width: 0;
+}
+@media (min-width: 761px) {
+  .basket-heading-main {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+}
 .basket-clear-button {
   display: inline-flex;
   align-items: center;
@@ -184,9 +191,39 @@ async function clearBasket() {
   cursor: wait;
 }
 @media (max-width: 760px) {
-  .basket-clear-button {
-    padding: 4px 0;
+  .basket-page {
+    margin-top: 16px;
+  }
+  .basket-heading-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  .basket-heading-main > div {
+    min-width: 0;
+  }
+  .basket-context {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 12px;
+  }
+  .basket-clear-button {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 0 2px 0 8px;
+    font-size: 12px;
+  }
+  .basket-heading-actions {
+    min-height: 44px;
+  }
+  .basket-tools[open] {
+    z-index: 30;
+  }
+  .basket-account-tools {
+    margin: 18px 0;
   }
 }
 </style>

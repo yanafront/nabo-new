@@ -53,6 +53,7 @@ onUnmounted(() => {
     class="app-shell"
     :class="{
       'app-shell--basket': route.path === '/basket' && items.length > 0,
+      'app-shell--product': route.path.startsWith('/product/'),
     }"
   >
     <a class="skip" href="#main">К содержимому</a>

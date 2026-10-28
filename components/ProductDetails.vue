@@ -264,41 +264,23 @@ onBeforeUnmount(() => controller?.abort());
           <div class="product-detail-copy">
             <div class="product-store-line">
               <StoreBrand :store-id="storeId" />
+              <FavoriteButton
+                :store-id="product.storeId"
+                :id="product.id"
+                :name="product.name"
+              />
             </div>
             <h1>{{ product.name }}</h1>
-            <p
-              v-if="product.categories?.some((category) => category.name)"
-              class="muted"
-            >
-              {{
-                product.categories
-                  .filter((category) => category.name)
-                  .map((category) => category.name)
-                  .join(" · ")
-              }}
-            </p>
             <p class="product-unit">
               {{ product.unit }} ·
               <span :class="product.available ? 'available' : 'unavailable'">{{
                 product.available ? "В наличии" : "Нет в наличии"
               }}</span>
             </p>
-            <details
-              v-if="product.description"
-              class="product-description-disclosure"
-            >
-              <summary>Описание и характеристики</summary>
-              <p class="product-description">{{ product.description }}</p>
-            </details>
             <p v-if="product.rating" class="product-rating">
               <AppIcon name="Star" :size="15" /> {{ product.rating }}
             </p>
             <div class="product-actions">
-              <FavoriteButton
-                :store-id="product.storeId"
-                :id="product.id"
-                :name="product.name"
-              />
               <div v-if="!modal" class="product-buy-row">
                 <div>
                   <strong>{{ money(product.price) }} BYN</strong
@@ -329,6 +311,29 @@ onBeforeUnmount(() => controller?.abort());
                 <AppIcon name="ExternalLink" :size="13"
               /></a>
             </div>
+            <details
+              v-if="
+                product.description ||
+                product.categories?.some((category) => category.name)
+              "
+              class="product-description-disclosure"
+            >
+              <summary>Описание и характеристики</summary>
+              <p
+                v-if="product.categories?.some((category) => category.name)"
+                class="muted"
+              >
+                {{
+                  product.categories
+                    .filter((category) => category.name)
+                    .map((category) => category.name)
+                    .join(" · ")
+                }}
+              </p>
+              <p v-if="product.description" class="product-description">
+                {{ product.description }}
+              </p>
+            </details>
           </div>
         </section>
         <section class="similar-products">
@@ -428,10 +433,19 @@ onBeforeUnmount(() => controller?.abort());
         </section>
       </template>
     </div>
-    <div v-if="modal && product" class="product-preview-buy">
+    <div
+      v-if="product"
+      class="product-preview-buy"
+      :class="{ 'product-page-buy': !modal }"
+    >
       <div class="preview-price">
-        <strong>{{ money(product.price) }} <small>BYN</small></strong
-        ><span
+        <div class="preview-price-amount">
+          <strong>{{ money(product.price) }} <small>BYN</small></strong>
+          <del v-if="product.oldPrice && product.oldPrice > product.price"
+            >{{ money(product.oldPrice) }} BYN</del
+          >
+        </div>
+        <span
           >{{ product.unit
           }}<template v-if="inCart"> · {{ inCart }} в корзине</template></span
         >
@@ -643,5 +657,236 @@ onBeforeUnmount(() => controller?.abort());
 }
 .product-preview-detail .product-yandex-link {
   margin: 0;
+}
+</style>
+
+<style scoped>
+.product-store-line {
+  justify-content: space-between;
+}
+.product-page-buy {
+  display: none;
+}
+.preview-price-amount {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+.preview-price-amount del {
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .product-page {
+    --product-gutter: 20px;
+    min-width: 0;
+  }
+  .product-page:not(.product-preview-detail) {
+    margin-top: 10px;
+  }
+  .product-page > .product-content > .back-link {
+    min-height: 44px;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .product-page .product-detail {
+    display: block;
+    margin-inline: calc(0px - var(--product-gutter));
+    width: calc(100% + var(--product-gutter) + var(--product-gutter));
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .product-page.product-preview-detail {
+    --product-gutter: 16px;
+    flex: 1;
+  }
+  .product-page.product-preview-detail .product-content {
+    flex: 1;
+    padding: 0;
+  }
+  .product-page.product-preview-detail .product-detail {
+    display: block;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    margin: 0;
+    gap: 0;
+  }
+  .product-page .product-detail-image {
+    width: 100%;
+    height: clamp(180px, 30svh, 280px);
+    background: #f7f8fa;
+  }
+  .product-page
+    :deep(.product-detail-image :is(.product-image, .product-emoji)) {
+    display: grid;
+    place-items: center;
+    object-fit: contain;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 16px;
+    border-radius: 0;
+  }
+  .product-page .product-detail-copy {
+    min-width: 0;
+    padding: 14px var(--product-gutter) 0;
+  }
+  .product-page .product-store-line {
+    margin: 0 0 8px;
+    gap: 12px;
+  }
+  .product-page .product-store-line :deep(.store-brand) {
+    height: 28px;
+    width: 104px;
+  }
+  .product-page .product-store-line :deep(.favorite-button) {
+    width: 44px;
+    min-height: 44px;
+  }
+  .product-page .product-detail h1 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .product-page .product-unit {
+    margin: 0 0 8px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .product-page .product-rating {
+    margin: 8px 0;
+  }
+  .product-page .product-actions {
+    margin: 0;
+  }
+  .product-page .product-buy-row {
+    display: none;
+  }
+  .product-page .product-yandex-link {
+    min-height: 44px;
+    max-width: 100%;
+    margin: 0;
+    font-size: 12px;
+    white-space: normal;
+    text-align: left;
+  }
+  .product-page .product-description-disclosure {
+    margin: 6px 0 0;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .product-page .product-description-disclosure summary {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .product-page .product-description-disclosure p {
+    margin-bottom: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+  .product-page .similar-products {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .product-page.product-preview-detail .similar-products {
+    margin: 24px 16px 0;
+  }
+  .product-page.product-preview-detail .similar-products:last-child {
+    margin-bottom: 20px;
+  }
+  .product-page .product-section-head {
+    margin-bottom: 12px;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .product-page .product-section-head .eyebrow {
+    display: none;
+  }
+  .product-page .product-section-head h2 {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.3;
+  }
+  .product-page .similar-store-group {
+    margin-top: 16px;
+  }
+  .product-page .similar-store-title {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .product-page :deep(.catalog-product-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .product-page :deep(.catalog-product-card) {
+    min-width: 0;
+    padding: 10px;
+  }
+  .product-page
+    :deep(.catalog-product-link :is(.product-image, .product-emoji)) {
+    width: 100%;
+    height: 100px;
+    min-height: 100px;
+    max-height: 100px;
+    margin-bottom: 8px;
+  }
+  .product-page .empty-state {
+    padding: 12px 0;
+    background: transparent;
+    border: 0;
+  }
+  .product-page .empty-state h2 {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .product-page .empty-state p {
+    font-size: 12px;
+  }
+  .product-preview-buy {
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    gap: 12px;
+  }
+  .product-page-buy {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    border: 0;
+    box-shadow: 0 -4px 20px rgb(15 15 16 / 8%);
+  }
+  .product-preview-buy .primary {
+    min-height: 48px;
+    max-width: 55%;
+    padding: 10px 14px;
+    font-size: 13px;
+    white-space: normal;
+  }
+  .preview-price strong {
+    font-size: 22px;
+  }
+  .preview-price > span {
+    font-size: 11px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+}
+</style>
+
+<style scoped>
+@media (max-width: 360px) {
+  .product-page {
+    --product-gutter: 16px;
+  }
 }
 </style>

@@ -66,3 +66,25 @@ watch(() => route.path, close);
   }
 }
 </style>
+
+<style>
+@media (max-width: 760px) {
+  :root dialog.modal.product-preview-modal[open] {
+    inset: var(--modal-viewport-top, 0px) 0 auto;
+    width: 100vw;
+    max-width: 100vw;
+    height: var(--modal-viewport-height, 100dvh);
+    max-height: var(--modal-viewport-height, 100dvh);
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    transform: none;
+  }
+  .product-preview-modal .modal-head {
+    padding: calc(6px + env(safe-area-inset-top)) 16px 6px;
+  }
+  .product-preview-modal .modal-head h2 {
+    font-size: 14px;
+  }
+}
+</style>

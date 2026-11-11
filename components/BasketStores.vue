@@ -224,6 +224,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="basket-stores" aria-label="Корзина по магазинам">
     <div
+      v-if="pending"
       class="basket-benefit"
       :class="{
         'basket-benefit--complete': best && !refreshing,
